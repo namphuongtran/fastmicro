@@ -1,0 +1,120 @@
+services:
+  # Infrastructure
+  cert-generator:
+    networks:
+      - ags-core
+
+  traefik:
+    networks:
+      - ags-core
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8080"  # Traefik dashboard
+
+  auth-postgresql:
+    environment:
+      POSTGRES_DB: "${PostgresDb}"
+      POSTGRES_USER: "${PostgresUser}"
+      POSTGRES_PASSWORD: ${PostgresPassword}
+    networks:
+      - ags-core
+    ports:
+      - "5432:5432"
+
+  mongodb:
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${MongoDbUserName}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MongoDbPassword}"
+    networks:
+      - ags-core
+    ports:
+      - "27017:27017"
+
+  rabbitmq:
+    networks:
+      - ags-core
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+      - "15692:15692"
+
+  smtp-server:
+    networks:
+      - ags-core
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  vault:
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "${VaultRootTokenId}"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    networks:
+      - ags-core
+    ports:
+      - "8200:8200"
+
+  redis:
+    environment:
+      REDIS_REPLICATION_MODE: "master"
+      REDIS_PASSWORD: "${RedisPassword}"
+      REDIS_DISABLE_COMMANDS: "FLUSHDB,FLUSHALL"
+    networks:
+      - ags-core
+    ports:
+      - "6379:6379"
+
+  # https://hub.docker.com/r/redis/redisinsight
+  redis-insight:
+    environment:
+      # values: error | warn | info | http | verbose | debug | silly
+      RI_LOG_LEVEL: "info"
+    networks:
+      - ags-core
+    ports:
+      - "5540:5540"
+
+  eureka:
+    networks:
+      - ags-core
+    ports:
+      - "8761:8761"
+
+  consul:
+    networks:
+      - ags-core
+    ports:
+      - "8500:8500"
+
+  seq:
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: "admin"
+    networks:
+      - ags-core
+    ports:
+      - "5340:80" # Web
+      - "5341:5341" # Ingestion only port
+  
+  # Identity Provider
+  keycloak:
+    environment:
+      KC_DB: "postgres"
+      KC_HTTP_RELATIVE_PATH: "/"
+      KC_DB_URL: "jdbc:postgresql://auth-postgresql:5432/${PostgresDb}"
+      KC_DB_USERNAME: "${PostgresUser}"
+      KC_DB_PASSWORD: "${PostgresPassword}"      
+      KC_DB_URL_PORT: 5432
+      KC_DB_URL_DATABASE: "${PostgresDb}"
+      KC_HOSTNAME_STRICT: "false"
+      KC_TRANSACTION_XA_ENABLED: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY: "edge"
+      KC_LOG_LEVEL: "INFO"
+      KEYCLOAK_ADMIN: "${KeycloakUser}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KeycloakPassword}"
+    networks:
+      - ags-core
+    ports:
+      - "44380:8080"

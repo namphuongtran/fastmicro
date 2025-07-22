@@ -1,0 +1,132 @@
+networks:
+  ags-core:
+    name: ags-core
+    driver: bridge
+
+volumes:
+  auth_postgresql_data:
+    name: ags_auth_postgresql_data
+  traefik_data:
+    name: ags_traefik_data
+  cert_data:
+    name: ags_cert_data
+  mongo_data:
+    name: ags_mongo_data
+  redis_data:
+    name: ags_redis_data
+  redis_insight_data:
+    name: ags_redis_insight_data
+  seq_data:
+    name: ags_seq_data
+  vault_data:
+    name: ags_vault_data
+
+services:
+  # Infrastructure
+  cert-generator:
+    image: alpine:3.18
+    container_name: cert-generator
+    volumes:
+      - ./infrastructure/cert-generator/generate-cert.sh:/generate-cert.sh:ro
+      - cert_data:/certs
+    command: sh /generate-cert.sh
+    healthcheck:
+      test: ["CMD", "test", "-f", "/certs/local.ags.com.crt"]
+      interval: 1s
+      timeout: 3s
+      retries: 30   
+
+  traefik:
+    image: traefik:v3.4.4
+    container_name: traefik
+    restart: ${TRAEFIK_RESTART_MODE:-no}
+    command:
+      - "--providers.file.filename=/etc/traefik/traefik.yml"    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infrastructure/ingress-controller/traefik.yml:/etc/traefik/traefik.yml
+      - traefik_data:/etc/traefik
+      - cert_data:/etc/traefik/certs
+    depends_on:
+      cert-generator:
+        condition: service_healthy    
+
+  auth-postgresql:
+    image: postgres:17
+    container_name: auth-postgresql
+    restart: unless-stopped
+    hostname: auth-postgresql
+    volumes:
+      - auth_postgresql_data:/var/lib/postgresql/data
+  
+  mongodb:
+    image: mongo:7.0.22
+    container_name: mongodb
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:4.1.2-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    hostname: rabbitmq
+
+  smtp-server:
+    image: axllent/mailpit:v1.27.1
+    container_name: smtp-server
+    restart: unless-stopped
+
+  vault:
+    image: hashicorp/vault:1.20
+    container_name: vault
+    restart: unless-stopped
+    volumes:
+      - vault_data:/vault/
+
+  redis:
+    image: docker.io/bitnami/redis:8.0.3
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/bitnami/redis/data
+
+  # https://hub.docker.com/r/redis/redisinsight
+  redis-insight:
+    image: docker.io/redis/redisinsight:2.70.1
+    container_name: redis-insight
+    restart: unless-stopped
+    volumes:
+      - redis_insight_data:/data
+
+  eureka:
+    image: steeltoeoss/eureka-server:4.1.1
+    container_name: eureka
+    restart: unless-stopped
+
+  consul:
+    image: hashicorp/consul:1.21.2
+    container_name: consul
+
+  seq:
+    image: datalust/seq:2025.2
+    container_name: seq
+    restart: unless-stopped
+    volumes:
+      - seq_data:/data
+
+  # Identity Provider
+  keycloak:
+    container_name: keycloak
+    build: 
+      context: ./infrastructure/identity/keycloak
+      dockerfile: Dockerfile
+    restart: unless-stopped    
+    depends_on:
+      auth-postgresql:
+        condition: service_started
+    command:
+      - "start"
+      - "--optimized"
+      - "--cache=ispn"
+      - "--cache-stack=tcp"

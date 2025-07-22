@@ -1,0 +1,34 @@
+entryPoints:
+  web:
+    address: ":80"
+  web-secure:
+    address: ":443"
+
+serversTransport:
+  insecureSkipVerify: true
+
+api:
+  dashboard: true
+  insecure: true
+
+providers:
+  docker:
+    exposedByDefault: false
+  file:
+    filename: /etc/traefik/traefik.yml
+    watch: true
+
+log:
+  level: INFO
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: "/etc/traefik/certs/local.ags.com.crt"
+        keyFile: "/etc/traefik/certs/local.ags.com.key"
+  certificates:
+    - certFile: "/etc/traefik/certs/local.ags.com.crt"
+      keyFile: "/etc/traefik/certs/local.ags.com.key"
+      stores:
+        - default
