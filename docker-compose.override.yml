@@ -100,21 +100,31 @@ services:
   # Identity Provider
   keycloak:
     environment:
-      KC_DB: "postgres"
-      KC_HTTP_RELATIVE_PATH: "/"
+      KC_DB: "postgres"      
       KC_DB_URL: "jdbc:postgresql://auth-postgresql:5432/${PostgresDb}"
       KC_DB_USERNAME: "${PostgresUser}"
       KC_DB_PASSWORD: "${PostgresPassword}"      
       KC_DB_URL_PORT: 5432
       KC_DB_URL_DATABASE: "${PostgresDb}"
       KC_HOSTNAME_STRICT: "false"
-      KC_TRANSACTION_XA_ENABLED: "false"
-      KC_HTTP_ENABLED: "true"
-      KC_PROXY: "edge"
+      # KC_HOSTNAME: "auth.local.ags.com"
+      KC_HTTP_ENABLED: "true"      
       KC_LOG_LEVEL: "INFO"
+      KC_PROXY_HEADERS: 'xforwarded'
       KEYCLOAK_ADMIN: "${KeycloakUser}"
       KEYCLOAK_ADMIN_PASSWORD: "${KeycloakPassword}"
     networks:
       - ags-core
     ports:
-      - "44380:8080"
+      - "44380:8080"      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`auth.local.ags.com`)"
+      - "traefik.http.routers.keycloak.entrypoints=web-secure"
+      - "traefik.http.routers.keycloak.tls=true"
+      - "traefik.http.services.keycloak-http.loadbalancer.server.port=8080"
+      - "traefik.http.routers.keycloak.service=keycloak-http"
+      - "traefik.http.routers.keycloak-health.rule=PathPrefix(`/health`)"
+      - "traefik.http.routers.keycloak-health.entrypoints=web"
+      - "traefik.http.services.keycloak-health.loadbalancer.server.port=9000"
+      - "traefik.http.routers.keycloak-health.service=keycloak-health"

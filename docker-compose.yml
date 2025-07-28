@@ -34,7 +34,22 @@ services:
       test: ["CMD", "test", "-f", "/certs/local.ags.com.crt"]
       interval: 1s
       timeout: 3s
-      retries: 30   
+      retries: 30  
+
+  # cert-generator:
+  #   image: mcr.microsoft.com/powershell:lts-7.2-alpine-3.14
+  #   container_name: cert-generator
+  #   volumes:
+  #     - ./infrastructure/cert-generator/generate-cert.ps1:/generate-cert.ps1:ro
+  #     - cert_data:/certs
+  #   command: pwsh /generate-cert.ps1
+  #   healthcheck:
+  #     test: ["CMD", "test", "-f", "/certs/local.ags.com.crt"]
+  #     interval: 1s
+  #     timeout: 3s
+  #     retries: 30
+  #   networks:
+  #     - ags-core 
 
   traefik:
     image: traefik:v3.4.4
@@ -44,7 +59,7 @@ services:
       - "--providers.file.filename=/etc/traefik/traefik.yml"    
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./infrastructure/ingress-controller/traefik.yml:/etc/traefik/traefik.yml
+      - ./infrastructure/traefik/traefik.yml:/etc/traefik/traefik.yml
       - traefik_data:/etc/traefik
       - cert_data:/etc/traefik/certs
     depends_on:
@@ -129,4 +144,4 @@ services:
       - "start"
       - "--optimized"
       - "--cache=ispn"
-      - "--cache-stack=tcp"
+      - "--cache-stack=jdbc-ping" 
