@@ -128,3 +128,9 @@ services:
       - "traefik.http.routers.keycloak-health.entrypoints=web"
       - "traefik.http.services.keycloak-health.loadbalancer.server.port=9000"
       - "traefik.http.routers.keycloak-health.service=keycloak-health"
+  
+  federation-gateway:
+    networks:
+      - ags-core
+    ports:
+      - "44381:44381"

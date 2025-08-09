@@ -134,8 +134,8 @@ services:
   keycloak:
     container_name: keycloak
     build: 
-      context: ./infrastructure/identity/keycloak
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./infrastructure/identity/keycloak/Dockerfile
     restart: unless-stopped    
     depends_on:
       auth-postgresql:
@@ -144,4 +144,11 @@ services:
       - "start"
       - "--optimized"
       - "--cache=ispn"
-      - "--cache-stack=jdbc-ping" 
+      - "--cache-stack=jdbc-ping"
+  
+  federation-gateway:
+    container_name: federation-gateway
+    build:
+      context: .
+      dockerfile: ./gateways/federation-gateway/Dockerfile
+    restart: unless-stopped    
