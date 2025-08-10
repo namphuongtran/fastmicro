@@ -1,15 +1,16 @@
 FROM python:3.12-slim
 
-# ENV PYTHONUNBUFFERED=1 \
-#     POETRY_VERSION=2.1.0 \
-#     POETRY_HOME="/opt/poetry" \
-#     PATH="/opt/poetry/bin:$PATH"
+ENV PYTHONUNBUFFERED=1 \
+    POETRY_VERSION=2.1.0 \
+    POETRY_HOME="/opt/poetry" \
+    PATH="/opt/poetry/bin:$PATH"
 
 # # Install system dependencies
-# RUN apt-get update && apt-get install -y curl build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
 
-# # Install Poetry
-# RUN curl -sSL https://install.python-poetry.org | python3 - && chmod -R 755 /opt/poetry
+# RUN curl -sSL https://install.python-poetry.org | python3 - --uninstall
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && chmod -R 755 /opt/poetry
 
 # WORKDIR /app
 
@@ -26,7 +27,7 @@ FROM python:3.12-slim
 # COPY gateways/federation-gateway/src ./src
 
 # Install Poetry
-RUN pip install poetry
+# RUN pip install poetry
 RUN poetry config virtualenvs.create false
 
 # Recreate the directory structure to match the relative paths in pyproject.toml
@@ -40,7 +41,7 @@ COPY gateways/federation-gateway/pyproject.toml ./
 COPY gateways/federation-gateway/poetry.lock ./
 
 # Install dependencies (now the relative path ../../libs/settings will work)
-RUN poetry install --only=main,local
+RUN poetry install --only=main,local --no-root
 
 # Copy source code
 COPY gateways/federation-gateway/src/ ./src/

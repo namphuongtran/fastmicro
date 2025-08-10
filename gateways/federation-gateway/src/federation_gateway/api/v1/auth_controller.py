@@ -1,161 +1,190 @@
-"""
-Authentication API controller
-"""
-
-import logging
-from fastapi import APIRouter, Request, HTTPException, Depends, Query
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from starlette.responses import Response
+from starlette.requests import Request
 from authlib.integrations.starlette_client import OAuthError
-from settings.settings_manager import SettingsManager
-from src.federation_gateway.application.services.token_service import TokenService
-from src.federation_gateway.application.services.auth_service import AuthService
-from src.federation_gateway.domain.entities.token_validation_response import TokenValidationResponse
-from src.federation_gateway.domain.entities.user_info import UserInfo
-from src.federation_gateway.configs.settings import get_settings
+import json
+import logging
+from typing import Dict, Any
+
+from ...application.services.oauth_service import OAuthService
+from ...application.services.session_service import SessionService
+from ...configs.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+def get_oauth_service() -> OAuthService:
+    """Dependency to get OAuth service instance"""
+    return OAuthService()
 
-# Dependency injection
-def get_token_service(settings: SettingsManager = Depends(get_settings)) -> TokenService:
-    """Get token service dependency."""
-    return TokenService(settings)
+def get_session_service() -> SessionService:
+    """Dependency to get Session service instance"""
+    return SessionService()
 
-
-def get_auth_service(
-    settings: SettingsManager = Depends(get_settings),
-    token_service: TokenService = Depends(get_token_service)
-) -> AuthService:
-    """Get authentication service dependency."""
-    return AuthService(settings, token_service)
-
+@router.get("/")
+async def auth_status(
+    request: Request,
+    session_service: SessionService = Depends(get_session_service)
+):
+    """
+    Get current authentication status
+    Returns user info if authenticated, otherwise login prompt
+    """
+    try:
+        user = await session_service.get_user(request)
+        if user:
+            return JSONResponse({
+                "authenticated": True,
+                "user": user,
+                "message": "User is authenticated"
+            })
+        
+        return JSONResponse({
+            "authenticated": False,
+            "login_url": "/v1/auth/login",
+            "message": "User not authenticated"
+        })
+    except Exception as e:
+        logger.error(f"Error checking auth status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/login")
 async def login(
     request: Request,
-    redirect_uri: str = Query(..., description="URI to redirect after successful authentication")
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ):
-    """Initiate OIDC login flow."""
-    
-    # Store the original redirect URI in session
-    request.session["redirect_uri"] = redirect_uri
-    
-    # Get OAuth client from app state
-    oauth = request.app.state.oauth
-    client = oauth.create_client("oidc")
-    
-    # Generate callback URL
-    callback_url = str(request.url_for("auth_callback"))
-    
+    """
+    Initiate OAuth login flow
+    Redirects user to identity provider login page
+    """
     try:
-        # Redirect to IdP for authentication
-        return await client.authorize_redirect(request, callback_url)
+        redirect_uri = request.url_for('auth_callback')
+        print(f"Redirect URI: {redirect_uri}")
+        return await oauth_service.authorize_redirect(request, redirect_uri)
     except Exception as e:
         logger.error(f"Error initiating login: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to initiate login")
 
-
 @router.get("/callback")
-async def callback(
+async def auth_callback(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service)
+    oauth_service: OAuthService = Depends(get_oauth_service),
+    session_service: SessionService = Depends(get_session_service)
 ):
-    """Handle OIDC callback from IdP."""
-    
-    # Get the original redirect URI from session
-    redirect_uri = request.session.get("redirect_uri")
-    if not redirect_uri:
-        raise HTTPException(status_code=400, detail="Missing redirect URI in session")
-    
-    # Get OAuth client from app state
-    oauth = request.app.state.oauth
-    client = oauth.create_client("oidc")
-    
+    """
+    Handle OAuth callback from identity provider
+    Exchange authorization code for tokens and create user session
+    """
     try:
-        # Exchange authorization code for tokens
-        token = await client.authorize_access_token(request)
+        # Exchange authorization code for access token
+        token = await oauth_service.authorize_access_token(request)
         
-        # Handle authentication through service
-        auth_result = await auth_service.handle_successful_auth(token)
+        # Extract user information from token
+        user_info = oauth_service.get_user_info(token)
         
-        # Clean up session
-        request.session.pop("redirect_uri", None)
-        
-        if not auth_result.success:
-            # Authentication failed
-            error_url = f"{redirect_uri}?error={auth_result.error}&error_description={auth_result.error_description}"
-            return RedirectResponse(url=error_url)
-        
-        # Redirect back to the original application with token
-        redirect_url = f"{redirect_uri}?token={auth_result.access_token}&token_type=Bearer"
-        return RedirectResponse(url=redirect_url)
-        
-    except OAuthError as e:
-        logger.error(f"OAuth error during callback: {str(e)}")
-        error_url = f"{redirect_uri}?error=oauth_error&error_description={str(e)}"
-        return RedirectResponse(url=error_url)
+        if user_info:
+            # Create user session
+            await session_service.create_session(request, user_info)
+            logger.info(f"User authenticated successfully: {user_info.get('email', 'unknown')}")
+            
+            # Redirect to success page or return JSON response
+            return JSONResponse({
+                "success": True,
+                "message": "Authentication successful",
+                "user": user_info
+            })
+        else:
+            logger.warning("No user info received from OAuth provider")
+            raise HTTPException(status_code=400, detail="Authentication failed - no user info")
+            
+    except OAuthError as error:
+        logger.error(f"OAuth error during callback: {error.error}")
+        return JSONResponse(
+            status_code=400,
+            content={"error": error.error, "description": getattr(error, 'description', 'OAuth authentication failed')}
+        )
     except Exception as e:
-        logger.error(f"Unexpected error during callback: {str(e)}")
-        error_url = f"{redirect_uri}?error=server_error&error_description=Authentication failed"
-        return RedirectResponse(url=error_url)
-
-
-@router.get("/userinfo", response_model=UserInfo)
-async def get_userinfo(
-    request: Request,
-    auth_service: AuthService = Depends(get_auth_service)
-):
-    """Get user information from JWT token."""
-    
-    # Get user info through service
-    auth_header = request.headers.get("Authorization")
-    payload = auth_service.validate_token_and_get_user_info(auth_header)
-    
-    # Return user info
-    return UserInfo(
-        sub=payload.get("sub"),
-        email=payload.get("email"),
-        name=payload.get("name"),
-        preferred_username=payload.get("preferred_username"),
-        given_name=payload.get("given_name"),
-        family_name=payload.get("family_name"),
-        picture=payload.get("picture")
-    )
-
+        logger.error(f"Unexpected error during auth callback: {str(e)}")
+        raise HTTPException(status_code=500, detail="Authentication callback failed")
 
 @router.post("/logout")
 async def logout(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service)
+    session_service: SessionService = Depends(get_session_service)
 ):
-    """Logout endpoint."""
-    
-    # Process logout through service
-    auth_header = request.headers.get("Authorization")
-    success = auth_service.logout_user(auth_header)
-    
-    if not success:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    return {"message": "Logged out successfully"}
+    """
+    Logout user and clear session
+    """
+    try:
+        await session_service.clear_session(request)
+        logger.info("User logged out successfully")
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Logout successful"
+        })
+    except Exception as e:
+        logger.error(f"Error during logout: {str(e)}")
+        raise HTTPException(status_code=500, detail="Logout failed")
 
-
-@router.get("/validate", response_model=TokenValidationResponse)
-async def validate_token(
+@router.get("/user")
+async def get_current_user(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service)
+    session_service: SessionService = Depends(get_session_service)
 ):
-    """Validate JWT token."""
-    
-    # Validate token through service
-    auth_header = request.headers.get("Authorization")
-    payload = auth_service.validate_token_and_get_user_info(auth_header)
-    
-    return TokenValidationResponse(
-        valid=True,
-        sub=payload.get("sub"),
-        exp=payload.get("exp"),
-        iat=payload.get("iat")
-    )
+    """
+    Get current authenticated user information
+    """
+    try:
+        user = await session_service.get_user(request)
+        if not user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        return JSONResponse({
+            "user": user,
+            "message": "User information retrieved successfully"
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving user info: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve user information")
+
+@router.get("/refresh")
+async def refresh_token(
+    request: Request,
+    oauth_service: OAuthService = Depends(get_oauth_service),
+    session_service: SessionService = Depends(get_session_service)
+):
+    """
+    Refresh access token if refresh token is available
+    """
+    try:
+        # Get current session
+        user_session = await session_service.get_session_data(request)
+        if not user_session:
+            raise HTTPException(status_code=401, detail="No active session")
+        
+        # Attempt to refresh token
+        new_token = await oauth_service.refresh_access_token(user_session.get('refresh_token'))
+        
+        if new_token:
+            # Update session with new token info
+            await session_service.update_session(request, new_token)
+            
+            return JSONResponse({
+                "success": True,
+                "message": "Token refreshed successfully"
+            })
+        else:
+            # Clear invalid session
+            await session_service.clear_session(request)
+            raise HTTPException(status_code=401, detail="Token refresh failed")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refreshing token: {str(e)}")
+        raise HTTPException(status_code=500, detail="Token refresh failed")

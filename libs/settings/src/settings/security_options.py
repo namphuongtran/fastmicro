@@ -126,6 +126,8 @@ class SessionSecurityOptions(BaseSettings):
     timeout: int = Field(default=3600, description="Session timeout in seconds")
     secure_cookies: bool = Field(default=True, description="Use secure cookies")
     same_site_cookies: str = Field(default="lax", description="SameSite cookie policy")
+    cookie_name: str = Field(default="sessionid", description="Session cookie name")
+    https_only: bool = Field(default=True, description="Use HTTPS only for cookies")
     
     @model_validator(mode='after')
     def validate_same_site_cookies(self):

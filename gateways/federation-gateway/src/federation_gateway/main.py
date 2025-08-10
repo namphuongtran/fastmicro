@@ -31,20 +31,6 @@ setup_cors_middleware(app, settings_manager)
 setup_compress_middleware(app)
 setup_session_middleware(app, settings_manager)
 
-# Initialize OAuth
-oauth = OAuth()
-oauth.register(
-    name="oidc",
-    client_id=settings_manager.auth.oidc.client_id,
-    client_secret=settings_manager.auth.oidc.client_secret,
-    server_metadata_url=f"{settings_manager.auth.oidc.issuer_url}/.well-known/openid-configuration",
-    client_kwargs={
-        "scope": " ".join(settings_manager.auth.oidc.scopes)
-    }
-)
-    
-logger.info(f"Registered OIDC client for issuer: {settings_manager.auth.oidc.issuer_url}")
-
 @app.get("/", include_in_schema=False)
 async def root():
     """The root function is a default entrypoint for the application.

@@ -134,3 +134,11 @@ services:
       - ags-core
     ports:
       - "44381:44381"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.federation.rule=Host(`federation.local.ags.com`)"
+      - "traefik.http.routers.federation.entrypoints=web-secure"
+      - "traefik.http.routers.federation.tls=true"
+      - "traefik.http.services.federation-http.loadbalancer.server.port=44381"
+      - "traefik.http.routers.federation.service=federation-http"
+    env_file: ./gateways/federation-gateway/.env
