@@ -9,7 +9,7 @@ from fastapi import HTTPException
 
 from settings.settings_manager import SettingsManager
 from .token_service import TokenService
-from src.federation_gateway.domain.entities.authentication_result import AuthenticationResult
+from federation_gateway.domain.entities.auth_response import AuthenticationResult
 
 logger = logging.getLogger(__name__)
 

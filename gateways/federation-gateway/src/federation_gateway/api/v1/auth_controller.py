@@ -1,190 +1,373 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
-from starlette.responses import Response
-from starlette.requests import Request
-from authlib.integrations.starlette_client import OAuthError
-import json
-import logging
-from typing import Dict, Any
+# from fastapi import APIRouter, Depends, HTTPException, Query
+# from fastapi.responses import JSONResponse
+# from starlette.requests import Request as StarletteRequest
+# import logging
+# from typing import Optional
+# from ...application.services.oauth_service import OAuthService
+# from ...application.services.session_service import SessionService
+# from ...infrastructure.middleware.auth_middleware import AuthMiddleware, security
 
+# logger = logging.getLogger(__name__)
+
+# router = APIRouter(prefix="/auth", tags=["authentication"])
+
+# def get_oauth_service(request: StarletteRequest) -> OAuthService:
+#     """Dependency to get OAuth service instance from app state"""
+#     oauth_service = getattr(request.app.state, 'oauth_service', None)
+    
+#     if oauth_service is None:
+#         raise HTTPException(
+#             status_code=500, 
+#             detail="OAuth service not initialized"
+#         )
+#     return oauth_service
+
+# def get_auth_middleware(    
+#     oauth_service: OAuthService = Depends(get_oauth_service)
+# ) -> AuthMiddleware:
+#     """Dependency to get AuthMiddleware instance"""
+#     return AuthMiddleware(oidc_service=oauth_service)
+
+# @router.get("/login")
+# async def login(    
+#     redirect_uri: Optional[str] = Query(None),
+#     oauth_service: OAuthService = Depends(get_oauth_service)
+# ):
+#     """Initiate OIDC login flow"""
+#     try:
+#         logger.info("Initiating login flow")
+#         result = await oauth_service.get_authorization_url(redirect_uri)
+#         logger.info("Authorization URL generated successfully")
+#         return result
+#     except Exception as e:
+#         logger.error(f"Login error: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# @router.get("/callback")
+# async def callback(    
+#     code: str,
+#     state: str,
+#     oauth_service: OAuthService = Depends(get_oauth_service)
+# ):
+#     """Handle OIDC callback"""
+#     try:
+#         logger.info("Processing OIDC callback")
+#         tokens = await oauth_service.exchange_code_for_tokens(code, state)
+#         logger.info("Token exchange completed successfully")
+#         return tokens
+#     except Exception as e:
+#         logger.error(f"Callback error: {e}")
+#         raise HTTPException(status_code=400, detail=str(e))
+
+# @router.post("/refresh")
+# async def refresh_access_token(    
+#     refresh_token: str,
+#     oauth_service: OAuthService = Depends(get_oauth_service)
+# ):
+#     """Refresh access token"""
+#     try:
+#         logger.info("Refreshing access token")
+#         tokens = await oauth_service.refresh_token(refresh_token)
+#         return tokens
+#     except Exception as e:
+#         logger.error(f"Token refresh error: {e}")
+#         raise HTTPException(status_code=400, detail=str(e))
+
+# @router.post("/logout")
+# async def logout(    
+#     oauth_service: OAuthService = Depends(get_oauth_service)
+# ):
+#     """Logout user and clear session"""
+#     try:
+#         logger.info("User logged out successfully")
+#         return JSONResponse({
+#             "success": True,
+#             "message": "Logout successful"
+#         })
+#     except Exception as e:
+#         logger.error(f"Error during logout: {str(e)}")
+#         raise HTTPException(status_code=500, detail="Logout failed")
+
+# @router.get("/user")
+# async def get_current_user(    
+#     user=Depends(get_auth_middleware)
+# ):
+#     """Get current authenticated user"""
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+    
+#     try:
+#         current_user = user.require_auth()
+#         logger.info(f"Current user retrieved: {current_user.get('sub', 'unknown')}")
+#         return current_user
+#     except Exception as e:
+#         logger.error(f"Error getting current user: {e}")
+#         raise HTTPException(status_code=401, detail="Authentication required")
+
+# @router.get("/health")
+# async def auth_health(    
+#     oauth_service: OAuthService = Depends(get_oauth_service)
+# ):
+#     """Check OAuth service health"""
+#     try:
+#         health = await oauth_service.health_check()
+#         return health
+#     except Exception as e:
+#         return {"status": "unhealthy", "error": str(e)}
+
+import logging
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse, JSONResponse
+from starlette.requests import Request as StarletteRequest
+from urllib.parse import urlencode, urlparse, parse_qs
 from ...application.services.oauth_service import OAuthService
-from ...application.services.session_service import SessionService
-from ...configs.settings import get_settings
+from ...infrastructure.middleware.auth_middleware import AuthMiddleware
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-def get_oauth_service() -> OAuthService:
-    """Dependency to get OAuth service instance"""
-    return OAuthService()
+def get_oauth_service(request: StarletteRequest) -> OAuthService:
+    """Dependency to get OAuth service instance from app state"""
+    oauth_service = getattr(request.app.state, 'oauth_service', None)
+    
+    if oauth_service is None:
+        raise HTTPException(
+            status_code=500, 
+            detail="OAuth service not initialized"
+        )
+    return oauth_service
 
-def get_session_service() -> SessionService:
-    """Dependency to get Session service instance"""
-    return SessionService()
-
-@router.get("/")
-async def auth_status(
-    request: Request,
-    session_service: SessionService = Depends(get_session_service)
-):
-    """
-    Get current authentication status
-    Returns user info if authenticated, otherwise login prompt
-    """
-    try:
-        user = await session_service.get_user(request)
-        if user:
-            return JSONResponse({
-                "authenticated": True,
-                "user": user,
-                "message": "User is authenticated"
-            })
-        
-        return JSONResponse({
-            "authenticated": False,
-            "login_url": "/v1/auth/login",
-            "message": "User not authenticated"
-        })
-    except Exception as e:
-        logger.error(f"Error checking auth status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+def get_auth_middleware(
+    oauth_service: OAuthService = Depends(get_oauth_service)
+) -> AuthMiddleware:
+    """Dependency to get AuthMiddleware instance"""
+    return AuthMiddleware(oidc_service=oauth_service)
 
 @router.get("/login")
 async def login(
     request: Request,
+    redirect_uri: Optional[str] = Query(None, description="Where to redirect after successful login"),
     oauth_service: OAuthService = Depends(get_oauth_service)
 ):
     """
-    Initiate OAuth login flow
-    Redirects user to identity provider login page
+    Federation Gateway Login Endpoint
+    
+    Flow:
+    1. Client calls /auth/login?redirect_uri=https://myapp.com/dashboard
+    2. Gateway generates authorization URL for Keycloak
+    3. Gateway redirects user to Keycloak login page
+    4. User enters credentials on Keycloak
+    5. Keycloak redirects back to /auth/callback with code
+    6. Gateway exchanges code for tokens
+    7. Gateway redirects user to original redirect_uri with tokens/session
     """
     try:
-        redirect_uri = request.url_for('auth_callback')
-        print(f"Redirect URI: {redirect_uri}")
-        return await oauth_service.authorize_redirect(request, redirect_uri)
+        logger.info(f"Federation login initiated. Target redirect: {redirect_uri}")
+        
+        # Store the final redirect URI in the callback URL as a parameter
+        # This way we can redirect the user to their intended destination after auth
+        callback_url = str(request.url_for("callback"))
+        if redirect_uri:
+            # Add the final redirect URI as a query parameter to the callback
+            callback_url += f"?final_redirect={redirect_uri}"
+        
+        # Get authorization URL from OIDC provider (Keycloak)
+        auth_response = await oauth_service.get_authorization_url(callback_url)
+        
+        logger.info(f"Redirecting user to Keycloak: {auth_response.authorization_url}")
+        
+        # REDIRECT user to Keycloak login page
+        return RedirectResponse(
+            url=auth_response.authorization_url,
+            status_code=302
+        )
+        
     except Exception as e:
-        logger.error(f"Error initiating login: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to initiate login")
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail=f"Authentication service error: {str(e)}")
 
 @router.get("/callback")
-async def auth_callback(
-    request: Request,
-    oauth_service: OAuthService = Depends(get_oauth_service),
-    session_service: SessionService = Depends(get_session_service)
+async def callback(
+    code: str,
+    state: str,
+    final_redirect: Optional[str] = Query(None, description="Final destination after auth"),
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ):
     """
-    Handle OAuth callback from identity provider
-    Exchange authorization code for tokens and create user session
+    OIDC Callback Handler
+    
+    Flow:
+    1. Keycloak redirects here with authorization code
+    2. Exchange code for tokens
+    3. Store tokens securely (session/cookie/header)
+    4. Redirect user to their original destination
     """
     try:
-        # Exchange authorization code for access token
-        token = await oauth_service.authorize_access_token(request)
+        logger.info("Processing OIDC callback from Keycloak")
         
-        # Extract user information from token
-        user_info = oauth_service.get_user_info(token)
+        # Exchange authorization code for tokens
+        tokens = await oauth_service.exchange_code_for_tokens(code, state)
+        logger.info("Token exchange completed successfully")
         
-        if user_info:
-            # Create user session
-            await session_service.create_session(request, user_info)
-            logger.info(f"User authenticated successfully: {user_info.get('email', 'unknown')}")
+        # Get user info to verify authentication
+        user_info = await oauth_service.get_user_info(tokens.access_token)
+        logger.info(f"User authenticated: {user_info.email}")
+        
+        # Create response with redirect
+        if final_redirect:
+            # Redirect to the original application with tokens
+            # Option 1: Pass tokens as URL fragments (for SPA)
+            redirect_url = f"{final_redirect}#access_token={tokens.access_token}&id_token={tokens.id_token or ''}"
             
-            # Redirect to success page or return JSON response
+            # Option 2: Pass tokens as query parameters (less secure, for testing)
+            # redirect_url = f"{final_redirect}?access_token={tokens.access_token}"
+            
+            # Option 3: Set secure cookies and redirect (most secure)
+            response = RedirectResponse(url=final_redirect, status_code=302)
+            
+            # Set secure HTTP-only cookies
+            response.set_cookie(
+                key="access_token",
+                value=tokens.access_token,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+                max_age=tokens.expires_in
+            )
+            
+            if tokens.id_token:
+                response.set_cookie(
+                    key="id_token",
+                    value=tokens.id_token,
+                    httponly=True,
+                    secure=True,
+                    samesite="lax",
+                    max_age=tokens.expires_in
+                )
+            
+            if tokens.refresh_token:
+                response.set_cookie(
+                    key="refresh_token",
+                    value=tokens.refresh_token,
+                    httponly=True,
+                    secure=True,
+                    samesite="lax",
+                    max_age=86400 * 30  # 30 days
+                )
+            
+            logger.info(f"Redirecting authenticated user to: {final_redirect}")
+            return response
+        else:
+            # No final redirect specified, return success page or default redirect
             return JSONResponse({
                 "success": True,
                 "message": "Authentication successful",
-                "user": user_info
+                "user": {
+                    "sub": user_info.sub,
+                    "email": user_info.email,
+                    "name": user_info.name
+                }
             })
-        else:
-            logger.warning("No user info received from OAuth provider")
-            raise HTTPException(status_code=400, detail="Authentication failed - no user info")
             
-    except OAuthError as error:
-        logger.error(f"OAuth error during callback: {error.error}")
-        return JSONResponse(
-            status_code=400,
-            content={"error": error.error, "description": getattr(error, 'description', 'OAuth authentication failed')}
-        )
     except Exception as e:
-        logger.error(f"Unexpected error during auth callback: {str(e)}")
-        raise HTTPException(status_code=500, detail="Authentication callback failed")
+        logger.error(f"Callback error: {e}")
+        
+        # If there's a final_redirect, redirect there with error
+        if final_redirect:
+            error_url = f"{final_redirect}?error=auth_failed&error_description={str(e)}"
+            return RedirectResponse(url=error_url, status_code=302)
+        
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/logout")
+@router.get("/logout")
 async def logout(
-    request: Request,
-    session_service: SessionService = Depends(get_session_service)
+    redirect_uri: Optional[str] = Query(None, description="Where to redirect after logout"),
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ):
     """
-    Logout user and clear session
+    Federation Gateway Logout
+    
+    Clears local session and optionally redirects to Keycloak logout
     """
     try:
-        await session_service.clear_session(request)
-        logger.info("User logged out successfully")
+        # Clear cookies
+        response = RedirectResponse(
+            url=redirect_uri or "/", 
+            status_code=302
+        )
         
-        return JSONResponse({
-            "success": True,
-            "message": "Logout successful"
-        })
+        # Clear authentication cookies
+        response.delete_cookie("access_token")
+        response.delete_cookie("id_token") 
+        response.delete_cookie("refresh_token")
+        
+        # Optional: Redirect to Keycloak logout for complete SSO logout
+        if hasattr(oauth_service, 'server_metadata') and oauth_service.server_metadata:
+            end_session_endpoint = oauth_service.server_metadata.get('end_session_endpoint')
+            if end_session_endpoint and redirect_uri:
+                logout_url = f"{end_session_endpoint}?post_logout_redirect_uri={redirect_uri}"
+                response = RedirectResponse(url=logout_url, status_code=302)
+        
+        logger.info("User logged out successfully")
+        return response
+        
     except Exception as e:
         logger.error(f"Error during logout: {str(e)}")
         raise HTTPException(status_code=500, detail="Logout failed")
 
+@router.post("/refresh")
+async def refresh_access_token(
+    refresh_token: str,
+    oauth_service: OAuthService = Depends(get_oauth_service)
+):
+    """Refresh access token (API endpoint)"""
+    try:
+        logger.info("Refreshing access token")
+        tokens = await oauth_service.refresh_token(refresh_token)
+        return tokens
+    except Exception as e:
+        logger.error(f"Token refresh error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/user")
 async def get_current_user(
-    request: Request,
-    session_service: SessionService = Depends(get_session_service)
+    user=Depends(get_auth_middleware)
 ):
-    """
-    Get current authenticated user information
-    """
+    """Get current authenticated user (API endpoint)"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
     try:
-        user = await session_service.get_user(request)
-        if not user:
-            raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        return JSONResponse({
-            "user": user,
-            "message": "User information retrieved successfully"
-        })
-    except HTTPException:
-        raise
+        current_user = user.require_auth()
+        logger.info(f"Current user retrieved: {current_user.get('sub', 'unknown')}")
+        return current_user
     except Exception as e:
-        logger.error(f"Error retrieving user info: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve user information")
+        logger.error(f"Error getting current user: {e}")
+        raise HTTPException(status_code=401, detail="Authentication required")
 
-@router.get("/refresh")
-async def refresh_token(
-    request: Request,
-    oauth_service: OAuthService = Depends(get_oauth_service),
-    session_service: SessionService = Depends(get_session_service)
+@router.get("/health")
+async def auth_health(
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ):
-    """
-    Refresh access token if refresh token is available
-    """
+    """Check OAuth service health"""
     try:
-        # Get current session
-        user_session = await session_service.get_session_data(request)
-        if not user_session:
-            raise HTTPException(status_code=401, detail="No active session")
-        
-        # Attempt to refresh token
-        new_token = await oauth_service.refresh_access_token(user_session.get('refresh_token'))
-        
-        if new_token:
-            # Update session with new token info
-            await session_service.update_session(request, new_token)
-            
-            return JSONResponse({
-                "success": True,
-                "message": "Token refreshed successfully"
-            })
-        else:
-            # Clear invalid session
-            await session_service.clear_session(request)
-            raise HTTPException(status_code=401, detail="Token refresh failed")
-            
-    except HTTPException:
-        raise
+        health = await oauth_service.health_check()
+        return health
     except Exception as e:
-        logger.error(f"Error refreshing token: {str(e)}")
-        raise HTTPException(status_code=500, detail="Token refresh failed")
+        return {"status": "unhealthy", "error": str(e)}
+
+# Middleware to protect routes (optional)
+@router.get("/protected")
+async def protected_route(
+    user=Depends(get_auth_middleware)
+):
+    """Example protected route"""
+    try:
+        current_user = user.require_auth()
+        return {
+            "message": "Access granted to protected resource",
+            "user": current_user
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Authentication required")
