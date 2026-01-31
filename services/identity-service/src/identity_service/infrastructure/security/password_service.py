@@ -1,10 +1,12 @@
-"""Password hashing service using bcrypt."""
+"""Password hashing service using Argon2 (with bcrypt fallback for migration)."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 if TYPE_CHECKING:
     from identity_service.configs.settings import Settings
@@ -13,7 +15,8 @@ if TYPE_CHECKING:
 class PasswordService:
     """Password hashing and verification service.
 
-    Uses bcrypt with configurable work factor.
+    Uses Argon2 for new hashes with bcrypt fallback for existing passwords.
+    This allows gradual migration from bcrypt to Argon2.
     """
 
     def __init__(self, settings: Settings) -> None:
@@ -23,14 +26,17 @@ class PasswordService:
             settings: Application settings
         """
         self._settings = settings
-        self._context = CryptContext(
-            schemes=["bcrypt"],
-            deprecated="auto",
-            bcrypt__rounds=settings.bcrypt_rounds,
+        # Argon2 first = new hashes use Argon2 (more secure)
+        # Bcrypt second = can still verify existing bcrypt hashes
+        self._hasher = PasswordHash(
+            (
+                Argon2Hasher(),
+                BcryptHasher(rounds=settings.bcrypt_rounds),
+            )
         )
 
     def hash_password(self, password: str) -> str:
-        """Hash a password using bcrypt.
+        """Hash a password using Argon2.
 
         Args:
             password: Plain text password
@@ -38,10 +44,12 @@ class PasswordService:
         Returns:
             Hashed password string.
         """
-        return self._context.hash(password)
+        return self._hasher.hash(password)
 
     def verify_password(self, password: str, password_hash: str) -> bool:
         """Verify a password against its hash.
+
+        Supports both Argon2 and bcrypt hashes for backward compatibility.
 
         Args:
             password: Plain text password to verify
@@ -50,12 +58,31 @@ class PasswordService:
         Returns:
             True if password matches.
         """
-        return self._context.verify(password, password_hash)
+        return self._hasher.verify(password, password_hash)
+
+    def verify_and_update(
+        self, password: str, password_hash: str
+    ) -> tuple[bool, str | None]:
+        """Verify password and upgrade hash if needed.
+
+        If password is valid and hash uses outdated algorithm (bcrypt)
+        or outdated parameters, returns new hash for database update.
+
+        Args:
+            password: Plain text password to verify
+            password_hash: Stored password hash
+
+        Returns:
+            Tuple of (is_valid, new_hash_or_none).
+            new_hash is only set if hash needs upgrade.
+        """
+        return self._hasher.verify_and_update(password, password_hash)
 
     def needs_rehash(self, password_hash: str) -> bool:
         """Check if password hash needs to be updated.
 
-        This is useful when changing bcrypt rounds.
+        Returns True if hash uses bcrypt (should upgrade to Argon2)
+        or if Argon2 parameters have changed.
 
         Args:
             password_hash: Stored password hash
@@ -63,7 +90,8 @@ class PasswordService:
         Returns:
             True if hash should be updated.
         """
-        return self._context.needs_update(password_hash)
+        # Argon2 hashes start with $argon2, bcrypt with $2
+        return not password_hash.startswith("$argon2")
 
     def validate_password(self, password: str) -> list[str]:
         """Validate password against policy.

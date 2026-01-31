@@ -1,53 +1,47 @@
 # =============================================================================
 # Multi-stage Dockerfile for audit-service
 # =============================================================================
-# Stage 1: Builder - Install dependencies and build the application
+# Stage 1: Builder - Install dependencies with uv
 # Stage 2: Runtime - Minimal image for production
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Builder
+# Stage 1: Builder with uv
 # -----------------------------------------------------------------------------
-FROM python:3.12-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0
 
 # Install system dependencies for building
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry
-RUN pip install poetry==1.8.5
 
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files first (for better layer caching)
-COPY services/audit-service/pyproject.toml services/audit-service/poetry.lock* ./
-COPY shared/ /shared/
+# Install dependencies first (better layer caching)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=services/audit-service/pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=services/audit-service/uv.lock,target=uv.lock \
+    --mount=type=bind,source=shared/,target=/shared/ \
+    uv sync --locked --no-install-project --no-dev
 
-# Configure Poetry to not create virtual environment (we're in container)
-RUN poetry config virtualenvs.create false
-
-# Install dependencies (production only)
-RUN poetry install --no-interaction --no-ansi --only main --no-root
-
-# Copy application source
+# Copy source and install project
 COPY services/audit-service/src/ ./src/
+COPY shared/ /shared/
+COPY services/audit-service/pyproject.toml services/audit-service/uv.lock ./
 
-# Install the application
-RUN poetry install --no-interaction --no-ansi --only main
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
 # -----------------------------------------------------------------------------
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 # Labels for container metadata
 LABEL maintainer="Nam Tran <nam.tranphuong@outlook.com>" \
@@ -58,6 +52,7 @@ LABEL maintainer="Nam Tran <nam.tranphuong@outlook.com>" \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \
+    PATH="/app/.venv/bin:$PATH" \
     APP_ENV=production \
     APP_PORT=8000
 
@@ -74,18 +69,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory
 WORKDIR /app
 
-# Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
-# Copy application code
-COPY --from=builder /app/src ./src/
-
-# Copy shared library
-COPY --from=builder /shared /shared
-
-# Change ownership to non-root user
-RUN chown -R appuser:appgroup /app
+# Copy virtual environment and application from builder
+COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
+COPY --from=builder --chown=appuser:appgroup /app/src ./src/
+COPY --from=builder --chown=appuser:appgroup /shared /shared
 
 # Switch to non-root user
 USER appuser
