@@ -1,6 +1,7 @@
 """Tests for shared.fastapi_utils.middleware module.
 
-This module tests FastAPI middleware components.
+This module tests FastAPI middleware components, verifying that
+correlation ID management is properly delegated to shared.observability.
 """
 
 from __future__ import annotations
@@ -19,6 +20,11 @@ from shared.fastapi_utils.middleware import (
     get_request_context,
     get_correlation_id,
     RequestContext,
+)
+from shared.observability.structlog_config import (
+    get_correlation_id as observability_get_correlation_id,
+    set_correlation_id as observability_set_correlation_id,
+    _correlation_id_ctx,
 )
 
 
@@ -148,3 +154,64 @@ class TestGetCorrelationId:
         corr_id = get_correlation_id()
         # Outside of a request, should return None
         assert corr_id is None or isinstance(corr_id, str)
+
+    def test_delegates_to_observability_module(self) -> None:
+        """Should delegate to shared.observability.structlog_config."""
+        # Set correlation ID via observability module
+        token = _correlation_id_ctx.set("test-corr-123")
+        try:
+            # get_correlation_id from fastapi_utils should return the same value
+            assert get_correlation_id() == "test-corr-123"
+            assert get_correlation_id() == observability_get_correlation_id()
+        finally:
+            _correlation_id_ctx.reset(token)
+
+
+class TestCorrelationIdConsolidation:
+    """Tests verifying correlation ID is managed by observability module."""
+    
+    @pytest.fixture
+    def app_with_middleware(self) -> FastAPI:
+        """Create FastAPI app with request context middleware."""
+        app = FastAPI()
+        app.add_middleware(RequestContextMiddleware)
+        
+        @app.get("/check-correlation")
+        async def check_correlation(request: Request):
+            # Both should return the same value
+            fastapi_utils_id = get_correlation_id()
+            observability_id = observability_get_correlation_id()
+            return {
+                "fastapi_utils_id": fastapi_utils_id,
+                "observability_id": observability_id,
+                "match": fastapi_utils_id == observability_id,
+            }
+        
+        return app
+    
+    def test_correlation_id_is_same_in_both_modules(
+        self, app_with_middleware: FastAPI
+    ) -> None:
+        """Correlation ID from fastapi_utils should match observability."""
+        client = TestClient(app_with_middleware)
+        response = client.get("/check-correlation")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["match"] is True
+        assert data["fastapi_utils_id"] == data["observability_id"]
+    
+    def test_provided_correlation_id_is_set_in_observability(
+        self, app_with_middleware: FastAPI
+    ) -> None:
+        """Provided correlation ID should be set in observability context."""
+        client = TestClient(app_with_middleware)
+        response = client.get(
+            "/check-correlation",
+            headers={"X-Correlation-ID": "provided-corr-id"},
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["fastapi_utils_id"] == "provided-corr-id"
+        assert data["observability_id"] == "provided-corr-id"

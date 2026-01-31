@@ -1,12 +1,26 @@
 """FastAPI middleware components for microservices.
 
 This module provides middleware for request context management,
-correlation ID tracking, and other cross-cutting concerns.
+including user identity and metadata. For correlation ID and logging,
+use the RequestLoggingMiddleware from shared.observability.
+
+Architecture:
+    - Correlation ID management: shared.observability.structlog_config
+    - Request logging: shared.observability.middleware.RequestLoggingMiddleware
+    - User context (user_id, metadata): This module's RequestContextMiddleware
 
 Example:
     >>> from fastapi import FastAPI
     >>> from shared.fastapi_utils.middleware import RequestContextMiddleware
+    >>> from shared.observability import RequestLoggingMiddleware
+    >>> 
     >>> app = FastAPI()
+    >>> # Add RequestLoggingMiddleware first for correlation ID and logging
+    >>> app.add_middleware(
+    ...     RequestLoggingMiddleware,
+    ...     service_name="my-service",
+    ... )
+    >>> # Then add RequestContextMiddleware for user context
     >>> app.add_middleware(RequestContextMiddleware)
 """
 
@@ -15,19 +29,23 @@ from __future__ import annotations
 import uuid
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
+# Import correlation ID functions from the single source of truth
+from shared.observability.structlog_config import (
+    get_correlation_id as _get_observability_correlation_id,
+    set_correlation_id as _set_correlation_id,
+    generate_correlation_id as _generate_correlation_id,
+)
 
-# Context variables for request-scoped data
+
+# Context variable for request-scoped data (user context, NOT correlation ID)
 _request_context: ContextVar[RequestContext | None] = ContextVar(
     "request_context", default=None
-)
-_correlation_id: ContextVar[str | None] = ContextVar(
-    "correlation_id", default=None
 )
 
 
@@ -64,6 +82,9 @@ def get_request_context() -> RequestContext | None:
 def get_correlation_id() -> str | None:
     """Get the current correlation ID.
     
+    This function delegates to shared.observability.structlog_config which
+    is the single source of truth for correlation ID management.
+    
     Returns:
         The current correlation ID or None if not in a request.
         
@@ -71,7 +92,7 @@ def get_correlation_id() -> str | None:
         >>> corr_id = get_correlation_id()
         >>> logger.info("Processing request", correlation_id=corr_id)
     """
-    return _correlation_id.get()
+    return _get_observability_correlation_id()
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -119,22 +140,28 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         Returns:
             The response with added headers.
         """
-        # Generate or extract IDs
+        # Generate unique request ID
         request_id = str(uuid.uuid4())
-        correlation_id = request.headers.get(
-            self.correlation_header,
-            str(uuid.uuid4()),
-        )
         
-        # Create request context
+        # Get correlation ID from observability context (set by RequestLoggingMiddleware)
+        # or extract from header / generate if not available
+        correlation_id = _get_observability_correlation_id()
+        if correlation_id is None:
+            correlation_id = request.headers.get(
+                self.correlation_header,
+                _generate_correlation_id(),
+            )
+            # Set in observability context for structlog
+            _set_correlation_id(correlation_id)
+        
+        # Create request context with user-level data
         context = RequestContext(
             request_id=request_id,
             correlation_id=correlation_id,
         )
         
-        # Set context variables
+        # Set request context (for user_id, metadata access)
         token_ctx = _request_context.set(context)
-        token_corr = _correlation_id.set(correlation_id)
         
         try:
             # Process request
@@ -146,9 +173,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             
             return response
         finally:
-            # Reset context variables
+            # Reset request context
             _request_context.reset(token_ctx)
-            _correlation_id.reset(token_corr)
 
 
 __all__ = [
