@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import uuid
-from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -162,18 +162,21 @@ class JWTService:
         """
         from authlib.jose import jwt
 
-        now = datetime.utcnow()
+        # Use time.time() for correct Unix timestamps (UTC)
+        # Note: datetime.utcnow().timestamp() is incorrect because it treats
+        # naive datetime as local time when converting to timestamp
+        now = int(time.time())
         lifetime = expires_in or self._settings.access_token_lifetime
-        exp = now + timedelta(seconds=lifetime)
+        exp = now + lifetime
         jti = str(uuid.uuid4())
 
         payload = {
             "iss": self._settings.jwt_issuer,
             "sub": subject,
             "aud": audience or self._settings.jwt_audience,
-            "exp": int(exp.timestamp()),
-            "iat": int(now.timestamp()),
-            "nbf": int(now.timestamp()),
+            "exp": exp,
+            "iat": now,
+            "nbf": now,
             "jti": jti,
             "client_id": client_id,
             "scope": scope,
@@ -215,16 +218,17 @@ class JWTService:
         """
         from authlib.jose import jwt
 
-        now = datetime.utcnow()
+        # Use time.time() for correct Unix timestamps (UTC)
+        now = int(time.time())
         lifetime = expires_in or self._settings.id_token_lifetime
-        exp = now + timedelta(seconds=lifetime)
+        exp = now + lifetime
 
         payload = {
             "iss": self._settings.jwt_issuer,
             "sub": subject,
             "aud": client_id,
-            "exp": int(exp.timestamp()),
-            "iat": int(now.timestamp()),
+            "exp": exp,
+            "iat": now,
         }
 
         if nonce:
@@ -286,17 +290,42 @@ class JWTService:
 
 
 @lru_cache
-def get_key_manager(settings: Settings) -> KeyManager:
-    """Get cached key manager instance."""
+def get_key_manager(private_key_path: str, public_key_path: str) -> KeyManager:
+    """Get cached key manager instance.
+    
+    Args:
+        private_key_path: Path to RSA private key
+        public_key_path: Path to RSA public key
+    
+    Returns:
+        Initialized KeyManager instance
+    """
     manager = KeyManager(
-        private_key_path=settings.jwt_private_key_path,
-        public_key_path=settings.jwt_public_key_path,
+        private_key_path=private_key_path,
+        public_key_path=public_key_path,
     )
     manager.load_or_generate_keys()
     return manager
 
 
-@lru_cache
+# Global cache for JWT service instance (avoids lru_cache with unhashable Settings)
+_jwt_service_cache: dict[tuple[str, str], JWTService] = {}
+
+
 def get_jwt_service(settings: Settings) -> JWTService:
-    """Get cached JWT service instance."""
-    return JWTService(settings, get_key_manager(settings))
+    """Get cached JWT service instance.
+    
+    Args:
+        settings: Application settings
+    
+    Returns:
+        JWTService instance (cached by key paths)
+    """
+    cache_key = (settings.jwt_private_key_path, settings.jwt_public_key_path)
+    if cache_key not in _jwt_service_cache:
+        key_manager = get_key_manager(
+            settings.jwt_private_key_path,
+            settings.jwt_public_key_path,
+        )
+        _jwt_service_cache[cache_key] = JWTService(settings, key_manager)
+    return _jwt_service_cache[cache_key]

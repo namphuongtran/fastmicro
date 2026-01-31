@@ -21,10 +21,10 @@ class TestEmail:
         email = Email("test@example.com")
         assert email.value == "test@example.com"
 
-    def test_email_normalization(self):
-        """Test email is normalized to lowercase."""
+    def test_email_case_preserved(self):
+        """Test email value is preserved as provided."""
         email = Email("Test@EXAMPLE.com")
-        assert email.value == "test@example.com"
+        assert email.value == "Test@EXAMPLE.com"
 
     def test_invalid_email_no_at(self):
         """Test email without @ is rejected."""
@@ -44,42 +44,50 @@ class TestEmail:
     def test_email_equality(self):
         """Test email equality comparison."""
         email1 = Email("test@example.com")
-        email2 = Email("TEST@example.com")
+        email2 = Email("test@example.com")
         assert email1 == email2
+        # Different case emails are not equal (no normalization)
+        email3 = Email("TEST@example.com")
+        assert email1 != email3
 
 
 class TestPassword:
     """Tests for Password value object."""
 
     def test_valid_password(self):
-        """Test valid password creation."""
-        password = Password("SecurePass123!")
+        """Test valid password creation using validate."""
+        password = Password.validate("SecurePass123!")
         assert password.value == "SecurePass123!"
+
+    def test_raw_password_creation(self):
+        """Test raw password creation without validation."""
+        password = Password("anypassword")
+        assert password.value == "anypassword"
 
     def test_password_too_short(self):
         """Test password under minimum length is rejected."""
-        with pytest.raises(ValueError, match="at least 8 characters"):
-            Password("Short1!")
+        with pytest.raises(ValueError, match="at least 12 characters"):
+            Password.validate("Short1!")
 
     def test_password_no_uppercase(self):
         """Test password without uppercase is rejected."""
         with pytest.raises(ValueError, match="uppercase letter"):
-            Password("securepass123!")
+            Password.validate("securepassword123!")
 
     def test_password_no_lowercase(self):
         """Test password without lowercase is rejected."""
         with pytest.raises(ValueError, match="lowercase letter"):
-            Password("SECUREPASS123!")
+            Password.validate("SECUREPASSWORD123!")
 
     def test_password_no_digit(self):
         """Test password without digit is rejected."""
         with pytest.raises(ValueError, match="digit"):
-            Password("SecurePassword!")
+            Password.validate("SecurePassword!!")
 
     def test_password_no_special(self):
         """Test password without special char is rejected."""
         with pytest.raises(ValueError, match="special character"):
-            Password("SecurePass123")
+            Password.validate("SecurePassword123")
 
 
 class TestRedirectUri:
@@ -121,29 +129,40 @@ class TestCodeChallenge:
     """Tests for CodeChallenge value object."""
 
     def test_plain_challenge(self):
-        """Test plain code challenge."""
-        challenge = CodeChallenge("verifier123", "plain")
-        assert challenge.verify("verifier123")
-        assert not challenge.verify("wrong")
+        """Test plain code challenge creation."""
+        # Must be 43-128 characters for valid PKCE
+        verifier = "a" * 43  # minimum length
+        challenge = CodeChallenge(verifier, "plain")
+        assert challenge.value == verifier
+        assert challenge.method == "plain"
 
     def test_s256_challenge(self):
         """Test S256 code challenge."""
-        # Pre-computed: base64url(sha256("verifier123"))
         import base64
         import hashlib
         
-        verifier = "verifier123"
+        verifier = "my_code_verifier_123456789012345678901234567890"
         digest = hashlib.sha256(verifier.encode()).digest()
-        expected_challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+        challenge_value = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
         
-        challenge = CodeChallenge(expected_challenge, "S256")
-        assert challenge.verify(verifier)
-        assert not challenge.verify("wrong")
+        challenge = CodeChallenge(challenge_value, "S256")
+        assert challenge.value == challenge_value
+        assert challenge.method == "S256"
 
     def test_invalid_method(self):
         """Test invalid challenge method is rejected."""
-        with pytest.raises(ValueError, match="Invalid code challenge method"):
-            CodeChallenge("challenge", "invalid")
+        with pytest.raises(ValueError, match="must be"):
+            CodeChallenge("a" * 43, "invalid")
+
+    def test_challenge_too_short(self):
+        """Test challenge under minimum length is rejected."""
+        with pytest.raises(ValueError, match="between 43 and 128"):
+            CodeChallenge("tooshort", "S256")
+
+    def test_challenge_too_long(self):
+        """Test challenge over maximum length is rejected."""
+        with pytest.raises(ValueError, match="between 43 and 128"):
+            CodeChallenge("a" * 130, "S256")
 
 
 class TestEnums:

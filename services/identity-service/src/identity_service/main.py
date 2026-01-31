@@ -1,5 +1,6 @@
 """Identity Service - FastAPI Application Entry Point."""
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
@@ -31,7 +32,7 @@ structlog.configure(
         structlog.dev.ConsoleRenderer() if get_settings().is_development else structlog.processors.JSONRenderer(),
     ],
     wrapper_class=structlog.make_filtering_bound_logger(
-        getattr(structlog, get_settings().log_level)
+        getattr(logging, get_settings().log_level)
     ),
     context_class=dict,
     logger_factory=structlog.PrintLoggerFactory(),
@@ -60,7 +61,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize RSA keys
     from identity_service.infrastructure.security import get_key_manager
 
-    key_manager = get_key_manager(settings)
+    key_manager = get_key_manager(
+        settings.jwt_private_key_path,
+        settings.jwt_public_key_path,
+    )
     logger.info("RSA keys initialized", kid=key_manager.kid)
 
     yield

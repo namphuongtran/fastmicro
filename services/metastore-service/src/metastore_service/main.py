@@ -8,14 +8,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from metastore_service.api.v1 import health_controller, metadata_controller
+from metastore_service.api.routes import (
+    configuration_router,
+    feature_flag_router,
+    health_router,
+    metadata_router,
+)
+from metastore_service.api.dependencies import set_cache, set_database_manager
 from metastore_service.configs.settings import get_settings
 
-try:
-    from shared.observability import get_logger
-except ImportError:
-    import structlog
-    get_logger = structlog.get_logger
+# Use shared library managers
+from shared.sqlalchemy_async import AsyncDatabaseManager
+from shared.cache import TieredCacheManager
+from shared.observability import get_logger
+from shared.observability.health import register_health_check
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -23,9 +29,61 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan manager."""
-    logger.info("Starting Metastore Service", version=app.version, environment=settings.app_env)
+    """Application lifespan manager.
+    
+    Initializes and cleans up:
+    - Database connection pool (AsyncDatabaseManager)
+    - Cache manager (TieredCacheManager with L1/L2)
+    - Health check registrations
+    """
+    logger.info(
+        "Starting Metastore Service",
+        version=settings.app_version,
+        environment=settings.environment,
+    )
+    
+    # Initialize database manager with shared library
+    db_config = settings.get_database_config()
+    db_manager = AsyncDatabaseManager(db_config)
+    set_database_manager(db_manager)
+    logger.info("Database connection pool initialized")
+    
+    # Register database health check
+    async def db_health_check() -> bool:
+        return await db_manager.health_check()
+    
+    register_health_check("database", db_health_check)
+    
+    # Initialize tiered cache manager
+    cache: TieredCacheManager | None = None
+    if settings.redis_enabled:
+        try:
+            cache_config = settings.get_cache_config()
+            cache = await TieredCacheManager.create(cache_config)
+            set_cache(cache)
+            logger.info("Tiered cache initialized (L1: memory, L2: Redis)")
+            
+            # Register cache health check
+            async def cache_health_check() -> bool:
+                return await cache.health_check() if cache else False
+            
+            register_health_check("cache", cache_health_check)
+        except Exception as e:
+            logger.warning(
+                "Failed to connect to Redis, continuing without L2 cache",
+                error=str(e),
+            )
+    
     yield
+    
+    # Cleanup
+    if cache:
+        await cache.close()
+        logger.info("Cache manager closed")
+    
+    await db_manager.dispose()
+    logger.info("Database connection pool closed")
+    
     logger.info("Shutting down Metastore Service")
 
 
@@ -34,9 +92,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Metastore Service",
         description="Metadata management service for configurations and feature flags",
-        version="0.1.0",
-        docs_url="/docs" if settings.app_env != "production" else None,
-        redoc_url="/redoc" if settings.app_env != "production" else None,
+        version=settings.app_version,
+        docs_url="/docs" if settings.environment != "production" else None,
+        redoc_url="/redoc" if settings.environment != "production" else None,
         lifespan=lifespan,
     )
     
@@ -44,18 +102,22 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=settings.cors_allow_credentials,
+        allow_methods=settings.cors_allow_methods,
+        allow_headers=settings.cors_allow_headers,
     )
+
     
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("Unhandled exception", path=request.url.path)
+        logger.exception("Unhandled exception", extra={"path": request.url.path})
         return JSONResponse(status_code=500, content={"error": "INTERNAL_ERROR"})
     
-    app.include_router(health_controller.router, tags=["Health"])
-    app.include_router(metadata_controller.router, prefix="/api/v1/metadata", tags=["Metadata"])
+    # Include routers
+    app.include_router(health_router, tags=["Health"])
+    app.include_router(metadata_router, prefix="/api/v1", tags=["Metadata"])
+    app.include_router(feature_flag_router, prefix="/api/v1", tags=["Feature Flags"])
+    app.include_router(configuration_router, prefix="/api/v1", tags=["Configurations"])
     
     return app
 

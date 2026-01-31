@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, Any, Callable
 
-from authlib.integrations.starlette_oauth2 import AuthorizationServer
+from authlib.oauth2 import AuthorizationServer
 from authlib.oauth2.rfc6749 import ClientMixin
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7636 import CodeChallenge

@@ -3,13 +3,18 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from identity_service.api.dependencies import get_oauth2_service
+from identity_service.application.services import OAuth2Service
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
 class UserInfoResponse(BaseModel):
     """OIDC UserInfo response."""
+
+    model_config = ConfigDict(extra="allow")  # Allow additional claims
 
     sub: str
     name: str | None = None
@@ -31,14 +36,12 @@ class UserInfoResponse(BaseModel):
     address: dict | None = None
     updated_at: int | None = None
 
-    class Config:
-        extra = "allow"  # Allow additional claims
-
 
 @router.get("/userinfo", response_model=UserInfoResponse)
 @router.post("/userinfo", response_model=UserInfoResponse)
 async def userinfo_endpoint(
     request: Request,
+    oauth2_service: Annotated[OAuth2Service, Depends(get_oauth2_service)],
     authorization: Annotated[str | None, Header()] = None,
 ) -> UserInfoResponse:
     """OIDC UserInfo endpoint.
@@ -55,10 +58,6 @@ async def userinfo_endpoint(
     Returns:
         User claims dictionary.
     """
-    from identity_service.api.dependencies import get_oauth2_service
-
-    oauth2_service = await get_oauth2_service()
-
     # Extract bearer token
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
