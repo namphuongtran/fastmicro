@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Identity Service{% endblock %}
+
+{% block content %}
+<div class="card error-card">
+    <div class="error-icon">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="30" stroke="#EF4444" stroke-width="4"/>
+            <path d="M32 18V34" stroke="#EF4444" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="44" r="3" fill="#EF4444"/>
+        </svg>
+    </div>
+    
+    <h1>{{ error_title or 'Something went wrong' }}</h1>
+    
+    <p class="error-message">{{ error_description }}</p>
+    
+    {% if error_code %}
+    <p class="error-code">Error code: <code>{{ error_code }}</code></p>
+    {% endif %}
+    
+    <div class="button-group">
+        {% if return_url %}
+        <a href="{{ return_url }}" class="btn btn-primary">Go Back</a>
+        {% else %}
+        <a href="/" class="btn btn-primary">Return Home</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

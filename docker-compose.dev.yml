@@ -1,0 +1,421 @@
+# =============================================================================
+# Docker Compose Development Configuration
+# =============================================================================
+# This file extends docker-compose.yml with development-specific settings:
+# - Hot-reload volume mounts
+# - Debug ports exposed
+# - Environment variables for development
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up audit-service
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure Services - Development Overrides
+  # ---------------------------------------------------------------------------
+
+  traefik:
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+
+  auth-postgresql:
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    ports:
+      - "6379:6379"
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-insight:
+    ports:
+      - "5540:5540"
+
+  vault:
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-dev-root-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+
+  seq:
+    ports:
+      - "5341:5341"
+      - "8081:80"  # Web UI
+    environment:
+      ACCEPT_EULA: "Y"
+
+  smtp-server:
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+
+  keycloak:
+    ports:
+      - "8180:8080"
+      - "8543:8443"
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://auth-postgresql:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  eureka:
+    ports:
+      - "8761:8761"
+
+  consul:
+    ports:
+      - "8500:8500"  # HTTP API/UI
+      - "8600:8600/udp"  # DNS
+
+  # ---------------------------------------------------------------------------
+  # Gateway Services - Development Overrides
+  # ---------------------------------------------------------------------------
+
+  federation-gateway:
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      DEBUG: "true"
+    volumes:
+      - ./gateways/federation-gateway/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "federation_gateway.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Application Services
+  # ---------------------------------------------------------------------------
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: ./services/audit-service/Dockerfile
+    container_name: audit-service
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080"
+      DATABASE_URL: mongodb://admin:admin@mongodb:27017/audit_db?authSource=admin
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      SEQ_URL: http://seq:5341
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    volumes:
+      - ./services/audit-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "audit_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.audit.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/audit`)"
+      - "traefik.http.services.audit.loadbalancer.server.port=8000"
+
+  metastore-service:
+    build:
+      context: .
+      dockerfile: ./services/metastore-service/Dockerfile
+    container_name: metastore-service
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080"
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@auth-postgresql:5432/metastore_db
+      REDIS_URL: redis://redis:6379/1
+      SEQ_URL: http://seq:5341
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    volumes:
+      - ./services/metastore-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "metastore_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      auth-postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.metastore.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/metadata`)"
+      - "traefik.http.services.metastore.loadbalancer.server.port=8000"
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: ./services/identity-service/Dockerfile
+    container_name: identity-service
+    restart: unless-stopped
+    ports:
+      - "8003:8000"
+    environment:
+      APP_ENV: development
+      APP_PORT: "8000"
+      LOG_LEVEL: DEBUG
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080,http://app.localhost"
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@identity-postgresql:5432/identity_db
+      REDIS_URL: redis://redis:6379/2
+      JWT_ISSUER: http://localhost:8003
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
+      RSA_KEY_SIZE: "2048"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      SEQ_URL: http://seq:5341
+    volumes:
+      - ./services/identity-service/src:/app/src:cached
+      - ./services/identity-service/templates:/app/templates:cached
+      - ./services/identity-service/static:/app/static:cached
+      - ./shared:/shared:cached
+      - identity_rsa_keys:/app/keys
+    command: ["uvicorn", "identity_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      identity-postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.identity.rule=Host(`identity.localhost`) || (Host(`api.localhost`) && PathPrefix(`/oauth2`, `/.well-known`))"
+      - "traefik.http.services.identity.loadbalancer.server.port=8000"
+
+  identity-postgresql:
+    image: postgres:16-alpine
+    container_name: identity-postgresql
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: identity_db
+    volumes:
+      - identity_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ags-core
+
+  # ---------------------------------------------------------------------------
+  # Frontend Services
+  # ---------------------------------------------------------------------------
+
+  webshell-service:
+    build:
+      context: ./services/webshell-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: webshell-service
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://api.localhost
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8180
+    volumes:
+      - ./services/webshell-service/src:/app/src:cached
+      - ./services/webshell-service/public:/app/public:cached
+    command: ["npm", "run", "dev"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webshell.rule=Host(`app.localhost`)"
+      - "traefik.http.services.webshell.loadbalancer.server.port=3000"
+
+  # ---------------------------------------------------------------------------
+  # Observability Stack
+  # ---------------------------------------------------------------------------
+
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+
+  jaeger:
+    image: jaegertracing/jaeger:2.8.0
+    container_name: jaeger
+    restart: unless-stopped
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"  # Web UI
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:14269"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+
+volumes:
+  prometheus_data:
+    name: ags_prometheus_data
+  grafana_data:
+    name: ags_grafana_data
+  identity_postgres_data:
+    name: ags_identity_postgres_data
+  identity_rsa_keys:
+    name: ags_identity_rsa_keys

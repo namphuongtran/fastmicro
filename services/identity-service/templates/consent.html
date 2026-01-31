@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Grant Access - Identity Service{% endblock %}
+
+{% block content %}
+<div class="card consent-card">
+    <h1>Grant Access</h1>
+    
+    <div class="client-info">
+        {% if client_logo %}
+        <img src="{{ client_logo }}" alt="{{ client_name }}" class="client-logo">
+        {% endif %}
+        <p><strong>{{ client_name }}</strong> is requesting access to your account.</p>
+    </div>
+    
+    <div class="scopes">
+        <h3>This application will be able to:</h3>
+        <ul class="scope-list">
+            {% for scope in scopes %}
+            <li class="scope-item">
+                <span class="scope-icon">✓</span>
+                <span class="scope-name">{{ scope.name }}</span>
+                <span class="scope-description">{{ scope.description }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <form method="POST" action="/consent" class="consent-form">
+        <input type="hidden" name="response_type" value="{{ response_type }}">
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+        <input type="hidden" name="state" value="{{ state }}">
+        {% if nonce %}
+        <input type="hidden" name="nonce" value="{{ nonce }}">
+        {% endif %}
+        {% if code_challenge %}
+        <input type="hidden" name="code_challenge" value="{{ code_challenge }}">
+        <input type="hidden" name="code_challenge_method" value="{{ code_challenge_method }}">
+        {% endif %}
+        
+        <div class="form-group checkbox">
+            <input type="checkbox" id="remember_consent" name="remember_consent" checked>
+            <label for="remember_consent">Remember this decision</label>
+        </div>
+        
+        <div class="button-group">
+            <button type="submit" name="action" value="deny" class="btn btn-secondary">
+                Deny
+            </button>
+            <button type="submit" name="action" value="allow" class="btn btn-primary">
+                Allow
+            </button>
+        </div>
+    </form>
+    
+    <p class="user-info">
+        Signed in as <strong>{{ user_email }}</strong>. 
+        <a href="/logout?post_logout_redirect={{ redirect_uri }}">Not you?</a>
+    </p>
+</div>
+{% endblock %}

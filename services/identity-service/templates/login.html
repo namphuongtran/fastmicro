@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - Identity Service{% endblock %}
+
+{% block content %}
+<div class="card login-card">
+    <h1>Sign In</h1>
+    
+    {% if client_name %}
+    <p class="subtitle">Sign in to continue to <strong>{{ client_name }}</strong></p>
+    {% endif %}
+    
+    {% if error %}
+    <div class="alert alert-error">
+        {{ error }}
+    </div>
+    {% endif %}
+    
+    <form method="POST" action="/login" class="login-form">
+        <input type="hidden" name="response_type" value="{{ response_type }}">
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+        <input type="hidden" name="state" value="{{ state }}">
+        {% if nonce %}
+        <input type="hidden" name="nonce" value="{{ nonce }}">
+        {% endif %}
+        {% if code_challenge %}
+        <input type="hidden" name="code_challenge" value="{{ code_challenge }}">
+        <input type="hidden" name="code_challenge_method" value="{{ code_challenge_method }}">
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                value="{{ login_hint or '' }}"
+                placeholder="you@example.com"
+                required 
+                autofocus
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password"
+                placeholder="Enter your password"
+                required
+            >
+        </div>
+        
+        <div class="form-group checkbox">
+            <input type="checkbox" id="remember" name="remember">
+            <label for="remember">Remember me</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block">
+            Sign In
+        </button>
+    </form>
+    
+    <div class="links">
+        <a href="/forgot-password">Forgot password?</a>
+        <span class="separator">•</span>
+        <a href="/register">Create an account</a>
+    </div>
+</div>
+{% endblock %}
