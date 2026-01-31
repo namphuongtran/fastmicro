@@ -105,38 +105,35 @@ logger.info(f"User {user.id} was created")  # Don't do this!
 | ERROR | Errors that need attention but service continues |
 | CRITICAL | Service cannot continue, immediate action required |
 
-### Correlation ID Middleware
+### Request Logging Middleware
+
+Use the `RequestLoggingMiddleware` from the shared observability module for automatic correlation ID handling and request logging:
 
 ```python
-from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
-import structlog
-import uuid
+from shared.observability import RequestLoggingMiddleware, configure_structlog
 
-class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    """Add correlation ID to all requests."""
-    
-    HEADER_NAME = "X-Correlation-ID"
-    
-    async def dispatch(self, request: Request, call_next):
-        correlation_id = request.headers.get(
-            self.HEADER_NAME, 
-            str(uuid.uuid4())
-        )
-        
-        # Bind to structlog context
-        structlog.contextvars.bind_contextvars(
-            correlation_id=correlation_id
-        )
-        
-        response = await call_next(request)
-        response.headers[self.HEADER_NAME] = correlation_id
-        
-        # Clear context after request
-        structlog.contextvars.unbind_contextvars("correlation_id")
-        
-        return response
+# Configure structlog first
+configure_structlog(
+    service_name="my-service",
+    environment="production",
+    log_level="INFO",
+)
+
+# Add middleware to FastAPI app
+app.add_middleware(
+    RequestLoggingMiddleware,
+    service_name="my-service",
+    exclude_paths=["/health", "/metrics", "/ready"],
+    slow_request_threshold=1.0,  # Log warnings for requests > 1s
+)
 ```
+
+The middleware automatically:
+- Extracts or generates correlation IDs from `X-Correlation-ID` header
+- Binds correlation ID to structlog context for all log messages
+- Logs request start/completion with method, path, status, and duration
+- Adds correlation ID to response headers
+- Detects and warns about slow requests
 
 ## OpenTelemetry Tracing
 
@@ -478,9 +475,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Add middleware
-app.add_middleware(CorrelationIdMiddleware)
+# Add middleware (order matters - first added = last executed)
 app.add_middleware(MetricsMiddleware)
+app.add_middleware(
+    RequestLoggingMiddleware,
+    service_name=settings.service_name,
+    exclude_paths=["/health", "/metrics", "/ready"],
+)
 
 # Add routes
 app.include_router(health_router, prefix="/health", tags=["health"])

@@ -151,66 +151,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             _correlation_id.reset(token_corr)
 
 
-class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    """Simple middleware for correlation ID tracking.
-    
-    A lighter-weight alternative to RequestContextMiddleware
-    when you only need correlation ID tracking.
-    
-    Example:
-        >>> app = FastAPI()
-        >>> app.add_middleware(CorrelationIdMiddleware)
-    """
-
-    def __init__(
-        self,
-        app: ASGIApp,
-        header_name: str = "X-Correlation-ID",
-    ) -> None:
-        """Initialize middleware.
-        
-        Args:
-            app: The ASGI application.
-            header_name: Header name for correlation ID.
-        """
-        super().__init__(app)
-        self.header_name = header_name
-
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: RequestResponseEndpoint,
-    ) -> Response:
-        """Process the request and track correlation ID.
-        
-        Args:
-            request: The incoming request.
-            call_next: The next handler in the chain.
-            
-        Returns:
-            The response with correlation ID header.
-        """
-        # Extract or generate correlation ID
-        correlation_id = request.headers.get(
-            self.header_name,
-            str(uuid.uuid4()),
-        )
-        
-        # Set context variable
-        token = _correlation_id.set(correlation_id)
-        
-        try:
-            response = await call_next(request)
-            response.headers[self.header_name] = correlation_id
-            return response
-        finally:
-            _correlation_id.reset(token)
-
-
 __all__ = [
     "RequestContext",
     "RequestContextMiddleware",
-    "CorrelationIdMiddleware",
     "get_request_context",
     "get_correlation_id",
 ]

@@ -44,7 +44,6 @@ from shared.fastapi_utils.lifespan import (
     register_startup_handler,
 )
 from shared.fastapi_utils.middleware import (
-    CorrelationIdMiddleware,
     RequestContext,
     RequestContextMiddleware,
     get_correlation_id,
@@ -65,7 +64,6 @@ __all__ = [
     # Middleware
     "RequestContext",
     "RequestContextMiddleware",
-    "CorrelationIdMiddleware",
     "get_request_context",
     "get_correlation_id",
     # Exception handlers

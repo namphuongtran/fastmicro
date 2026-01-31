@@ -16,7 +16,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from shared.fastapi_utils.middleware import (
     RequestContextMiddleware,
-    CorrelationIdMiddleware,
     get_request_context,
     get_correlation_id,
     RequestContext,
@@ -128,68 +127,6 @@ class TestRequestContextMiddleware:
         
         assert "X-Correlation-ID" in response.headers
         assert response.headers["X-Correlation-ID"] == response.json()["correlation_id"]
-
-
-class TestCorrelationIdMiddleware:
-    """Tests for CorrelationIdMiddleware."""
-
-    @pytest.fixture
-    def app_with_correlation_middleware(self) -> FastAPI:
-        """Create FastAPI app with correlation ID middleware."""
-        app = FastAPI()
-        app.add_middleware(CorrelationIdMiddleware)
-        
-        @app.get("/test")
-        async def test_endpoint():
-            corr_id = get_correlation_id()
-            return {"correlation_id": corr_id}
-        
-        return app
-
-    def test_generates_correlation_id(
-        self, app_with_correlation_middleware: FastAPI
-    ) -> None:
-        """Should generate correlation ID if not provided."""
-        client = TestClient(app_with_correlation_middleware)
-        response = client.get("/test")
-        
-        assert response.status_code == 200
-        corr_id = response.json()["correlation_id"]
-        assert corr_id is not None
-        # Should be a valid UUID
-        uuid.UUID(corr_id)
-
-    def test_uses_provided_correlation_id(
-        self, app_with_correlation_middleware: FastAPI
-    ) -> None:
-        """Should use correlation ID from request header."""
-        client = TestClient(app_with_correlation_middleware)
-        response = client.get(
-            "/test",
-            headers={"X-Correlation-ID": "my-custom-id"},
-        )
-        
-        assert response.json()["correlation_id"] == "my-custom-id"
-
-    def test_custom_header_name(self) -> None:
-        """Should support custom header name."""
-        app = FastAPI()
-        app.add_middleware(
-            CorrelationIdMiddleware,
-            header_name="X-Request-ID",
-        )
-        
-        @app.get("/test")
-        async def test_endpoint():
-            return {"correlation_id": get_correlation_id()}
-        
-        client = TestClient(app)
-        response = client.get(
-            "/test",
-            headers={"X-Request-ID": "custom-request-id"},
-        )
-        
-        assert response.json()["correlation_id"] == "custom-request-id"
 
 
 class TestGetRequestContext:
