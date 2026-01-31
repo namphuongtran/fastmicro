@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuditAction(str, Enum):
@@ -91,14 +91,7 @@ class AuditEvent(BaseModel):
         description="Compliance tags (GDPR, SOC2, HIPAA, etc.)",
     )
     
-    class Config:
-        """Pydantic configuration."""
-        
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            UUID: lambda v: str(v),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CreateAuditEventRequest(BaseModel):
@@ -156,7 +149,4 @@ class AuditEventResponse(BaseModel):
     description: str | None = Field(description="Event description")
     compliance_tags: list[str] = Field(description="Compliance tags")
     
-    class Config:
-        """Pydantic configuration."""
-        
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

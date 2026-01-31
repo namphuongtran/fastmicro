@@ -5,6 +5,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
+from identity_service.api.dependencies import get_oauth2_service
+from identity_service.application.services import OAuth2Service
+
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
@@ -38,6 +41,7 @@ class TokenErrorResponse(BaseModel):
 async def token_endpoint(
     request: Request,
     grant_type: Annotated[str, Form()],
+    oauth2_service: Annotated[OAuth2Service, Depends(get_oauth2_service)],
     code: Annotated[str | None, Form()] = None,
     redirect_uri: Annotated[str | None, Form()] = None,
     client_id: Annotated[str | None, Form()] = None,
@@ -71,13 +75,6 @@ async def token_endpoint(
     Returns:
         Token response with access_token, etc.
     """
-    # This is a placeholder - actual implementation will use Authlib
-    # through the OAuth2Service in the application layer
-    from identity_service.api.dependencies import get_oauth2_service
-    from identity_service.application.services import OAuth2Service
-
-    oauth2_service: OAuth2Service = await get_oauth2_service()
-
     # Parse Basic Auth if provided
     auth_client_id = client_id
     auth_client_secret = client_secret

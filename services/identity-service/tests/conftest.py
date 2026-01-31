@@ -1,6 +1,8 @@
 """Pytest configuration and fixtures for identity service tests."""
 
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import AsyncGenerator
 from uuid import uuid4
 
@@ -25,40 +27,62 @@ from identity_service.infrastructure.security import PasswordService
 from identity_service.main import create_app
 
 
+@pytest.fixture(scope="session")
+def temp_key_dir():
+    """Create temporary directory for test keys (shared across session)."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        yield tmp_dir
+
+
 @pytest.fixture
-def test_settings() -> Settings:
-    """Create test settings."""
+def test_settings(temp_key_dir: str) -> Settings:
+    """Create test settings with temporary key paths."""
     return Settings(
         app_env="test",
         app_port=8000,
         jwt_issuer="http://localhost:8000",
-        jwt_access_token_expire_minutes=60,
-        jwt_refresh_token_expire_days=30,
+        jwt_audience="http://localhost:8000",
+        jwt_private_key_path=str(Path(temp_key_dir) / "private.pem"),
+        jwt_public_key_path=str(Path(temp_key_dir) / "public.pem"),
         database_url="sqlite+aiosqlite:///./test.db",
         redis_url="redis://localhost:6379/15",
-        cors_origins=["http://localhost:3000"],
-        rsa_key_size=2048,
-        password_bcrypt_rounds=4,  # Lower for tests
+        bcrypt_rounds=4,  # Lower for tests
     )
 
 
 @pytest.fixture
-def app(test_settings: Settings):
+def app(test_settings: Settings, monkeypatch):
     """Create test FastAPI application."""
-    # Override settings
-    def _get_test_settings() -> Settings:
-        return test_settings
-    
+    # Clear all caches before test to ensure fresh state
+    from identity_service.infrastructure.security import jwt_service
     from identity_service import configs
-    original_get_settings = configs.get_settings
-    configs.get_settings = _get_test_settings
+    
+    jwt_service.get_key_manager.cache_clear()
+    jwt_service._jwt_service_cache.clear()
+    configs.get_settings.cache_clear()
+    
+    # Set environment variables for settings
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("APP_PORT", str(test_settings.app_port))
+    monkeypatch.setenv("JWT_ISSUER", test_settings.jwt_issuer)
+    monkeypatch.setenv("JWT_AUDIENCE", test_settings.jwt_audience)
+    monkeypatch.setenv("JWT_PRIVATE_KEY_PATH", test_settings.jwt_private_key_path)
+    monkeypatch.setenv("JWT_PUBLIC_KEY_PATH", test_settings.jwt_public_key_path)
+    monkeypatch.setenv("DATABASE_URL", test_settings.database_url.get_secret_value())
+    monkeypatch.setenv("REDIS_URL", test_settings.redis_url)
+    monkeypatch.setenv("BCRYPT_ROUNDS", str(test_settings.bcrypt_rounds))
+    
+    # Clear the cache again after setting env vars so Settings picks them up
+    configs.get_settings.cache_clear()
     
     application = create_app()
     
     yield application
     
-    # Restore
-    configs.get_settings = original_get_settings
+    # Cleanup caches
+    jwt_service.get_key_manager.cache_clear()
+    jwt_service._jwt_service_cache.clear()
+    configs.get_settings.cache_clear()
 
 
 @pytest.fixture
@@ -78,9 +102,9 @@ async def async_client(app) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture
-def password_service() -> PasswordService:
+def password_service(test_settings: Settings) -> PasswordService:
     """Create password service for tests."""
-    return PasswordService(bcrypt_rounds=4)
+    return PasswordService(test_settings)
 
 
 @pytest.fixture

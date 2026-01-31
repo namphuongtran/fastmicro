@@ -107,5 +107,8 @@ async def get_jwks(request: Request) -> dict:
     from identity_service.infrastructure.security import get_key_manager
 
     settings = get_settings()
-    key_manager = get_key_manager(settings)
+    key_manager = get_key_manager(
+        settings.jwt_private_key_path,
+        settings.jwt_public_key_path,
+    )
     return key_manager.get_jwks()

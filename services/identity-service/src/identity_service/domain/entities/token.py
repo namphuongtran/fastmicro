@@ -7,6 +7,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+from shared.utils import now_utc
+
 from identity_service.domain.value_objects import TokenType
 
 
@@ -27,7 +29,7 @@ class AuthorizationCode:
     state: str | None = None
     code_challenge: str | None = None  # PKCE
     code_challenge_method: str | None = None  # "S256" or "plain"
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
     expires_at: datetime | None = None
     is_used: bool = False
 
@@ -35,13 +37,13 @@ class AuthorizationCode:
         """Set default expiration if not provided."""
         if self.expires_at is None:
             # Authorization codes expire in 10 minutes
-            self.expires_at = datetime.utcnow() + timedelta(minutes=10)
+            self.expires_at = now_utc() + timedelta(minutes=10)
 
     def is_expired(self) -> bool:
         """Check if code has expired."""
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at
+        return now_utc() > self.expires_at
 
     def is_valid(self) -> bool:
         """Check if code is still valid (not expired and not used)."""
@@ -128,7 +130,7 @@ class RefreshToken:
     client_id: str = ""
     user_id: uuid.UUID | None = None
     scope: str = ""
-    issued_at: datetime = field(default_factory=datetime.utcnow)
+    issued_at: datetime = field(default_factory=now_utc)
     expires_at: datetime | None = None
     is_revoked: bool = False
     revoked_at: datetime | None = None
@@ -139,13 +141,13 @@ class RefreshToken:
         """Set default expiration if not provided."""
         if self.expires_at is None:
             # Refresh tokens expire in 30 days
-            self.expires_at = datetime.utcnow() + timedelta(days=30)
+            self.expires_at = now_utc() + timedelta(days=30)
 
     def is_expired(self) -> bool:
         """Check if token has expired."""
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at
+        return now_utc() > self.expires_at
 
     def is_valid(self) -> bool:
         """Check if token is still valid."""
@@ -154,7 +156,7 @@ class RefreshToken:
     def revoke(self, replaced_by: str | None = None) -> None:
         """Revoke this token."""
         self.is_revoked = True
-        self.revoked_at = datetime.utcnow()
+        self.revoked_at = now_utc()
         self.replaced_by = replaced_by
 
 
@@ -213,7 +215,7 @@ class TokenBlacklistEntry:
     """
 
     jti: str = ""  # JWT ID
-    revoked_at: datetime = field(default_factory=datetime.utcnow)
+    revoked_at: datetime = field(default_factory=now_utc)
     reason: str | None = None
     expires_at: datetime | None = None  # When entry can be removed
 

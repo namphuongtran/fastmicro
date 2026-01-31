@@ -7,6 +7,9 @@ from fastapi import APIRouter, Depends, Query, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
+from identity_service.api.dependencies import get_oauth2_service
+from identity_service.application.services import OAuth2Service
+
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
@@ -31,6 +34,7 @@ async def authorization_endpoint(
     request: Request,
     response_type: Annotated[str, Query()],
     client_id: Annotated[str, Query()],
+    oauth2_service: Annotated[OAuth2Service, Depends(get_oauth2_service)],
     redirect_uri: Annotated[str | None, Query()] = None,
     scope: Annotated[str | None, Query()] = None,
     state: Annotated[str | None, Query()] = None,
@@ -67,10 +71,6 @@ async def authorization_endpoint(
     Returns:
         Redirect to login, consent, or callback URL.
     """
-    from identity_service.api.dependencies import get_oauth2_service
-
-    oauth2_service = await get_oauth2_service()
-
     # Validate client and redirect URI
     validation = await oauth2_service.validate_authorization_request(
         client_id=client_id,

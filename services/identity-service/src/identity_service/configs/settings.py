@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # Application
     app_name: str = Field(default="identity-service", description="Application name")
-    app_env: Literal["development", "staging", "production"] = Field(
+    app_env: Literal["development", "staging", "production", "test"] = Field(
         default="development", description="Environment"
     )
     app_debug: bool = Field(default=False, description="Debug mode")
@@ -94,7 +94,7 @@ class Settings(BaseSettings):
     password_require_lowercase: bool = Field(default=True, description="Require lowercase")
     password_require_digit: bool = Field(default=True, description="Require digit")
     password_require_special: bool = Field(default=True, description="Require special character")
-    bcrypt_rounds: int = Field(default=12, ge=10, le=15, description="bcrypt work factor")
+    bcrypt_rounds: int = Field(default=12, ge=4, le=15, description="bcrypt work factor")
 
     # Rate Limiting
     rate_limit_enabled: bool = Field(default=True, description="Enable rate limiting")

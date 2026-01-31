@@ -6,6 +6,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from shared.utils import now_utc
+
 
 @dataclass
 class ConsentScope:
@@ -14,7 +16,7 @@ class ConsentScope:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     consent_id: uuid.UUID | None = None
     scope: str = ""
-    granted_at: datetime = field(default_factory=datetime.utcnow)
+    granted_at: datetime = field(default_factory=now_utc)
 
 
 @dataclass
@@ -29,15 +31,15 @@ class Consent:
     client_id: str = ""  # OAuth2 client_id string
     scopes: list[ConsentScope] = field(default_factory=list)
     remember: bool = False  # Whether to skip consent prompt in future
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
+    updated_at: datetime = field(default_factory=now_utc)
     expires_at: datetime | None = None
 
     def is_valid(self) -> bool:
         """Check if consent is still valid."""
         if self.expires_at is None:
             return True
-        return datetime.utcnow() < self.expires_at
+        return now_utc() < self.expires_at
 
     def get_granted_scopes(self) -> list[str]:
         """Get list of granted scope strings."""
@@ -63,12 +65,12 @@ class Consent:
         """Add a scope to the consent."""
         if not self.has_scope(scope):
             self.scopes.append(ConsentScope(consent_id=self.id, scope=scope))
-            self.updated_at = datetime.utcnow()
+            self.updated_at = now_utc()
 
     def remove_scope(self, scope: str) -> None:
         """Remove a scope from the consent."""
         self.scopes = [s for s in self.scopes if s.scope != scope]
-        self.updated_at = datetime.utcnow()
+        self.updated_at = now_utc()
 
     def update_scopes(self, scopes: list[str]) -> None:
         """Update the granted scopes.
@@ -101,8 +103,8 @@ class Session:
     client_id: str | None = None  # Which client initiated session
     ip_address: str | None = None
     user_agent: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_activity: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
+    last_activity: datetime = field(default_factory=now_utc)
     expires_at: datetime | None = None
     is_active: bool = True
 
@@ -110,13 +112,13 @@ class Session:
         """Check if session is still valid."""
         if not self.is_active:
             return False
-        if self.expires_at and datetime.utcnow() > self.expires_at:
+        if self.expires_at and now_utc() > self.expires_at:
             return False
         return True
 
     def update_activity(self) -> None:
         """Update last activity timestamp."""
-        self.last_activity = datetime.utcnow()
+        self.last_activity = now_utc()
 
     def terminate(self) -> None:
         """Terminate the session."""

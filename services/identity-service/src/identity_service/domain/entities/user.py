@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
+
+from shared.utils import now_utc
 
 if TYPE_CHECKING:
     from identity_service.domain.value_objects import Email
@@ -25,14 +27,14 @@ class UserCredential:
     password_expires_at: datetime | None = None
     failed_login_attempts: int = 0
     locked_until: datetime | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
+    updated_at: datetime = field(default_factory=now_utc)
 
     def is_locked(self) -> bool:
         """Check if account is currently locked."""
         if self.locked_until is None:
             return False
-        return datetime.utcnow() < self.locked_until
+        return now_utc() < self.locked_until
 
     def increment_failed_attempts(self, max_attempts: int, lockout_duration: int) -> None:
         """Increment failed login attempts and lock if exceeded."""
@@ -40,14 +42,14 @@ class UserCredential:
 
         self.failed_login_attempts += 1
         if self.failed_login_attempts >= max_attempts:
-            self.locked_until = datetime.utcnow() + timedelta(seconds=lockout_duration)
-        self.updated_at = datetime.utcnow()
+            self.locked_until = now_utc() + timedelta(seconds=lockout_duration)
+        self.updated_at = now_utc()
 
     def reset_failed_attempts(self) -> None:
         """Reset failed login attempts after successful login."""
         self.failed_login_attempts = 0
         self.locked_until = None
-        self.updated_at = datetime.utcnow()
+        self.updated_at = now_utc()
 
 
 @dataclass
@@ -70,8 +72,8 @@ class UserProfile:
     phone_number: str | None = None
     phone_number_verified: bool = False
     address: dict | None = None  # OIDC address claim structure
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
+    updated_at: datetime = field(default_factory=now_utc)
 
     @property
     def full_name(self) -> str | None:
@@ -89,7 +91,7 @@ class UserClaim:
     user_id: uuid.UUID | None = None
     claim_type: str = ""
     claim_value: str = ""
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
 
 
 @dataclass
@@ -99,7 +101,7 @@ class UserRole:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     user_id: uuid.UUID | None = None
     role_name: str = ""
-    assigned_at: datetime = field(default_factory=datetime.utcnow)
+    assigned_at: datetime = field(default_factory=now_utc)
     assigned_by: uuid.UUID | None = None
     expires_at: datetime | None = None
 
@@ -107,7 +109,7 @@ class UserRole:
         """Check if role assignment is active."""
         if self.expires_at is None:
             return True
-        return datetime.utcnow() < self.expires_at
+        return now_utc() < self.expires_at
 
 
 @dataclass
@@ -130,8 +132,8 @@ class User:
     profile: UserProfile | None = None
     claims: list[UserClaim] = field(default_factory=list)
     roles: list[UserRole] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
+    updated_at: datetime = field(default_factory=now_utc)
 
     def __post_init__(self) -> None:
         """Initialize nested entities if not provided."""
@@ -168,19 +170,19 @@ class User:
             self.roles.append(
                 UserRole(user_id=self.id, role_name=role_name, assigned_by=assigned_by)
             )
-            self.updated_at = datetime.utcnow()
+            self.updated_at = now_utc()
 
     def remove_role(self, role_name: str) -> None:
         """Remove a role from the user."""
         self.roles = [r for r in self.roles if r.role_name != role_name]
-        self.updated_at = datetime.utcnow()
+        self.updated_at = now_utc()
 
     def add_claim(self, claim_type: str, claim_value: str) -> None:
         """Add a custom claim to the user."""
         self.claims.append(
             UserClaim(user_id=self.id, claim_type=claim_type, claim_value=claim_value)
         )
-        self.updated_at = datetime.utcnow()
+        self.updated_at = now_utc()
 
     def get_claims_dict(self) -> dict[str, str]:
         """Get all claims as a dictionary."""
