@@ -3,32 +3,38 @@
 # Enterprise Identity Provider - OAuth 2.0 / OpenID Connect Server
 # =============================================================================
 
-FROM python:3.12-slim AS builder
+# Stage 1: Builder with uv
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl libpq-dev && rm -rf /var/lib/apt/lists/*
-
-RUN pip install poetry==1.8.5
+    build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY services/identity-service/pyproject.toml services/identity-service/poetry.lock* ./
-COPY shared/ /shared/
+# Install dependencies first (better layer caching)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=services/identity-service/pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=services/identity-service/uv.lock,target=uv.lock \
+    --mount=type=bind,source=shared/,target=/shared/ \
+    uv sync --locked --no-install-project --no-dev
 
-RUN poetry config virtualenvs.create false
-RUN poetry install --no-interaction --no-ansi --only main --no-root
-
+# Copy source and install project
 COPY services/identity-service/src/ ./src/
 COPY services/identity-service/templates/ ./templates/
 COPY services/identity-service/static/ ./static/
-RUN poetry install --no-interaction --no-ansi --only main
+COPY shared/ /shared/
+COPY services/identity-service/pyproject.toml services/identity-service/uv.lock ./
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
 # -----------------------------------------------------------------------------
-FROM python:3.12-slim AS runtime
+# Stage 2: Runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 LABEL maintainer="Nam Tran <nam.tranphuong@outlook.com>" \
       description="Identity Service - OAuth 2.0 / OpenID Connect Provider" \
@@ -37,6 +43,7 @@ LABEL maintainer="Nam Tran <nam.tranphuong@outlook.com>" \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \
+    PATH="/app/.venv/bin:$PATH" \
     APP_ENV=production \
     APP_PORT=8000
 
@@ -48,12 +55,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-COPY --from=builder /app/src ./src/
-COPY --from=builder /app/templates ./templates/
-COPY --from=builder /app/static ./static/
-COPY --from=builder /shared /shared
+# Copy virtual environment and application from builder
+COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
+COPY --from=builder --chown=appuser:appgroup /app/src ./src/
+COPY --from=builder --chown=appuser:appgroup /app/templates ./templates/
+COPY --from=builder --chown=appuser:appgroup /app/static ./static/
+COPY --from=builder --chown=appuser:appgroup /shared /shared
 
 # Create directory for RSA keys
 RUN mkdir -p /app/keys && chown -R appuser:appgroup /app

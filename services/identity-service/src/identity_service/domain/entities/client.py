@@ -7,6 +7,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from shared.utils import now_utc
+
 from identity_service.domain.value_objects import (
     AuthMethod,
     ClientType,
@@ -24,7 +26,7 @@ class ClientSecret:
     secret_hash: str = ""  # Hashed secret
     description: str | None = None
     expires_at: datetime | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
     last_used_at: datetime | None = None
     is_revoked: bool = False
 
@@ -32,7 +34,7 @@ class ClientSecret:
         """Check if secret is still valid."""
         if self.is_revoked:
             return False
-        if self.expires_at and datetime.utcnow() > self.expires_at:
+        if self.expires_at and now_utc() > self.expires_at:
             return False
         return True
 
@@ -55,7 +57,7 @@ class ClientRedirectUri:
     client_id: uuid.UUID | None = None
     uri: str = ""
     is_default: bool = False
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
 
 
 @dataclass
@@ -112,8 +114,8 @@ class Client:
     redirect_uris: list[ClientRedirectUri] = field(default_factory=list)
 
     # Audit
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=now_utc)
+    updated_at: datetime = field(default_factory=now_utc)
     created_by: uuid.UUID | None = None
 
     def __post_init__(self) -> None:
@@ -194,11 +196,13 @@ class Client:
             Tuple of (plain_secret, ClientSecret entity).
             The plain secret is only returned once and must be stored by caller.
         """
-        from passlib.hash import bcrypt
+        from pwdlib import PasswordHash
 
         # Generate secure random secret
         plain_secret = secrets.token_urlsafe(32)
-        secret_hash = bcrypt.hash(plain_secret)
+        # Use Argon2 for client secrets (no backward compat needed)
+        hasher = PasswordHash.recommended()
+        secret_hash = hasher.hash(plain_secret)
 
         secret = ClientSecret(
             client_id=self.id,
@@ -207,12 +211,14 @@ class Client:
             expires_at=expires_at,
         )
         self.secrets.append(secret)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = now_utc()
 
         return plain_secret, secret
 
     def verify_secret(self, plain_secret: str) -> bool:
         """Verify a client secret against stored hashes.
+
+        Supports both Argon2 and legacy bcrypt hashes.
 
         Args:
             plain_secret: Plain text secret to verify
@@ -220,12 +226,17 @@ class Client:
         Returns:
             True if secret matches any valid stored secret.
         """
-        from passlib.hash import bcrypt
+        from pwdlib import PasswordHash
+        from pwdlib.hashers.argon2 import Argon2Hasher
+        from pwdlib.hashers.bcrypt import BcryptHasher
+
+        # Support both Argon2 (new) and bcrypt (legacy) hashes
+        hasher = PasswordHash((Argon2Hasher(), BcryptHasher()))
 
         for secret in self.secrets:
             if secret.is_valid():
-                if bcrypt.verify(plain_secret, secret.secret_hash):
-                    secret.last_used_at = datetime.utcnow()
+                if hasher.verify(plain_secret, secret.secret_hash):
+                    secret.last_used_at = now_utc()
                     return True
         return False
 
@@ -241,7 +252,7 @@ class Client:
         for secret in self.secrets:
             if secret.id == secret_id:
                 secret.is_revoked = True
-                self.updated_at = datetime.utcnow()
+                self.updated_at = now_utc()
                 return True
         return False
 
@@ -251,7 +262,7 @@ class Client:
             self.scopes.append(
                 ClientScope(client_id=self.id, scope=scope, is_default=is_default)
             )
-            self.updated_at = datetime.utcnow()
+            self.updated_at = now_utc()
 
     def add_redirect_uri(self, uri: str, is_default: bool = False) -> None:
         """Add a redirect URI to the client."""
@@ -260,7 +271,7 @@ class Client:
             self.redirect_uris.append(
                 ClientRedirectUri(client_id=self.id, uri=uri, is_default=is_default)
             )
-            self.updated_at = datetime.utcnow()
+            self.updated_at = now_utc()
 
     def can_authenticate(self) -> tuple[bool, str | None]:
         """Check if client can authenticate, returns (can_auth, reason_if_not)."""
