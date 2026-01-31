@@ -2,11 +2,10 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Header, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict
 
-from identity_service.api.dependencies import get_oauth2_service
-from identity_service.application.services import OAuth2Service
+from identity_service.api.dependencies import OAuth2ServiceDep
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
@@ -41,7 +40,7 @@ class UserInfoResponse(BaseModel):
 @router.post("/userinfo", response_model=UserInfoResponse)
 async def userinfo_endpoint(
     request: Request,
-    oauth2_service: Annotated[OAuth2Service, Depends(get_oauth2_service)],
+    oauth2_service: OAuth2ServiceDep,
     authorization: Annotated[str | None, Header()] = None,
 ) -> UserInfoResponse:
     """OIDC UserInfo endpoint.
