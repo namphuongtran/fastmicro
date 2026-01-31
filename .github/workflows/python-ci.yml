@@ -1,0 +1,276 @@
+# =============================================================================
+# Python Services CI/CD Pipeline
+# =============================================================================
+# This workflow handles linting, testing, and building for all Python services.
+# Uses matrix strategy to run jobs in parallel across multiple services.
+#
+# Triggers:
+#   - Push to main/develop branches
+#   - Pull requests to main/develop
+#   - Manual dispatch
+# =============================================================================
+
+name: Python Services CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'services/**/*.py'
+      - 'gateways/**/*.py'
+      - 'shared/**/*.py'
+      - 'libs/**/*.py'
+      - '**/pyproject.toml'
+      - '.github/workflows/python-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'services/**/*.py'
+      - 'gateways/**/*.py'
+      - 'shared/**/*.py'
+      - 'libs/**/*.py'
+      - '**/pyproject.toml'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+  POETRY_VERSION: '1.8.5'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Detect Changes - Determine which services have changed
+  # ---------------------------------------------------------------------------
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.services }}
+      shared: ${{ steps.filter.outputs.shared }}
+      gateways: ${{ steps.filter.outputs.gateways }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared:
+              - 'shared/**'
+            audit-service:
+              - 'services/audit-service/**'
+            metastore-service:
+              - 'services/metastore-service/**'
+            federation-gateway:
+              - 'gateways/federation-gateway/**'
+
+      - name: Set service matrix
+        id: set-matrix
+        run: |
+          services=()
+          if [ "${{ steps.filter.outputs.audit-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
+            services+=("audit-service")
+          fi
+          if [ "${{ steps.filter.outputs.metastore-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
+            services+=("metastore-service")
+          fi
+          if [ "${{ steps.filter.outputs.federation-gateway }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
+            services+=("federation-gateway")
+          fi
+          echo "services=$(jq -c -n '$ARGS.positional' --args "${services[@]}")" >> $GITHUB_OUTPUT
+
+  # ---------------------------------------------------------------------------
+  # Shared Library - Test and validate shared library
+  # ---------------------------------------------------------------------------
+  shared-library:
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.shared == 'true' || github.event_name == 'workflow_dispatch'
+    needs: detect-changes
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: shared/.venv
+          key: shared-${{ runner.os }}-${{ hashFiles('shared/pyproject.toml') }}
+
+      - name: Install dependencies
+        working-directory: shared
+        run: poetry install --no-interaction
+
+      - name: Run linting
+        working-directory: shared
+        run: |
+          poetry run ruff check .
+          poetry run ruff format --check .
+
+      - name: Run type checking
+        working-directory: shared
+        run: poetry run mypy .
+        continue-on-error: true
+
+      - name: Run tests
+        working-directory: shared
+        run: poetry run pytest --cov=. --cov-report=xml --cov-report=html -v
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: shared/coverage.xml
+          flags: shared
+          fail_ci_if_error: false
+
+  # ---------------------------------------------------------------------------
+  # Service Tests - Matrix strategy for all services
+  # ---------------------------------------------------------------------------
+  service-tests:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, shared-library]
+    if: always() && (needs.shared-library.result == 'success' || needs.shared-library.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: audit-service
+            path: services/audit-service
+          - name: metastore-service
+            path: services/metastore-service
+          - name: federation-gateway
+            path: gateways/federation-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.service.path }}/.venv
+          key: ${{ matrix.service.name }}-${{ runner.os }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.service.path)) }}
+
+      - name: Install shared library
+        working-directory: shared
+        run: poetry install --no-interaction
+
+      - name: Install service dependencies
+        working-directory: ${{ matrix.service.path }}
+        run: poetry install --no-interaction
+
+      - name: Run linting
+        working-directory: ${{ matrix.service.path }}
+        run: |
+          poetry run ruff check .
+          poetry run ruff format --check .
+
+      - name: Run tests
+        working-directory: ${{ matrix.service.path }}
+        run: poetry run pytest --cov=src --cov-report=xml -v
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ${{ matrix.service.path }}/coverage.xml
+          flags: ${{ matrix.service.name }}
+          fail_ci_if_error: false
+
+  # ---------------------------------------------------------------------------
+  # Build Docker Images
+  # ---------------------------------------------------------------------------
+  build-images:
+    runs-on: ubuntu-latest
+    needs: service-tests
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: audit-service
+            dockerfile: services/audit-service/Dockerfile
+            context: .
+          - name: metastore-service
+            dockerfile: services/metastore-service/Dockerfile
+            context: .
+          - name: federation-gateway
+            dockerfile: gateways/federation-gateway/Dockerfile
+            context: .
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Security Scan
+  # ---------------------------------------------------------------------------
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        service: [audit-service, metastore-service, federation-gateway]
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true

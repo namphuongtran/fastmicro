@@ -1,0 +1,4 @@
+mode: ContinuousDelivery
+assembly-versioning-scheme: MajorMinorPatch
+tag-prefix: metastore-service-v
+increment: Patch

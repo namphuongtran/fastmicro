@@ -7,11 +7,17 @@ for building robust microservices including:
 - **exceptions**: Standardized exception hierarchy for HTTP, database, validation
 - **constants**: HTTP status codes, environment detection, regex patterns
 - **utils**: Datetime handling, JSON serialization, string manipulation, validation
+- **observability**: Structured logging, tracing, metrics, health checks
+- **dbs**: Repository pattern, Unit of Work, database utilities
+- **extensions**: Decorators, dependency injection, middleware patterns
 
 Example:
     >>> from shared.exceptions import NotFoundError, ValidationException
     >>> from shared.constants import HTTPStatus, Environment
     >>> from shared.utils import now_utc, serialize_json, slugify
+    >>> from shared.observability import get_logger, configure_logging
+    >>> from shared.dbs import InMemoryRepository, PageRequest
+    >>> from shared.extensions import retry, cache, Container, Depends
 """
 
 from __future__ import annotations
@@ -20,6 +26,18 @@ __version__ = "0.1.0"
 
 # Re-export commonly used items for convenience
 from shared.constants import Environment, HTTPStatus, Patterns
+from shared.dbs import (
+    AbstractRepository,
+    AbstractUnitOfWork,
+    Filter,
+    FilterOperator,
+    InMemoryRepository,
+    InMemoryUnitOfWork,
+    OrderBy,
+    OrderDirection,
+    PageRequest,
+    PageResponse,
+)
 from shared.exceptions import (
     BadGatewayException,
     BadRequestException,
@@ -44,6 +62,64 @@ from shared.exceptions import (
     UnauthorizedException,
     UnprocessableEntityException,
     ValidationException,
+)
+from shared.observability import (
+    # Logging
+    JSONFormatter,
+    CorrelationIdFilter,
+    set_correlation_id,
+    get_correlation_id,
+    generate_correlation_id,
+    with_context,
+    get_logger,
+    configure_logging,
+    # Tracing
+    SpanKind,
+    TracingConfig,
+    Span,
+    configure_tracing,
+    get_current_span,
+    get_trace_id,
+    create_span,
+    inject_context,
+    extract_context,
+    traced,
+    # Metrics
+    Counter,
+    Gauge,
+    Histogram,
+    MetricsRegistry,
+    get_metrics_registry,
+    configure_metrics,
+    timed,
+    # Health
+    HealthStatus,
+    HealthCheckResult,
+    HealthCheck,
+    register_health_check,
+    create_health_check,
+    check_liveness,
+    check_readiness,
+    get_health_status,
+)
+from shared.extensions import (
+    # Decorators
+    retry,
+    cache,
+    rate_limit,
+    timeout,
+    deprecated,
+    log_calls,
+    validate_args,
+    singleton,
+    # Dependency Injection
+    Container,
+    Scope,
+    Depends,
+    inject,
+    get_container,
+    register,
+    resolve,
 )
 from shared.utils import (
     CustomJSONEncoder,
@@ -108,6 +184,54 @@ __all__ = [
     "HTTPStatus",
     "Environment",
     "Patterns",
+    # Database Patterns
+    "FilterOperator",
+    "OrderDirection",
+    "Filter",
+    "OrderBy",
+    "PageRequest",
+    "PageResponse",
+    "AbstractRepository",
+    "InMemoryRepository",
+    "AbstractUnitOfWork",
+    "InMemoryUnitOfWork",
+    # Observability - Logging
+    "JSONFormatter",
+    "CorrelationIdFilter",
+    "set_correlation_id",
+    "get_correlation_id",
+    "generate_correlation_id",
+    "with_context",
+    "get_logger",
+    "configure_logging",
+    # Observability - Tracing
+    "SpanKind",
+    "TracingConfig",
+    "Span",
+    "configure_tracing",
+    "get_current_span",
+    "get_trace_id",
+    "create_span",
+    "inject_context",
+    "extract_context",
+    "traced",
+    # Observability - Metrics
+    "Counter",
+    "Gauge",
+    "Histogram",
+    "MetricsRegistry",
+    "get_metrics_registry",
+    "configure_metrics",
+    "timed",
+    # Observability - Health
+    "HealthStatus",
+    "HealthCheckResult",
+    "HealthCheck",
+    "register_health_check",
+    "create_health_check",
+    "check_liveness",
+    "check_readiness",
+    "get_health_status",
     # Utils
     "now_utc",
     "utc_timestamp",
@@ -138,4 +262,21 @@ __all__ = [
     "validate_length",
     "validate_range",
     "sanitize_html",
+    # Extensions - Decorators
+    "retry",
+    "cache",
+    "rate_limit",
+    "timeout",
+    "deprecated",
+    "log_calls",
+    "validate_args",
+    "singleton",
+    # Extensions - Dependency Injection
+    "Container",
+    "Scope",
+    "Depends",
+    "inject",
+    "get_container",
+    "register",
+    "resolve",
 ]
