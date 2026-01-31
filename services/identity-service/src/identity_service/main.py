@@ -21,10 +21,8 @@ from shared.observability import (
     configure_structlog,
     get_structlog_logger,
     LoggingConfig,
-    bind_contextvars,
-    clear_contextvars,
-    set_correlation_id,
-    generate_correlation_id,
+    RequestLoggingMiddleware,
+    RequestLoggingConfig,
 )
 
 # Paths for templates and static files
@@ -101,6 +99,15 @@ def create_app() -> FastAPI:
         templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
         web_routes.templates = templates
 
+    # Request logging middleware (must be added first to wrap other middleware)
+    app.add_middleware(
+        RequestLoggingMiddleware,
+        config=RequestLoggingConfig(
+            exclude_paths=["/health", "/healthz", "/ready", "/readyz", "/.well-known/openid-configuration", "/.well-known/jwks.json"],
+            slow_request_threshold_ms=500.0,
+        ),
+    )
+
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -108,7 +115,7 @@ def create_app() -> FastAPI:
         allow_credentials=settings.cors_allow_credentials,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
-        expose_headers=["X-Request-ID"],
+        expose_headers=["X-Correlation-ID", "X-Request-ID"],
     )
 
     # Global exception handler

@@ -93,6 +93,12 @@ from shared.observability.health import (
     get_health_status,
 )
 
+from shared.observability.middleware import (
+    RequestLoggingConfig,
+    RequestLoggingMiddleware,
+    get_correlation_id_from_request,
+)
+
 
 __all__ = [
     # Structlog (recommended)
@@ -146,4 +152,8 @@ __all__ = [
     "check_liveness",
     "check_readiness",
     "get_health_status",
+    # Middleware
+    "RequestLoggingConfig",
+    "RequestLoggingMiddleware",
+    "get_correlation_id_from_request",
 ]
