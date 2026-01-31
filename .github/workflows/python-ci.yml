@@ -57,6 +57,8 @@ jobs:
               - 'shared/**'
             audit-service:
               - 'services/audit-service/**'
+            identity-service:
+              - 'services/identity-service/**'
             metastore-service:
               - 'services/metastore-service/**'
             federation-gateway:
@@ -68,6 +70,9 @@ jobs:
           services=()
           if [ "${{ steps.filter.outputs.audit-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
             services+=("audit-service")
+          fi
+          if [ "${{ steps.filter.outputs.identity-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
+            services+=("identity-service")
           fi
           if [ "${{ steps.filter.outputs.metastore-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
             services+=("metastore-service")
@@ -144,6 +149,8 @@ jobs:
         service:
           - name: audit-service
             path: services/audit-service
+          - name: identity-service
+            path: services/identity-service
           - name: metastore-service
             path: services/metastore-service
           - name: federation-gateway
@@ -209,6 +216,9 @@ jobs:
           - name: audit-service
             dockerfile: services/audit-service/Dockerfile
             context: .
+          - name: identity-service
+            dockerfile: services/identity-service/Dockerfile
+            context: .
           - name: metastore-service
             dockerfile: services/metastore-service/Dockerfile
             context: .
@@ -259,7 +269,7 @@ jobs:
     if: github.event_name == 'push'
     strategy:
       matrix:
-        service: [audit-service, metastore-service, federation-gateway]
+        service: [audit-service, identity-service, metastore-service, federation-gateway]
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
