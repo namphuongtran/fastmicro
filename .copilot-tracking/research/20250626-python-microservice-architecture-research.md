@@ -572,3 +572,63 @@ Based on research findings, the recommended implementation approach for the iden
   - Password hashes use Argon2 with secure defaults
   - 90%+ test coverage on auth flows
   - Structured logging on all auth events
+
+---
+
+## Implementation Status (Updated: 2026-02-01)
+
+### ✅ Completed Items
+
+| Task | Location | Evidence |
+|------|----------|----------|
+| JWT RS256 token generation/validation | `shared/src/shared/auth/jwt.py` | JWTService class with HS256/RS256 support, TokenData, expiration handling |
+| Password hashing (Argon2) | `shared/src/shared/auth/password.py` | PasswordService with argon2-cffi, configurable params |
+| Password strength validation | `shared/src/shared/auth/password.py` | `check_password_strength()` function |
+| API Key management | `shared/src/shared/auth/api_key.py` | APIKeyService with prefix support |
+| Annotated type dependencies | `identity_service/api/dependencies.py` | OAuth2ServiceDep and other type aliases |
+| OAuth2 token endpoint | `identity_service/api/oauth/token.py` | authorization_code, client_credentials, refresh_token grants |
+| PKCE OAuth2 flow | `identity_service/api/oauth/token.py` | code_verifier parameter in token endpoint |
+| OAuth2 authorization endpoint | `identity_service/api/oauth/authorize.py` | Authorization code flow with consent |
+| OpenID Connect discovery | `identity_service/api/oauth/discovery.py` | `.well-known/openid-configuration` |
+| Token introspection | `identity_service/api/oauth/introspection.py` | RFC 7662 compliant |
+| UserInfo endpoint | `identity_service/api/oauth/userinfo.py` | OIDC userinfo |
+| Async test setup | `identity_service/tests/conftest.py` | pytest-asyncio, httpx AsyncClient, ASGITransport |
+| Structured logging | `identity_service/main.py` | structlog with LoggingConfig from shared |
+| Request logging middleware | `identity_service/main.py` | RequestLoggingMiddleware from shared |
+| Settings with cache clear | `identity_service/configs.py` | `get_settings.cache_clear()` in conftest.py |
+| Domain entities (DDD) | `identity_service/domain/entities/` | User, Client, Token, Consent entities |
+| Value objects | `identity_service/domain/value_objects.py` | ClientId, Email, Scope, GrantType, etc. |
+| FastAPI lifespan pattern | `identity_service/main.py` | `@asynccontextmanager` lifespan handler |
+| Factory function pattern | `identity_service/main.py` | `create_app()` for testability |
+| Environment-based docs URL | `identity_service/main.py` | None in production |
+
+### 🟡 Partially Implemented
+
+| Task | Status | What's Missing |
+|------|--------|----------------|
+| User registration endpoints | 50% | Domain entities exist, need API endpoints `/users/register` |
+| User login endpoints | 50% | OAuth flow exists, need direct `/users/login` endpoint |
+| Refresh token grant | 80% | Grant type handler exists, need token storage/rotation |
+| Test coverage (90%+) | 60% | Unit tests exist, need more integration tests |
+| Database integration | 40% | Repositories defined, need actual DB session management |
+
+### 🔴 Not Started
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| CI pipeline update (identity-service) | High | Add to python-ci.yml matrix |
+| Remove python-app.yml | Medium | Outdated demo workflow |
+| OpenTelemetry tracing integration | Medium | Shared library ready, need service integration |
+| Prometheus metrics endpoints | Low | `/metrics` endpoint |
+| Rate limiting on auth endpoints | Medium | Brute force protection |
+| Account lockout mechanism | Medium | After N failed attempts |
+| Password reset flow | Low | Email verification required |
+| MFA/2FA support | Low | TOTP, WebAuthn |
+
+### Next Steps (Priority Order)
+
+1. **Immediate:** Add identity-service to CI pipeline
+2. **This Sprint:** Complete user registration/login API endpoints
+3. **This Sprint:** Add database session management with SQLAlchemy async
+4. **Next Sprint:** Implement rate limiting and account lockout
+5. **Next Sprint:** Achieve 90%+ test coverage
