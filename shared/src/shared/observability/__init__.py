@@ -1,20 +1,59 @@
 """Observability utilities for microservices.
 
 This module provides comprehensive observability features including:
-- Structured JSON logging with correlation ID support
+- Structured logging with structlog (recommended)
+- Legacy JSON logging with correlation ID support
 - Distributed tracing with OpenTelemetry-compatible spans
 - Prometheus-compatible metrics (Counter, Gauge, Histogram)
 - Health check utilities for Kubernetes probes
+
+Recommended Usage (structlog):
+    from shared.observability import configure_structlog, get_structlog_logger, LoggingConfig
+    
+    configure_structlog(LoggingConfig(
+        service_name="my-service",
+        environment="production",
+    ))
+    logger = get_structlog_logger(__name__)
+    logger.info("Application started", port=8000)
+
+Legacy Usage (stdlib logging):
+    from shared.observability import configure_logging, get_logger
+    
+    configure_logging(level="INFO", json_format=True)
+    logger = get_logger(__name__)
+    logger.info("Application started")
 """
 
 from __future__ import annotations
 
-from shared.observability.logging import (
-    JSONFormatter,
-    CorrelationIdFilter,
+# Structlog-based logging (recommended)
+from shared.observability.structlog_config import (
+    # Configuration
+    Environment,
+    LoggingConfig,
+    configure_structlog,
+    configure_structlog_for_testing,
+    reset_structlog_configuration,
+    # Context management
     set_correlation_id,
     get_correlation_id,
     generate_correlation_id,
+    clear_correlation_id,
+    bind_contextvars,
+    clear_contextvars,
+    unbind_contextvars,
+    # Logger
+    get_structlog_logger,
+    # Processors
+    add_service_context,
+    add_opentelemetry_context,
+)
+
+# Legacy logging (for backward compatibility)
+from shared.observability.logging import (
+    JSONFormatter,
+    CorrelationIdFilter,
     with_context,
     get_logger,
     configure_logging,
@@ -54,14 +93,34 @@ from shared.observability.health import (
     get_health_status,
 )
 
+from shared.observability.middleware import (
+    RequestLoggingConfig,
+    RequestLoggingMiddleware,
+    get_correlation_id_from_request,
+)
+
 
 __all__ = [
-    # Logging
-    "JSONFormatter",
-    "CorrelationIdFilter",
+    # Structlog (recommended)
+    "Environment",
+    "LoggingConfig",
+    "configure_structlog",
+    "configure_structlog_for_testing",
+    "reset_structlog_configuration",
+    "get_structlog_logger",
+    "bind_contextvars",
+    "clear_contextvars",
+    "unbind_contextvars",
+    "add_service_context",
+    "add_opentelemetry_context",
+    # Context (shared between both)
     "set_correlation_id",
     "get_correlation_id",
     "generate_correlation_id",
+    "clear_correlation_id",
+    # Legacy logging (backward compatibility)
+    "JSONFormatter",
+    "CorrelationIdFilter",
     "with_context",
     "get_logger",
     "configure_logging",
@@ -93,4 +152,8 @@ __all__ = [
     "check_liveness",
     "check_readiness",
     "get_health_status",
+    # Middleware
+    "RequestLoggingConfig",
+    "RequestLoggingMiddleware",
+    "get_correlation_id_from_request",
 ]

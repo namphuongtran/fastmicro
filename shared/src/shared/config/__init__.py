@@ -15,15 +15,49 @@ Example:
 
 from __future__ import annotations
 
+from shared.config.app import AppSettings, PaginationSettings
+from shared.config.auth import AuthSettings
 from shared.config.base import (
     BaseServiceSettings,
     SettingsError,
-    get_settings,
     clear_settings_cache,
+    get_settings,
+)
+from shared.config.caching import (
+    CacheBackend,
+    CacheClusterSettings,
+    CacheStrategy,
+    CacheWarmingSettings,
+    CachingSettings,
+    DatabaseCacheSettings,
+    MemcachedCacheSettings,
+    MemoryCacheSettings,
+    RedisCacheSettings,
 )
 from shared.config.database import DatabaseSettings, DatabaseType
+from shared.config.logging import (
+    ConsoleLoggingSettings,
+    ElasticsearchLoggingSettings,
+    FileLoggingSettings,
+    LogFormat,
+    LoggingSettings,
+    LogLevel,
+    OpenTelemetrySettings,
+    RequestLoggingSettings,
+    SentrySettings,
+)
 from shared.config.redis import RedisSettings
-from shared.config.auth import AuthSettings
+from shared.config.security import (
+    CookieSettings,
+    CORSSettings,
+    CryptoSettings,
+    RateLimitSettings,
+    SameSitePolicy,
+    SecurityHeadersSettings,
+    SecuritySettings,
+    SessionSettings,
+    TLSSettings,
+)
 
 __all__ = [
     # Base
@@ -31,11 +65,44 @@ __all__ = [
     "SettingsError",
     "get_settings",
     "clear_settings_cache",
+    # App
+    "AppSettings",
+    "PaginationSettings",
+    # Auth
+    "AuthSettings",
+    # Caching
+    "CachingSettings",
+    "CacheBackend",
+    "CacheStrategy",
+    "RedisCacheSettings",
+    "MemcachedCacheSettings",
+    "MemoryCacheSettings",
+    "DatabaseCacheSettings",
+    "CacheWarmingSettings",
+    "CacheClusterSettings",
     # Database
     "DatabaseSettings",
     "DatabaseType",
+    # Logging
+    "LoggingSettings",
+    "LogFormat",
+    "LogLevel",
+    "ConsoleLoggingSettings",
+    "FileLoggingSettings",
+    "SentrySettings",
+    "OpenTelemetrySettings",
+    "ElasticsearchLoggingSettings",
+    "RequestLoggingSettings",
     # Redis
     "RedisSettings",
-    # Auth
-    "AuthSettings",
+    # Security
+    "SecuritySettings",
+    "CORSSettings",
+    "RateLimitSettings",
+    "SecurityHeadersSettings",
+    "CookieSettings",
+    "SessionSettings",
+    "CryptoSettings",
+    "TLSSettings",
+    "SameSitePolicy",
 ]

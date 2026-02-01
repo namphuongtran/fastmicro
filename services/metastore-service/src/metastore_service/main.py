@@ -20,11 +20,25 @@ from metastore_service.configs.settings import get_settings
 # Use shared library managers
 from shared.sqlalchemy_async import AsyncDatabaseManager
 from shared.cache import TieredCacheManager
-from shared.observability import get_logger
+from shared.observability import (
+    configure_structlog,
+    get_structlog_logger,
+    LoggingConfig,
+    RequestLoggingMiddleware,
+    RequestLoggingConfig,
+)
 from shared.observability.health import register_health_check
 
 settings = get_settings()
-logger = get_logger(__name__)
+
+# Configure structured logging using shared library
+configure_structlog(LoggingConfig(
+    service_name="metastore-service",
+    environment=settings.environment,
+    log_level=getattr(settings, "log_level", "INFO"),
+))
+
+logger = get_structlog_logger(__name__)
 
 
 @asynccontextmanager
@@ -98,16 +112,23 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     
+    # Request logging middleware (must be added first to wrap other middleware)
+    app.add_middleware(
+        RequestLoggingMiddleware,
+        config=RequestLoggingConfig(
+            slow_request_threshold_ms=500.0,
+        ),
+    )
+
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=settings.cors_allow_credentials,
         allow_methods=settings.cors_allow_methods,
-        allow_headers=settings.cors_allow_headers,
+        allow_headers=[*settings.cors_allow_headers, "X-Correlation-ID"],
     )
 
-    
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         logger.exception("Unhandled exception", extra={"path": request.url.path})

@@ -1,14 +1,35 @@
-"""FastAPI dependencies for dependency injection."""
+"""FastAPI dependencies for dependency injection.
+
+Defines reusable Annotated type aliases following FastAPI best practices.
+See: https://fastapi.tiangolo.com/tutorial/dependencies/
+"""
 
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, TYPE_CHECKING
 
 from fastapi import Depends
 
 from identity_service.application.services import OAuth2Service
 from identity_service.configs import Settings, get_settings
+
+if TYPE_CHECKING:
+    from identity_service.domain.repositories import (
+        ClientRepository,
+        UserRepository,
+    )
+
+# =============================================================================
+# Annotated Type Aliases for Dependency Injection
+# =============================================================================
+# These provide clean, reusable type annotations that can be imported and used
+# in route handlers. Example:
+#   async def endpoint(service: OAuth2ServiceDep) -> Response:
+#       ...
+
+# Settings dependency - cached singleton
+SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
 # Placeholder for actual repository implementations
@@ -320,3 +341,7 @@ async def get_oauth2_service(
         consent_repository=_consent_repo,
         session_repository=_session_repo,
     )
+
+
+# OAuth2 service dependency - primary service for authentication/authorization
+OAuth2ServiceDep = Annotated[OAuth2Service, Depends(get_oauth2_service)]

@@ -2,11 +2,10 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, status
+from fastapi import APIRouter, Form, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
-from identity_service.api.dependencies import get_oauth2_service
-from identity_service.application.services import OAuth2Service
+from identity_service.api.dependencies import OAuth2ServiceDep
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
@@ -32,7 +31,7 @@ class IntrospectionResponse(BaseModel):
 async def introspect_token(
     request: Request,
     token: Annotated[str, Form()],
-    oauth2_service: Annotated[OAuth2Service, Depends(get_oauth2_service)],
+    oauth2_service: OAuth2ServiceDep,
     token_type_hint: Annotated[str | None, Form()] = None,
     client_id: Annotated[str | None, Form()] = None,
     client_secret: Annotated[str | None, Form()] = None,
@@ -99,7 +98,7 @@ class RevocationResponse(BaseModel):
 async def revoke_token(
     request: Request,
     token: Annotated[str, Form()],
-    oauth2_service: Annotated[OAuth2Service, Depends(get_oauth2_service)],
+    oauth2_service: OAuth2ServiceDep,
     token_type_hint: Annotated[str | None, Form()] = None,
     client_id: Annotated[str | None, Form()] = None,
     client_secret: Annotated[str | None, Form()] = None,

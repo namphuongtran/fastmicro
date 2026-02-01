@@ -1,11 +1,9 @@
 """Identity Service - FastAPI Application Entry Point."""
 
-import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
-import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,28 +16,29 @@ from identity_service.api.web import router as web_router
 from identity_service.api.web import routes as web_routes
 from identity_service.configs import get_settings
 
+# Shared observability
+from shared.observability import (
+    configure_structlog,
+    get_structlog_logger,
+    LoggingConfig,
+    RequestLoggingMiddleware,
+    RequestLoggingConfig,
+)
+
 # Paths for templates and static files
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.contextvars.merge_contextvars,
-        structlog.processors.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.dev.ConsoleRenderer() if get_settings().is_development else structlog.processors.JSONRenderer(),
-    ],
-    wrapper_class=structlog.make_filtering_bound_logger(
-        getattr(logging, get_settings().log_level)
-    ),
-    context_class=dict,
-    logger_factory=structlog.PrintLoggerFactory(),
-    cache_logger_on_first_use=True,
-)
+# Configure structured logging using shared library
+settings = get_settings()
+configure_structlog(LoggingConfig(
+    service_name="identity-service",
+    environment=settings.app_env,
+    log_level=settings.log_level,
+))
 
-logger = structlog.get_logger()
+logger = get_structlog_logger(__name__)
 
 
 @asynccontextmanager
@@ -100,6 +99,15 @@ def create_app() -> FastAPI:
         templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
         web_routes.templates = templates
 
+    # Request logging middleware (must be added first to wrap other middleware)
+    app.add_middleware(
+        RequestLoggingMiddleware,
+        config=RequestLoggingConfig(
+            exclude_paths=["/health", "/healthz", "/ready", "/readyz", "/.well-known/openid-configuration", "/.well-known/jwks.json"],
+            slow_request_threshold_ms=500.0,
+        ),
+    )
+
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -107,7 +115,7 @@ def create_app() -> FastAPI:
         allow_credentials=settings.cors_allow_credentials,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
-        expose_headers=["X-Request-ID"],
+        expose_headers=["X-Correlation-ID", "X-Request-ID"],
     )
 
     # Global exception handler
