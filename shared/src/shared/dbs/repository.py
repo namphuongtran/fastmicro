@@ -229,35 +229,35 @@ class InMemoryRepository(AbstractRepository[T]):
         """
         return str(getattr(entity, self._id_field))
 
-    def _matches_filter(self, entity: T, filter: Filter) -> bool:
+    def _matches_filter(self, entity: T, filter_spec: Filter) -> bool:
         """Check if entity matches a filter.
 
         Args:
             entity: The entity to check.
-            filter: The filter to apply.
+            filter_spec: The filter to apply.
 
         Returns:
             True if entity matches.
         """
-        value = getattr(entity, filter.field, None)
+        value = getattr(entity, filter_spec.field, None)
 
-        match filter.operator:
+        match filter_spec.operator:
             case FilterOperator.EQ:
-                return value == filter.value
+                return value == filter_spec.value
             case FilterOperator.NE:
-                return value != filter.value
+                return value != filter_spec.value
             case FilterOperator.GT:
-                return value > filter.value
+                return value > filter_spec.value
             case FilterOperator.GTE:
-                return value >= filter.value
+                return value >= filter_spec.value
             case FilterOperator.LT:
-                return value < filter.value
+                return value < filter_spec.value
             case FilterOperator.LTE:
-                return value <= filter.value
+                return value <= filter_spec.value
             case FilterOperator.LIKE:
-                return filter.value.lower() in str(value).lower()
+                return filter_spec.value.lower() in str(value).lower()
             case FilterOperator.IN:
-                return value in filter.value
+                return value in filter_spec.value
             case _:
                 return False
 

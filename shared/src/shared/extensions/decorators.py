@@ -49,7 +49,7 @@ class RateLimitExceededError(Exception):
         super().__init__(message)
 
 
-class TimeoutError(Exception):
+class OperationTimeoutError(Exception):
     """Raised when operation times out."""
 
     def __init__(self, message: str = "Operation timed out") -> None:
@@ -282,7 +282,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
         Decorated function with timeout.
 
     Raises:
-        TimeoutError: When execution exceeds timeout.
+        OperationTimeoutError: When execution exceeds timeout.
 
     Example:
         >>> @timeout(5.0)
@@ -300,7 +300,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                 try:
                     return future.result(timeout=seconds)
                 except concurrent.futures.TimeoutError:
-                    raise TimeoutError(f"Operation timed out after {seconds} seconds") from None
+                    raise OperationTimeoutError(f"Operation timed out after {seconds} seconds") from None
 
         @functools.wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -310,7 +310,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                     timeout=seconds,
                 )
             except builtins.TimeoutError:
-                raise TimeoutError(f"Operation timed out after {seconds} seconds") from None
+                raise OperationTimeoutError(f"Operation timed out after {seconds} seconds") from None
 
         if asyncio.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]

@@ -13,9 +13,7 @@ from shared.cache.redis_client import (
     AsyncRedisClient,
     CacheError,
     RedisConfig,
-)
-from shared.cache.redis_client import (
-    ConnectionError as RedisConnectionError,
+    RedisConnectionError,
 )
 
 

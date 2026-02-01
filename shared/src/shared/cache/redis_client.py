@@ -22,7 +22,7 @@ class CacheError(Exception):
     pass
 
 
-class ConnectionError(CacheError):
+class RedisConnectionError(CacheError):
     """Error when Redis connection fails."""
 
     pass
@@ -100,7 +100,7 @@ class AsyncRedisClient:
                 socket_timeout=self._config.socket_timeout,
             )
         except Exception as e:
-            raise ConnectionError(f"Failed to connect to Redis: {e}") from e
+            raise RedisConnectionError(f"Failed to connect to Redis: {e}") from e
 
     async def close(self) -> None:
         """Close Redis connection."""
@@ -123,10 +123,10 @@ class AsyncRedisClient:
             Redis client instance.
 
         Raises:
-            ConnectionError: If not connected.
+            RedisConnectionError: If not connected.
         """
         if self._redis is None:
-            raise ConnectionError("Redis client not connected")
+            raise RedisConnectionError("Redis client not connected")
         return self._redis
 
     def _serialize(self, value: Any) -> str:

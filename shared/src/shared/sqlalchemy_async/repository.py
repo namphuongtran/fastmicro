@@ -105,47 +105,47 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         ...     page = await repo.paginate(PageRequest(page=1, size=10))
     """
 
-    def _apply_filter(self, stmt: Select, filter: Filter) -> Select:
+    def _apply_filter(self, stmt: Select, filter_spec: Filter) -> Select:
         """Apply a single filter to a query statement.
 
         Args:
             stmt: SQLAlchemy select statement.
-            filter: Filter to apply.
+            filter_spec: Filter to apply.
 
         Returns:
             Modified statement with filter applied.
         """
-        column = getattr(self.model_class, filter.field, None)
+        column = getattr(self.model_class, filter_spec.field, None)
         if column is None:
             return stmt
 
-        match filter.operator:
+        match filter_spec.operator:
             case FilterOperator.EQ:
-                stmt = stmt.where(column == filter.value)
+                stmt = stmt.where(column == filter_spec.value)
             case FilterOperator.NE:
-                stmt = stmt.where(column != filter.value)
+                stmt = stmt.where(column != filter_spec.value)
             case FilterOperator.GT:
-                stmt = stmt.where(column > filter.value)
+                stmt = stmt.where(column > filter_spec.value)
             case FilterOperator.GE | FilterOperator.GTE:
-                stmt = stmt.where(column >= filter.value)
+                stmt = stmt.where(column >= filter_spec.value)
             case FilterOperator.LT:
-                stmt = stmt.where(column < filter.value)
+                stmt = stmt.where(column < filter_spec.value)
             case FilterOperator.LE | FilterOperator.LTE:
-                stmt = stmt.where(column <= filter.value)
+                stmt = stmt.where(column <= filter_spec.value)
             case FilterOperator.LIKE:
-                stmt = stmt.where(column.like(str(filter.value)))
+                stmt = stmt.where(column.like(str(filter_spec.value)))
             case FilterOperator.CONTAINS:
-                stmt = stmt.where(column.contains(str(filter.value)))
+                stmt = stmt.where(column.contains(str(filter_spec.value)))
             case FilterOperator.STARTS_WITH:
-                stmt = stmt.where(column.startswith(str(filter.value)))
+                stmt = stmt.where(column.startswith(str(filter_spec.value)))
             case FilterOperator.ENDS_WITH:
-                stmt = stmt.where(column.endswith(str(filter.value)))
+                stmt = stmt.where(column.endswith(str(filter_spec.value)))
             case FilterOperator.IN:
-                if isinstance(filter.value, (list, tuple, set)):
-                    stmt = stmt.where(column.in_(filter.value))
+                if isinstance(filter_spec.value, (list, tuple, set)):
+                    stmt = stmt.where(column.in_(filter_spec.value))
             case FilterOperator.NOT_IN:
-                if isinstance(filter.value, (list, tuple, set)):
-                    stmt = stmt.where(column.not_in(filter.value))
+                if isinstance(filter_spec.value, (list, tuple, set)):
+                    stmt = stmt.where(column.not_in(filter_spec.value))
             case FilterOperator.IS_NULL:
                 stmt = stmt.where(column.is_(None))
             case FilterOperator.IS_NOT_NULL:
@@ -166,8 +166,8 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         if not filters:
             return stmt
 
-        for filter in filters:
-            stmt = self._apply_filter(stmt, filter)
+        for filter_spec in filters:
+            stmt = self._apply_filter(stmt, filter_spec)
 
         return stmt
 

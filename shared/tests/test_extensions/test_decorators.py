@@ -267,14 +267,14 @@ class TestTimeoutDecorator:
 
     def test_raises_on_timeout(self) -> None:
         """Should raise on timeout."""
-        from shared.extensions.decorators import TimeoutError as DecoratorTimeoutError
+        from shared.extensions.decorators import OperationTimeoutError
 
         @timeout(seconds=0.1)
         def slow_func() -> str:
             time.sleep(1.0)
             return "slow"
 
-        with pytest.raises(DecoratorTimeoutError):
+        with pytest.raises(OperationTimeoutError):
             slow_func()
 
     @pytest.mark.asyncio
@@ -291,14 +291,14 @@ class TestTimeoutDecorator:
     @pytest.mark.asyncio
     async def test_async_timeout_exceeded(self) -> None:
         """Should timeout async functions."""
-        from shared.extensions.decorators import TimeoutError as DecoratorTimeoutError
+        from shared.extensions.decorators import OperationTimeoutError
 
         @timeout(seconds=0.1)
         async def async_slow() -> str:
             await asyncio.sleep(1.0)
             return "slow"
 
-        with pytest.raises(DecoratorTimeoutError):
+        with pytest.raises(OperationTimeoutError):
             await async_slow()
 
 

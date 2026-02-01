@@ -92,7 +92,7 @@ from shared.cache.redis_client import (
     CacheError as LegacyCacheError,
 )
 from shared.cache.redis_client import (
-    ConnectionError as LegacyConnectionError,
+    RedisConnectionError as LegacyConnectionError,
 )
 
 __all__ = [

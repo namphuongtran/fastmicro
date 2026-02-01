@@ -148,6 +148,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = [
+    "A",      # flake8-builtins - prevent shadowing builtins like 'list', 'dict', 'id'
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
     "F",      # Pyflakes
@@ -166,6 +167,7 @@ ignore = [
     "RUF022",  # __all__ not sorted - we organize by category for documentation
     "UP046",   # Use type parameters - we use Generic for wider compatibility
     "UP047",   # Generic function type params - we use Generic for wider compatibility
+    "A002",    # Argument shadowing builtin - 'id' is common pattern in Python ORMs/APIs
 ]
 fixable = ["ALL"]
 unfixable = []

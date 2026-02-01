@@ -1844,6 +1844,7 @@ dev = [
     { name = "pytest-mock", specifier = ">=3.12.0" },
     { name = "pytest-xdist", specifier = ">=3.5.0" },
     { name = "ruff", specifier = ">=0.1.0" },
+    { name = "shared", extras = ["all"] },
 ]
 
 [[package]]
