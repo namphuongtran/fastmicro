@@ -73,37 +73,75 @@ class InMemoryUserRepository:
 
 
 class InMemoryClientRepository:
-    """In-memory client repository for development/testing."""
+    """In-memory client repository for development/testing.
+
+    Provides a functional in-memory implementation for OAuth2 client storage.
+    Used during development and testing before database persistence is implemented.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the in-memory storage."""
+        self._clients: dict[str, any] = {}  # Keyed by client_id (OAuth2 public identifier)
+        self._clients_by_uuid: dict[str, any] = {}  # Keyed by internal UUID
 
     async def get_by_id(self, client_id):
-        return None
+        """Get client by internal UUID."""
+        return self._clients_by_uuid.get(str(client_id))
 
-    async def get_by_client_id(self, client_id):
-        return None
+    async def get_by_client_id(self, client_id: str):
+        """Get client by OAuth2 client_id (public identifier)."""
+        return self._clients.get(client_id)
 
     async def create(self, client):
+        """Create a new client."""
+        self._clients[client.client_id] = client
+        self._clients_by_uuid[str(client.id)] = client
         return client
 
     async def update(self, client):
+        """Update an existing client."""
+        self._clients[client.client_id] = client
+        self._clients_by_uuid[str(client.id)] = client
         return client
 
     async def delete(self, client_id):
-        return True
-
-    async def exists_by_client_id(self, client_id):
+        """Delete a client by UUID."""
+        client = self._clients_by_uuid.get(str(client_id))
+        if client:
+            client.is_active = False
+            return True
         return False
 
+    async def exists_by_client_id(self, client_id: str) -> bool:
+        """Check if client exists by OAuth2 client_id."""
+        return client_id in self._clients
+
     async def list_active(self, skip=0, limit=100):
-        return []
+        """List all active clients."""
+        active = [c for c in self._clients.values() if c.is_active]
+        return active[skip : skip + limit]
 
     async def list_by_owner(self, owner_id, skip=0, limit=100):
-        return []
+        """List clients by owner."""
+        owned = [c for c in self._clients.values() if c.created_by == owner_id]
+        return owned[skip : skip + limit]
 
     async def count(self, include_inactive=False):
-        return 0
+        """Count total clients."""
+        if include_inactive:
+            return len(self._clients)
+        return len([c for c in self._clients.values() if c.is_active])
 
     async def search(self, query, skip=0, limit=100, include_inactive=False):
-        return []
+        """Search clients by name or client_id."""
+        query_lower = query.lower()
+        results = []
+        for client in self._clients.values():
+            if not include_inactive and not client.is_active:
+                continue
+            if query_lower in client.client_id.lower() or query_lower in client.client_name.lower():
+                results.append(client)
+        return results[skip : skip + limit]
 
 
 class InMemoryAuthCodeRepository:
@@ -347,3 +385,21 @@ async def get_oauth2_service(
 
 # OAuth2 service dependency - primary service for authentication/authorization
 OAuth2ServiceDep = Annotated[OAuth2Service, Depends(get_oauth2_service)]
+
+
+def get_client_repository() -> InMemoryClientRepository:
+    """Get the client repository singleton.
+
+    Returns:
+        Client repository instance for OAuth2 client management.
+    """
+    return _client_repo
+
+
+def get_user_repository() -> InMemoryUserRepository:
+    """Get the user repository singleton.
+
+    Returns:
+        User repository instance for user management.
+    """
+    return _user_repo

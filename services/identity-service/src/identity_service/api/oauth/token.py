@@ -6,6 +6,11 @@ from fastapi import APIRouter, Form, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
 from identity_service.api.dependencies import OAuth2ServiceDep
+from identity_service.api.oauth.device import (
+    check_polling_rate,
+    consume_device_code,
+    get_device_code_entry,
+)
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
@@ -48,6 +53,7 @@ async def token_endpoint(
     code_verifier: Annotated[str | None, Form()] = None,
     refresh_token: Annotated[str | None, Form()] = None,
     scope: Annotated[str | None, Form()] = None,
+    device_code: Annotated[str | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ) -> TokenResponse:
     """OAuth2 Token endpoint.
@@ -58,6 +64,7 @@ async def token_endpoint(
     - authorization_code: Exchange code for tokens
     - client_credentials: Machine-to-machine tokens
     - refresh_token: Refresh access tokens
+    - urn:ietf:params:oauth:grant-type:device_code: Device authorization (RFC 8628)
 
     Args:
         request: HTTP request
@@ -69,6 +76,7 @@ async def token_endpoint(
         code_verifier: PKCE code verifier
         refresh_token: Refresh token (for refresh_token grant)
         scope: Requested scope
+        device_code: Device code (for device_code grant)
         authorization: HTTP Basic Auth header
 
     Returns:
@@ -137,6 +145,96 @@ async def token_endpoint(
             client_id=auth_client_id,
             client_secret=auth_client_secret,
             scope=scope,
+        )
+
+    elif grant_type == "urn:ietf:params:oauth:grant-type:device_code":
+        # RFC 8628 Device Authorization Grant
+        if not device_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "invalid_request",
+                    "error_description": "Missing device_code parameter",
+                },
+            )
+
+        if not auth_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "error": "invalid_client",
+                    "error_description": "Client identifier required",
+                },
+            )
+
+        # Get device code entry
+        entry = get_device_code_entry(device_code)
+        if not entry:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "invalid_grant",
+                    "error_description": "Invalid or expired device code",
+                },
+            )
+
+        # Verify client matches
+        if entry.client_id != auth_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "invalid_grant",
+                    "error_description": "Device code was not issued to this client",
+                },
+            )
+
+        # Check polling rate (RFC 8628 Section 3.5)
+        if not check_polling_rate(device_code, entry.interval):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "slow_down",
+                    "error_description": "Polling too frequently, please wait",
+                },
+            )
+
+        # Check if user denied
+        if entry.denied:
+            consume_device_code(device_code)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "access_denied",
+                    "error_description": "User denied the authorization request",
+                },
+            )
+
+        # Check if not yet authorized
+        if not entry.authorized or not entry.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "authorization_pending",
+                    "error_description": "User has not yet completed authorization",
+                },
+            )
+
+        # Device code is authorized - issue tokens
+        consumed_entry = consume_device_code(device_code)
+        if not consumed_entry:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "invalid_grant",
+                    "error_description": "Device code already used or expired",
+                },
+            )
+
+        # Issue tokens for the authorized user
+        result = await oauth2_service.issue_tokens_for_user(
+            user_id=consumed_entry.user_id,
+            client_id=auth_client_id,
+            scope=consumed_entry.scope,
         )
 
     else:
