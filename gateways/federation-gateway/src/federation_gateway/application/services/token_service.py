@@ -7,13 +7,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 
-from settings.settings_manager import SettingsManager
+from federation_gateway.configs.settings import FederationGatewaySettings
 
 
 class TokenService:
     """Service for JWT token operations."""
     
-    def __init__(self, settings: SettingsManager):
+    def __init__(self, settings: FederationGatewaySettings):
         self.settings = settings
     
     def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -30,15 +30,17 @@ class TokenService:
             "iss": "federation-gateway"
         })
         
-        encoded_jwt = jwt.encode(to_encode, self.settings.jwt_secret, algorithm=self.settings.jwt_algorithm)
+        secret_key = self.settings.jwt_secret.get_secret_value()
+        encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=self.settings.jwt_algorithm)
         return encoded_jwt
     
     def decode_token(self, token: str) -> Dict[str, Any]:
         """Decode and validate JWT token."""
         try:
+            secret_key = self.settings.jwt_secret.get_secret_value()
             payload = jwt.decode(
                 token, 
-                self.settings.jwt_secret, 
+                secret_key, 
                 algorithms=[self.settings.jwt_algorithm]
             )
             return payload

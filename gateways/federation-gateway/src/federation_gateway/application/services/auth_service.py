@@ -7,7 +7,7 @@ from datetime import timedelta
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 
-from settings.settings_manager import SettingsManager
+from federation_gateway.configs.settings import FederationGatewaySettings
 from .token_service import TokenService
 from federation_gateway.domain.entities.auth_response import AuthenticationResult
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """Main authentication service."""
     
-    def __init__(self, settings: SettingsManager, token_service: TokenService):
+    def __init__(self, settings: FederationGatewaySettings, token_service: TokenService):
         self.settings = settings
         self.token_service = token_service
     

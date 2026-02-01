@@ -1,19 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from settings.settings_manager import SettingsManager
+from federation_gateway.configs.settings import FederationGatewaySettings
 
 logger = logging.getLogger(__name__)
 
-def setup_cors_middleware(app: FastAPI, settings_manager: SettingsManager):
+def setup_cors_middleware(app: FastAPI, settings: FederationGatewaySettings):
     """
     Setup CORS middleware using security settings.
     
     Args:
         app: FastAPI application instance
-        settings_manager: Settings manager with CORS configuration
+        settings: Gateway settings with CORS configuration
     """
-    cors_config = settings_manager.security.cors
+    cors_config = settings.security.cors
     
     if not cors_config.enabled:
         logger.info("CORS is disabled")
