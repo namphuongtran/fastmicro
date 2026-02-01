@@ -12,9 +12,10 @@ This module provides:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Coroutine, Generic, TypeVar
+from datetime import UTC, datetime
+from typing import Any, Generic, TypeVar
 from uuid import uuid4
 
 T = TypeVar("T", bound="DomainEvent")
@@ -41,18 +42,18 @@ class DomainEvent:
         ...     customer_id: str
         ...     total_amount: Decimal
     """
-    
+
     event_id: str = field(default_factory=lambda: str(uuid4()))
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     aggregate_id: str | None = None
     aggregate_type: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     @property
     def event_type(self) -> str:
         """Get the event type name."""
         return self.__class__.__name__
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary.
         
@@ -68,7 +69,7 @@ class DomainEvent:
             "metadata": self.metadata,
             "data": self._get_event_data(),
         }
-    
+
     def _get_event_data(self) -> dict[str, Any]:
         """Get event-specific data.
         
@@ -96,7 +97,7 @@ class DomainEventHandler(ABC, Generic[T]):
         ...         # Send confirmation email
         ...         await email_service.send_order_confirmation(event.order_id)
     """
-    
+
     @abstractmethod
     async def handle(self, event: T) -> None:
         """Handle the domain event.
@@ -131,12 +132,12 @@ class EventDispatcher:
         >>> # Dispatch event
         >>> await dispatcher.dispatch(OrderPlaced(order_id="123", ...))
     """
-    
+
     def __init__(self) -> None:
         """Initialize event dispatcher."""
         self._handlers: dict[type[DomainEvent], list[EventHandlerFn]] = {}
         self._class_handlers: dict[type[DomainEvent], list[DomainEventHandler]] = {}
-    
+
     def register(
         self,
         event_type: type[T],
@@ -156,7 +157,7 @@ class EventDispatcher:
             if event_type not in self._handlers:
                 self._handlers[event_type] = []
             self._handlers[event_type].append(handler)
-    
+
     def subscribe(
         self, event_type: type[T]
     ) -> Callable[[EventHandlerFn], EventHandlerFn]:
@@ -177,7 +178,7 @@ class EventDispatcher:
             self.register(event_type, func)
             return func
         return decorator
-    
+
     async def dispatch(self, event: DomainEvent) -> None:
         """Dispatch an event to all registered handlers.
         
@@ -185,15 +186,15 @@ class EventDispatcher:
             event: The event to dispatch.
         """
         event_type = type(event)
-        
+
         # Call function handlers
         for handler in self._handlers.get(event_type, []):
             await handler(event)
-        
+
         # Call class handlers
         for handler in self._class_handlers.get(event_type, []):
             await handler.handle(event)
-    
+
     async def dispatch_all(self, events: list[DomainEvent]) -> None:
         """Dispatch multiple events.
         
@@ -202,12 +203,12 @@ class EventDispatcher:
         """
         for event in events:
             await self.dispatch(event)
-    
+
     def clear(self) -> None:
         """Clear all registered handlers."""
         self._handlers.clear()
         self._class_handlers.clear()
-    
+
     def has_handlers(self, event_type: type[DomainEvent]) -> bool:
         """Check if event type has registered handlers.
         

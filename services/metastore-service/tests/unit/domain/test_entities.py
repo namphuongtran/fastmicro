@@ -1,23 +1,18 @@
 """Tests for domain entities."""
 
-from datetime import datetime, timezone
-from uuid import uuid4
 
-import pytest
 
-from metastore_service.domain.entities.metadata import MetadataEntry, MetadataVersion
-from metastore_service.domain.entities.feature_flag import FeatureFlag, TargetingRule
 from metastore_service.domain.entities.configuration import Configuration, ConfigurationSchema
+from metastore_service.domain.entities.feature_flag import FeatureFlag
+from metastore_service.domain.entities.metadata import MetadataEntry
 from metastore_service.domain.value_objects import (
     ContentType,
     Environment,
     FeatureName,
     MetadataKey,
-    MetadataValue,
     Namespace,
     Operator,
     Percentage,
-    TenantId,
 )
 
 

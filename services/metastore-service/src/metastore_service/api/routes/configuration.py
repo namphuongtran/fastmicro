@@ -8,6 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from metastore_service.api.dependencies import get_configuration_service
 from metastore_service.application.dtos.configuration_dtos import (
     ConfigurationDTO,
     ConfigurationListDTO,
@@ -18,7 +19,6 @@ from metastore_service.application.dtos.configuration_dtos import (
 )
 from metastore_service.application.services.configuration_service import ConfigurationService
 from metastore_service.domain.value_objects import Environment
-from metastore_service.api.dependencies import get_configuration_service
 
 logger = logging.getLogger(__name__)
 

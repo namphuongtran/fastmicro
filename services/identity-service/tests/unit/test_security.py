@@ -1,6 +1,5 @@
 """Unit tests for security services."""
 
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -21,7 +20,7 @@ class TestPasswordService:
         password = "SecurePass123!"
         hash1 = password_service.hash_password(password)
         hash2 = password_service.hash_password(password)
-        
+
         # Different hashes due to random salt
         assert hash1 != hash2
         # Both start with Argon2 prefix (new default)
@@ -32,19 +31,19 @@ class TestPasswordService:
         """Test verifying correct password."""
         password = "SecurePass123!"
         hashed = password_service.hash_password(password)
-        
+
         assert password_service.verify_password(password, hashed)
 
     def test_verify_password_bcrypt_backward_compat(self, password_service: PasswordService):
         """Test verifying legacy bcrypt password hash (migration support)."""
         from pwdlib import PasswordHash
         from pwdlib.hashers.bcrypt import BcryptHasher
-        
+
         password = "SecurePass123!"
         # Simulate a legacy bcrypt hash (as if from old passlib)
         legacy_hasher = PasswordHash((BcryptHasher(rounds=4),))
         bcrypt_hash = legacy_hasher.hash(password)
-        
+
         # Service should still verify bcrypt hashes (backward compatibility)
         assert password_service.verify_password(password, bcrypt_hash)
 
@@ -52,26 +51,26 @@ class TestPasswordService:
         """Test verifying incorrect password."""
         password = "SecurePass123!"
         hashed = password_service.hash_password(password)
-        
+
         assert not password_service.verify_password("WrongPassword123!", hashed)
 
     def test_validate_password_valid(self, password_service: PasswordService):
         """Test valid password against policy."""
         errors = password_service.validate_password("SecurePass123!")
-        
+
         assert len(errors) == 0
 
     def test_validate_password_too_short(self, password_service: PasswordService):
         """Test password too short."""
         errors = password_service.validate_password("Short1!")
-        
+
         assert len(errors) > 0
         assert any("12 characters" in e for e in errors)
 
     def test_validate_password_no_uppercase(self, password_service: PasswordService):
         """Test password without uppercase."""
         errors = password_service.validate_password("securepassword123!")
-        
+
         assert len(errors) > 0
         assert any("uppercase" in e for e in errors)
 
@@ -79,11 +78,11 @@ class TestPasswordService:
         """Test detecting legacy bcrypt hash that needs upgrade to Argon2."""
         from pwdlib import PasswordHash
         from pwdlib.hashers.bcrypt import BcryptHasher
-        
+
         # Simulate a legacy bcrypt hash (as if from old passlib)
         legacy_hasher = PasswordHash((BcryptHasher(rounds=4),))
         bcrypt_hash = legacy_hasher.hash("test")
-        
+
         # New service should detect bcrypt needs rehash to Argon2
         new_settings = Settings(
             app_env="test",
@@ -92,7 +91,7 @@ class TestPasswordService:
         )
         new_service = PasswordService(new_settings)
         assert new_service.needs_rehash(bcrypt_hash)
-        
+
         # But Argon2 hashes should not need rehash
         argon2_hash = new_service.hash_password("test")
         assert not new_service.needs_rehash(argon2_hash)
@@ -105,9 +104,9 @@ class TestKeyManager:
         """Test RSA key generation."""
         private_key_path = tmp_path / "private.pem"
         public_key_path = tmp_path / "public.pem"
-        
+
         km = KeyManager(str(private_key_path), str(public_key_path))
-        
+
         assert km.private_key is not None
         assert km.public_key is not None
         assert km.kid is not None
@@ -116,13 +115,13 @@ class TestKeyManager:
         """Test JWKS generation."""
         private_key_path = tmp_path / "private.pem"
         public_key_path = tmp_path / "public.pem"
-        
+
         km = KeyManager(str(private_key_path), str(public_key_path))
         jwks = km.get_jwks()
-        
+
         assert "keys" in jwks
         assert len(jwks["keys"]) == 1
-        
+
         key = jwks["keys"][0]
         assert key["kty"] == "RSA"
         assert key["use"] == "sig"
@@ -150,7 +149,7 @@ class TestJWTService:
             client_id="my-client",
             scope="openid profile",
         )
-        
+
         assert token is not None
         assert token.startswith("eyJ")  # JWT header
         assert jti is not None
@@ -163,9 +162,9 @@ class TestJWTService:
             client_id="my-client",
             scope="openid profile",
         )
-        
+
         payload = jwt_service.decode_token(token)
-        
+
         assert payload["sub"] == "user-123"
         assert payload["client_id"] == "my-client"
         assert payload["scope"] == "openid profile"
@@ -181,10 +180,10 @@ class TestJWTService:
                 "email": "test@example.com",
             },
         )
-        
+
         assert token is not None
         payload = jwt_service.decode_token(token)
-        
+
         assert payload["sub"] == "user-123"
         assert payload["aud"] == "my-client"
         assert payload["nonce"] == "nonce-123"
@@ -204,13 +203,13 @@ class TestJWTService:
         public_key_path = tmp_path / "public.pem"
         km = KeyManager(str(private_key_path), str(public_key_path))
         short_jwt = JWTService(test_settings, km)
-        
+
         token, _, _ = short_jwt.create_access_token(
             subject="user-123",
             client_id="my-client",
             scope="openid",
         )
-        
+
         # Should return None for expired token
         result = short_jwt.decode_token(token)
         assert result is None

@@ -20,17 +20,14 @@ import datetime
 import json
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
-
-if TYPE_CHECKING:
-    pass
 
 __all__ = [
     "CustomJSONEncoder",
-    "serialize_json",
     "deserialize_json",
     "safe_serialize",
+    "serialize_json",
 ]
 
 
@@ -102,7 +99,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.model_dump()
 
         # Legacy Pydantic v1 (check for dict method)
-        if hasattr(obj, "dict") and callable(getattr(obj, "dict")):
+        if hasattr(obj, "dict") and callable(obj.dict):
             return obj.dict()
 
         # Dataclasses
@@ -198,10 +195,10 @@ def safe_serialize(
     """
     try:
         return serialize_json(data)
-    except (TypeError, ValueError, OverflowError, RecursionError) as e:
+    except (TypeError, ValueError, OverflowError, RecursionError):
         if fallback is not None:
             return fallback
-        
+
         # Try to provide a useful representation
         type_name = type(data).__name__
         return f"<Unserializable: {type_name}>"

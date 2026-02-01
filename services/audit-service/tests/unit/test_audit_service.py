@@ -2,8 +2,9 @@
 Unit tests for Audit Application Service.
 """
 
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from audit_service.application.services.audit_service import (
     AuditAppService,
@@ -50,7 +51,7 @@ def sample_request() -> CreateAuditEventRequest:
 
 class TestAuditAppService:
     """Tests for AuditAppService."""
-    
+
     @pytest.mark.asyncio
     async def test_create_event(
         self,
@@ -59,13 +60,13 @@ class TestAuditAppService:
     ) -> None:
         """Test creating an audit event."""
         response = await service.create_event(sample_request)
-        
+
         assert response.id is not None
         assert response.actor_id == sample_request.actor_id
         assert response.action == sample_request.action
         assert response.resource_type == sample_request.resource_type
         assert response.resource_id == sample_request.resource_id
-    
+
     @pytest.mark.asyncio
     async def test_get_event(
         self,
@@ -75,10 +76,10 @@ class TestAuditAppService:
         """Test getting an audit event by ID."""
         created = await service.create_event(sample_request)
         retrieved = await service.get_event(created.id)
-        
+
         assert retrieved.id == created.id
         assert retrieved.actor_id == created.actor_id
-    
+
     @pytest.mark.asyncio
     async def test_get_event_not_found(
         self,
@@ -87,7 +88,7 @@ class TestAuditAppService:
         """Test getting a non-existent event raises error."""
         with pytest.raises(Exception):  # NotFoundError
             await service.get_event(uuid4())
-    
+
     @pytest.mark.asyncio
     async def test_list_events_empty(
         self,
@@ -95,11 +96,11 @@ class TestAuditAppService:
     ) -> None:
         """Test listing events when repository is empty."""
         result = await service.list_events()
-        
+
         assert isinstance(result, PaginatedResult)
         assert result.items == []
         assert result.total == 0
-    
+
     @pytest.mark.asyncio
     async def test_list_events_with_data(
         self,
@@ -113,12 +114,12 @@ class TestAuditAppService:
                 update={"resource_id": f"doc-{i}"}
             )
             await service.create_event(request)
-        
+
         result = await service.list_events(page=1, page_size=3)
-        
+
         assert len(result.items) == 3
         assert result.total == 5
-    
+
     @pytest.mark.asyncio
     async def test_list_events_pagination(
         self,
@@ -132,20 +133,20 @@ class TestAuditAppService:
                 update={"resource_id": f"doc-{i}"}
             )
             await service.create_event(request)
-        
+
         # Get page 1
         page1 = await service.list_events(page=1, page_size=3)
         assert len(page1.items) == 3
-        
+
         # Get page 2
         page2 = await service.list_events(page=2, page_size=3)
         assert len(page2.items) == 3
-        
+
         # Ensure different items
         page1_ids = {item.id for item in page1.items}
         page2_ids = {item.id for item in page2.items}
         assert page1_ids.isdisjoint(page2_ids)
-    
+
     @pytest.mark.asyncio
     async def test_delete_event(
         self,
@@ -154,14 +155,14 @@ class TestAuditAppService:
     ) -> None:
         """Test deleting an audit event."""
         created = await service.create_event(sample_request)
-        
+
         deleted = await service.delete_event(created.id)
         assert deleted is True
-        
+
         # Verify it's gone
         with pytest.raises(Exception):
             await service.get_event(created.id)
-    
+
     @pytest.mark.asyncio
     async def test_delete_event_not_found(
         self,

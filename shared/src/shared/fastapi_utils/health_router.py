@@ -19,8 +19,9 @@ Example:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Response, status
 from pydantic import BaseModel, Field
@@ -36,7 +37,7 @@ from shared.observability.health import (
 
 class HealthResponse(BaseModel):
     """Basic health check response."""
-    
+
     status: str = Field(description="Health status: healthy, unhealthy, or degraded")
     service: str = Field(description="Service name")
     version: str = Field(description="Service version")
@@ -45,14 +46,14 @@ class HealthResponse(BaseModel):
 
 class LivenessResponse(BaseModel):
     """Liveness probe response."""
-    
+
     status: str = Field(description="Liveness status")
     message: str | None = Field(default=None, description="Additional message")
 
 
 class ReadinessResponse(BaseModel):
     """Readiness probe response."""
-    
+
     status: str = Field(description="Overall readiness status")
     checks: list[dict[str, Any]] = Field(
         default_factory=list,
@@ -62,7 +63,7 @@ class ReadinessResponse(BaseModel):
 
 class DetailedHealthResponse(BaseModel):
     """Detailed health response with all checks."""
-    
+
     status: str = Field(description="Overall health status")
     service: str = Field(description="Service name")
     version: str = Field(description="Service version")
@@ -110,8 +111,8 @@ def create_health_router(
         >>> app.include_router(router)
     """
     router = APIRouter(prefix=prefix, tags=tags or ["Health"])
-    _startup_time = startup_time or datetime.now(timezone.utc)
-    
+    _startup_time = startup_time or datetime.now(UTC)
+
     @router.get(
         "",
         response_model=HealthResponse | DetailedHealthResponse,
@@ -125,8 +126,8 @@ def create_health_router(
         If include_details is True, also returns individual check results.
         """
         readiness = await check_readiness()
-        now = datetime.now(timezone.utc)
-        
+        now = datetime.now(UTC)
+
         if include_details:
             uptime = (now - _startup_time).total_seconds()
             return DetailedHealthResponse(
@@ -137,14 +138,14 @@ def create_health_router(
                 uptime_seconds=uptime,
                 checks=readiness.get("checks", []),
             )
-        
+
         return HealthResponse(
             status=readiness["status"],
             service=service_name,
             version=version,
             timestamp=now,
         )
-    
+
     @router.get(
         "/live",
         response_model=LivenessResponse,
@@ -162,15 +163,15 @@ def create_health_router(
         Kubernetes will restart the pod if this fails.
         """
         result = await check_liveness()
-        
+
         if result.status != HealthStatus.HEALTHY:
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        
+
         return LivenessResponse(
             status=result.status.value,
             message=result.message,
         )
-    
+
     @router.get(
         "/ready",
         response_model=ReadinessResponse,
@@ -188,15 +189,15 @@ def create_health_router(
         Kubernetes will stop routing traffic if this fails.
         """
         result = await check_readiness()
-        
+
         if result["status"] != "healthy":
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        
+
         return ReadinessResponse(
             status=result["status"],
             checks=result.get("checks", []),
         )
-    
+
     return router
 
 
@@ -227,7 +228,7 @@ def create_database_health_check(
                 status=HealthStatus.HEALTHY,
                 message="No check configured",
             )
-        
+
         try:
             is_healthy = await check_fn()
             return HealthCheckResult(
@@ -241,7 +242,7 @@ def create_database_health_check(
                 status=HealthStatus.UNHEALTHY,
                 message=f"Database error: {e}",
             )
-    
+
     register_health_check(
         name=name,
         check_fn=database_check,
@@ -277,7 +278,7 @@ def create_cache_health_check(
                 status=HealthStatus.HEALTHY,
                 message="No check configured",
             )
-        
+
         try:
             is_healthy = await check_fn()
             return HealthCheckResult(
@@ -291,7 +292,7 @@ def create_cache_health_check(
                 status=HealthStatus.DEGRADED,
                 message=f"Cache error: {e}",
             )
-    
+
     register_health_check(
         name=name,
         check_fn=cache_check,
@@ -338,7 +339,7 @@ def create_external_service_health_check(
                 status=HealthStatus.UNHEALTHY,
                 message=f"{name} error: {e}",
             )
-    
+
     register_health_check(
         name=name,
         check_fn=service_check,

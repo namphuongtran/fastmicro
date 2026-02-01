@@ -19,15 +19,15 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from shared.exceptions import (
+    BadRequestException,
     BaseServiceException,
-    NotFoundException,
-    ValidationException,
-    UnauthorizedException,
-    ForbiddenException,
     ConflictException,
     DatabaseException,
+    ForbiddenException,
+    NotFoundException,
     ServiceUnavailableException,
-    BadRequestException,
+    UnauthorizedException,
+    ValidationException,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ async def http_exception_handler(
     # Map exception types to status codes and error codes
     status_code = getattr(exc, "status_code", 500)
     error_code = getattr(exc, "error_code", "INTERNAL_ERROR")
-    
+
     # Extract details if available
     details = {}
     if hasattr(exc, "details") and exc.details:
@@ -89,7 +89,7 @@ async def http_exception_handler(
         details["resource_type"] = exc.resource_type
     if hasattr(exc, "resource_id"):
         details["resource_id"] = exc.resource_id
-    
+
     logger.warning(
         "HTTP exception: %s",
         str(exc),
@@ -99,7 +99,7 @@ async def http_exception_handler(
             "path": request.url.path,
         },
     )
-    
+
     return _create_error_response(
         status_code=status_code,
         code=error_code,
@@ -125,7 +125,7 @@ async def validation_exception_handler(
         "field": getattr(exc, "field", None),
         "value": getattr(exc, "value", None),
     }
-    
+
     return _create_error_response(
         status_code=422,
         code="VALIDATION_ERROR",
@@ -152,7 +152,7 @@ async def generic_exception_handler(
         str(exc),
         extra={"path": request.url.path},
     )
-    
+
     return _create_error_response(
         status_code=500,
         code="INTERNAL_SERVER_ERROR",
@@ -190,14 +190,14 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(BadRequestException, http_exception_handler)
     app.add_exception_handler(DatabaseException, http_exception_handler)
     app.add_exception_handler(ServiceUnavailableException, http_exception_handler)
-    
+
     # Generic handler for unhandled exceptions
     app.add_exception_handler(Exception, generic_exception_handler)
 
 
 __all__ = [
-    "register_exception_handlers",
-    "http_exception_handler",
-    "validation_exception_handler",
     "generic_exception_handler",
+    "http_exception_handler",
+    "register_exception_handlers",
+    "validation_exception_handler",
 ]

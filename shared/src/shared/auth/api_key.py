@@ -111,10 +111,10 @@ class APIKeyService:
         """
         # Generate a short key ID (8 chars)
         key_id = secrets.token_hex(4)  # 8 hex chars
-        
+
         # Generate random bytes for the key
         random_bytes = secrets.token_urlsafe(self.key_length)
-        
+
         return f"{self.prefix}{key_id}_{random_bytes}"
 
     def hash_key(self, api_key: str) -> str:
@@ -181,14 +181,14 @@ class APIKeyService:
         """
         if not self.validate_key_format(api_key):
             raise InvalidAPIKeyError("Invalid API key format")
-        
+
         # Remove prefix and extract key_id (before the underscore)
         key_without_prefix = api_key[len(self.prefix):]
         parts = key_without_prefix.split("_", 1)
-        
+
         if len(parts) != 2:
             raise InvalidAPIKeyError("Invalid API key format")
-        
+
         return parts[0]
 
     def validate_key_format(self, api_key: str) -> bool:
@@ -215,21 +215,21 @@ class APIKeyService:
         # Check prefix
         if not api_key.startswith(self.prefix):
             return False
-        
+
         # Check minimum length
         if len(api_key) < self._min_key_length:
             return False
-        
+
         # Check structure (should have underscore after key_id)
         key_without_prefix = api_key[len(self.prefix):]
         if "_" not in key_without_prefix:
             return False
-        
+
         return True
 
 
 __all__ = [
-    "APIKeyService",
     "APIKeyData",
+    "APIKeyService",
     "InvalidAPIKeyError",
 ]

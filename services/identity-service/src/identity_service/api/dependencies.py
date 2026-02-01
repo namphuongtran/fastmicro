@@ -6,8 +6,7 @@ See: https://fastapi.tiangolo.com/tutorial/dependencies/
 
 from __future__ import annotations
 
-from functools import lru_cache
-from typing import Annotated, TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends
 
@@ -15,10 +14,7 @@ from identity_service.application.services import OAuth2Service
 from identity_service.configs import Settings, get_settings
 
 if TYPE_CHECKING:
-    from identity_service.domain.repositories import (
-        ClientRepository,
-        UserRepository,
-    )
+    pass
 
 # =============================================================================
 # Annotated Type Aliases for Dependency Injection

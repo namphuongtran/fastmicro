@@ -10,7 +10,7 @@ Integrates with shared.dbs abstract patterns for consistency.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,6 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql import Select
 
 from shared.dbs.repository import (
-    AbstractRepository,
     Filter,
     FilterOperator,
     OrderBy,
@@ -119,7 +118,7 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         column = getattr(self.model_class, filter.field, None)
         if column is None:
             return stmt
-        
+
         match filter.operator:
             case FilterOperator.EQ:
                 stmt = stmt.where(column == filter.value)
@@ -151,7 +150,7 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
                 stmt = stmt.where(column.is_(None))
             case FilterOperator.IS_NOT_NULL:
                 stmt = stmt.where(column.is_not(None))
-        
+
         return stmt
 
     def _apply_filters(
@@ -168,10 +167,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         """
         if not filters:
             return stmt
-        
+
         for filter in filters:
             stmt = self._apply_filter(stmt, filter)
-        
+
         return stmt
 
     def _apply_ordering(
@@ -188,7 +187,7 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         """
         if not order_by:
             return stmt
-        
+
         for order in order_by:
             column = getattr(self.model_class, order.field, None)
             if column is not None:
@@ -196,7 +195,7 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
                     stmt = stmt.order_by(desc(column))
                 else:
                     stmt = stmt.order_by(asc(column))
-        
+
         return stmt
 
     async def get_by_id(self, id: ID) -> T | None:
@@ -226,12 +225,12 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
             List of entities.
         """
         stmt = select(self.model_class)
-        
+
         if offset is not None:
             stmt = stmt.offset(offset)
         if limit is not None:
             stmt = stmt.limit(limit)
-        
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -263,11 +262,11 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         entity = await self.get_by_id(id)
         if entity is None:
             return None
-        
+
         for key, value in kwargs.items():
             if hasattr(entity, key):
                 setattr(entity, key, value)
-        
+
         await self._session.flush()
         await self._session.refresh(entity)
         return entity
@@ -284,7 +283,7 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         entity = await self.get_by_id(id)
         if entity is None:
             return False
-        
+
         await self._session.delete(entity)
         await self._session.flush()
         return True
@@ -337,12 +336,12 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         stmt = select(self.model_class)
         stmt = self._apply_filters(stmt, filters)
         stmt = self._apply_ordering(stmt, order_by)
-        
+
         if offset is not None:
             stmt = stmt.offset(offset)
         if limit is not None:
             stmt = stmt.limit(limit)
-        
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -372,10 +371,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         """
         # Get total count
         total = await self.count(filters)
-        
+
         # Calculate offset
         offset = (page_request.page - 1) * page_request.size
-        
+
         # Get items
         items = await self.find_with_filters(
             filters=filters,
@@ -383,7 +382,7 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
             limit=page_request.size,
             offset=offset,
         )
-        
+
         return PageResponse(
             items=items,
             total=total,
@@ -401,12 +400,12 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
             List of matching entities.
         """
         stmt = select(self.model_class)
-        
+
         for key, value in kwargs.items():
             column = getattr(self.model_class, key, None)
             if column is not None:
                 stmt = stmt.where(column == value)
-        
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

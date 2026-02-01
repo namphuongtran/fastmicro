@@ -7,14 +7,13 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from shared.utils import now_utc
-
 from identity_service.domain.value_objects import (
     AuthMethod,
     ClientType,
     GrantType,
     ResponseType,
 )
+from shared.utils import now_utc
 
 
 @dataclass

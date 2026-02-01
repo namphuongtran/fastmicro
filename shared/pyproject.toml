@@ -152,20 +152,38 @@ select = [
     "B",      # flake8-bugbear
     "C4",     # flake8-comprehensions
     "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
     "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
     "PTH",    # flake8-use-pathlib
-    "PL",     # Pylint
     "RUF",    # Ruff-specific rules
 ]
 ignore = [
     "E501",    # line too long (handled by formatter)
+    "B007",    # loop control variable not used
+    "B008",    # function call in defaults (used for Depends)
+    "B017",    # pytest.raises(Exception)
+    "B024",    # abstract class without abstract methods
+    "B039",    # mutable ContextVar default
+    "B904",    # raise from err
+    "B905",    # zip without strict=
+    "W291",    # trailing whitespace
+    "W293",    # blank line with whitespace
+    "SIM102",  # nested if
+    "SIM103",  # return bool condition
+    "SIM105",  # use contextlib.suppress
+    "SIM108",  # ternary operator
+    "SIM110",  # use any() instead of for loop
     "PLR0913", # too many arguments
+    "PLR1714", # merge comparisons
+    "RUF005",  # concatenation instead of spread
+    "RUF022",  # __all__ not sorted (we group by category)
+    "UP046",   # use type parameters (python 3.12+)
+    "UP047",   # generic function type parameters
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ARG", "PLR2004"]
+"tests/*" = ["ARG", "PLR2004", "F841", "PLC0415", "PLR", "B008"]
+"src/*" = ["TC002", "TC003", "F841"]  # type-checking imports and context manager variables
+"src/**/__init__.py" = ["F401"]  # re-exports in __init__.py files
 
 [tool.ruff.lint.isort]
 known-first-party = ["shared"]

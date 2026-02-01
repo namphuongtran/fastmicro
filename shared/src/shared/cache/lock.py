@@ -89,10 +89,10 @@ class DistributedLock:
         """
         self._token = str(uuid.uuid4())
         redis = self._client._redis
-        
+
         if redis is None:
             return False
-        
+
         if self._config.blocking:
             return await self._acquire_blocking(redis)
         else:
@@ -125,7 +125,7 @@ class DistributedLock:
             True if acquired within timeout.
         """
         deadline = asyncio.get_event_loop().time() + self._config.blocking_timeout
-        
+
         while asyncio.get_event_loop().time() < deadline:
             result = await redis.set(
                 self._key,
@@ -135,9 +135,9 @@ class DistributedLock:
             )
             if result:
                 return True
-            
+
             await asyncio.sleep(self._config.retry_interval)
-        
+
         return False
 
     async def release(self) -> None:
@@ -148,18 +148,18 @@ class DistributedLock:
         """
         if self._token is None:
             return
-        
+
         redis = self._client._redis
         if redis is None:
             return
-        
+
         # Only delete if we own the lock
         current_token = await redis.get(self._key)
         if current_token:
             token_str = current_token.decode() if isinstance(current_token, bytes) else current_token
             if token_str == self._token:
                 await redis.delete(self._key)
-        
+
         self._token = None
 
     async def extend(self, additional_time: int) -> bool:
@@ -173,11 +173,11 @@ class DistributedLock:
         """
         if self._token is None:
             return False
-        
+
         redis = self._client._redis
         if redis is None:
             return False
-        
+
         # Verify we own the lock
         current_token = await redis.get(self._key)
         if current_token:
@@ -185,7 +185,7 @@ class DistributedLock:
             if token_str == self._token:
                 await redis.expire(self._key, additional_time)
                 return True
-        
+
         return False
 
     async def is_locked(self) -> bool:
@@ -197,7 +197,7 @@ class DistributedLock:
         redis = self._client._redis
         if redis is None:
             return False
-        
+
         value = await redis.get(self._key)
         return value is not None
 

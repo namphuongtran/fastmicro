@@ -10,8 +10,6 @@ Tests cover:
 
 from __future__ import annotations
 
-import re
-
 import pytest
 
 from shared.constants.patterns import Patterns

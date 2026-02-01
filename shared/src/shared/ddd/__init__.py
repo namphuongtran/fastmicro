@@ -25,26 +25,26 @@ Example:
 """
 
 from shared.ddd.entity import (
-    Entity,
     AggregateRoot,
+    Entity,
     EntityId,
-)
-from shared.ddd.value_objects import (
-    ValueObject,
-    Email,
-    PhoneNumber,
-    Money,
-    Percentage,
-    NonEmptyString,
-    PositiveInt,
-    PositiveDecimal,
-    DateRange,
-    Address,
 )
 from shared.ddd.events import (
     DomainEvent,
     DomainEventHandler,
     EventDispatcher,
+)
+from shared.ddd.value_objects import (
+    Address,
+    DateRange,
+    Email,
+    Money,
+    NonEmptyString,
+    Percentage,
+    PhoneNumber,
+    PositiveDecimal,
+    PositiveInt,
+    ValueObject,
 )
 
 __all__ = [

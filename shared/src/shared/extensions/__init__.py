@@ -7,21 +7,21 @@ and dependency injection utilities for microservices.
 from __future__ import annotations
 
 from shared.extensions.decorators import (
-    retry,
     cache,
-    rate_limit,
-    timeout,
     deprecated,
     log_calls,
-    validate_args,
+    rate_limit,
+    retry,
     singleton,
+    timeout,
+    validate_args,
 )
 from shared.extensions.dependency_injection import (
     Container,
-    Scope,
     Depends,
-    inject,
+    Scope,
     get_container,
+    inject,
     register,
     resolve,
 )

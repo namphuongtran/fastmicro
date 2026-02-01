@@ -23,7 +23,7 @@ class TestNullCacheOperations:
         """Test get always returns default."""
         result = await cache.get("key")
         assert result is None
-        
+
         result = await cache.get("key", default="default")
         assert result == "default"
 
@@ -32,7 +32,7 @@ class TestNullCacheOperations:
         """Test set always succeeds."""
         result = await cache.set("key", "value")
         assert result is True
-        
+
         # But value is not stored
         assert await cache.get("key") is None
 
@@ -59,7 +59,7 @@ class TestNullCacheOperations:
         """Test increment returns delta (as if from 0)."""
         result = await cache.increment("counter")
         assert result == 1
-        
+
         result = await cache.increment("counter", delta=5)
         assert result == 5
 
@@ -98,14 +98,14 @@ class TestNullCacheStats:
     async def test_stats_tracks_operations(self) -> None:
         """Test stats tracks operation counts."""
         cache = NullCache()
-        
+
         await cache.get("k1")
         await cache.get("k2")
         await cache.set("k1", "v1")
         await cache.delete("k1")
-        
+
         stats = cache.stats()
-        
+
         assert stats["backend"] == "null"
         assert stats["get_calls"] == 2
         assert stats["set_calls"] == 1
@@ -115,13 +115,13 @@ class TestNullCacheStats:
     async def test_reset_stats(self) -> None:
         """Test resetting statistics."""
         cache = NullCache()
-        
+
         await cache.get("k1")
         await cache.set("k1", "v1")
-        
+
         cache.reset_stats()
         stats = cache.stats()
-        
+
         assert stats["get_calls"] == 0
         assert stats["set_calls"] == 0
         assert stats["delete_calls"] == 0

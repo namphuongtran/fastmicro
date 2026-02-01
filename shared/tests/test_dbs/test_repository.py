@@ -6,21 +6,15 @@ including CRUD operations, filtering, and pagination.
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-if TYPE_CHECKING:
-    pass
-
 from shared.dbs.repository import (
     AbstractRepository,
-    InMemoryRepository,
-    FilterOperator,
     Filter,
+    FilterOperator,
+    InMemoryRepository,
     OrderBy,
     OrderDirection,
     PageRequest,
@@ -149,7 +143,7 @@ class TestPageResponse:
         """Should indicate if next page exists."""
         response = PageResponse(items=[], total=100, page=1, size=10)
         assert response.has_next is True
-        
+
         response2 = PageResponse(items=[], total=100, page=10, size=10)
         assert response2.has_next is False
 
@@ -157,7 +151,7 @@ class TestPageResponse:
         """Should indicate if previous page exists."""
         response = PageResponse(items=[], total=100, page=1, size=10)
         assert response.has_previous is False
-        
+
         response2 = PageResponse(items=[], total=100, page=2, size=10)
         assert response2.has_previous is True
 
@@ -191,7 +185,7 @@ class TestInMemoryRepository:
         """Should get entity by ID."""
         entity = SampleEntity(id="1", name="Test")
         await repo.add(entity)
-        
+
         result = await repo.get("1")
         assert result == entity
 
@@ -208,7 +202,7 @@ class TestInMemoryRepository:
         """Should get all entities."""
         await repo.add(SampleEntity(id="1", name="First"))
         await repo.add(SampleEntity(id="2", name="Second"))
-        
+
         result = await repo.get_all()
         assert len(result) == 2
 
@@ -217,10 +211,10 @@ class TestInMemoryRepository:
         """Should update existing entity."""
         entity = SampleEntity(id="1", name="Original")
         await repo.add(entity)
-        
+
         updated = SampleEntity(id="1", name="Updated")
         result = await repo.update(updated)
-        
+
         assert result.name == "Updated"
         fetched = await repo.get("1")
         assert fetched is not None
@@ -231,10 +225,10 @@ class TestInMemoryRepository:
         """Should delete entity."""
         entity = SampleEntity(id="1", name="Test")
         await repo.add(entity)
-        
+
         deleted = await repo.delete("1")
         assert deleted is True
-        
+
         result = await repo.get("1")
         assert result is None
 
@@ -251,7 +245,7 @@ class TestInMemoryRepository:
         """Should check if entity exists."""
         entity = SampleEntity(id="1", name="Test")
         await repo.add(entity)
-        
+
         assert await repo.exists("1") is True
         assert await repo.exists("2") is False
 
@@ -260,7 +254,7 @@ class TestInMemoryRepository:
         """Should count entities."""
         await repo.add(SampleEntity(id="1", name="First"))
         await repo.add(SampleEntity(id="2", name="Second"))
-        
+
         assert await repo.count() == 2
 
     @pytest.mark.asyncio
@@ -268,10 +262,10 @@ class TestInMemoryRepository:
         """Should filter with EQ operator."""
         await repo.add(SampleEntity(id="1", name="Alice", age=30))
         await repo.add(SampleEntity(id="2", name="Bob", age=25))
-        
+
         filters = [Filter(field="name", operator=FilterOperator.EQ, value="Alice")]
         result = await repo.find(filters=filters)
-        
+
         assert len(result) == 1
         assert result[0].name == "Alice"
 
@@ -280,10 +274,10 @@ class TestInMemoryRepository:
         """Should filter with GT operator."""
         await repo.add(SampleEntity(id="1", name="Alice", age=30))
         await repo.add(SampleEntity(id="2", name="Bob", age=25))
-        
+
         filters = [Filter(field="age", operator=FilterOperator.GT, value=26)]
         result = await repo.find(filters=filters)
-        
+
         assert len(result) == 1
         assert result[0].name == "Alice"
 
@@ -293,10 +287,10 @@ class TestInMemoryRepository:
         await repo.add(SampleEntity(id="1", name="Alice", age=30))
         await repo.add(SampleEntity(id="2", name="Bob", age=25))
         await repo.add(SampleEntity(id="3", name="Charlie", age=35))
-        
+
         filters = [Filter(field="name", operator=FilterOperator.IN, value=["Alice", "Bob"])]
         result = await repo.find(filters=filters)
-        
+
         assert len(result) == 2
 
     @pytest.mark.asyncio
@@ -304,10 +298,10 @@ class TestInMemoryRepository:
         """Should order results ascending."""
         await repo.add(SampleEntity(id="1", name="Zara", age=30))
         await repo.add(SampleEntity(id="2", name="Alice", age=25))
-        
+
         order = [OrderBy(field="name", direction=OrderDirection.ASC)]
         result = await repo.find(order_by=order)
-        
+
         assert result[0].name == "Alice"
         assert result[1].name == "Zara"
 
@@ -316,10 +310,10 @@ class TestInMemoryRepository:
         """Should order results descending."""
         await repo.add(SampleEntity(id="1", name="Zara", age=30))
         await repo.add(SampleEntity(id="2", name="Alice", age=25))
-        
+
         order = [OrderBy(field="name", direction=OrderDirection.DESC)]
         result = await repo.find(order_by=order)
-        
+
         assert result[0].name == "Zara"
         assert result[1].name == "Alice"
 
@@ -328,10 +322,10 @@ class TestInMemoryRepository:
         """Should paginate results."""
         for i in range(25):
             await repo.add(SampleEntity(id=str(i), name=f"Entity{i}", age=i))
-        
+
         page_request = PageRequest(page=2, size=10)
         response = await repo.find_paginated(page_request=page_request)
-        
+
         assert len(response.items) == 10
         assert response.total == 25
         assert response.page == 2
@@ -343,10 +337,10 @@ class TestInMemoryRepository:
         """Should find first matching entity."""
         await repo.add(SampleEntity(id="1", name="Alice", age=30))
         await repo.add(SampleEntity(id="2", name="Bob", age=30))
-        
+
         filters = [Filter(field="age", operator=FilterOperator.EQ, value=30)]
         result = await repo.find_one(filters=filters)
-        
+
         assert result is not None
         assert result.age == 30
 
@@ -356,10 +350,10 @@ class TestInMemoryRepository:
     ) -> None:
         """Should return None when no match found."""
         await repo.add(SampleEntity(id="1", name="Alice", age=30))
-        
+
         filters = [Filter(field="age", operator=FilterOperator.EQ, value=99)]
         result = await repo.find_one(filters=filters)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -367,7 +361,7 @@ class TestInMemoryRepository:
         """Should clear all entities."""
         await repo.add(SampleEntity(id="1", name="Test"))
         await repo.add(SampleEntity(id="2", name="Test2"))
-        
+
         await repo.clear()
-        
+
         assert await repo.count() == 0

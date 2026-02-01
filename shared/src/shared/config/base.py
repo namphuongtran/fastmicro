@@ -7,7 +7,6 @@ for all microservice configurations.
 from __future__ import annotations
 
 import threading
-from functools import lru_cache
 from typing import Any, TypeVar
 
 from pydantic import Field

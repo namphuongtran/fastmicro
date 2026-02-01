@@ -1,6 +1,5 @@
 """Integration tests for OAuth2/OIDC endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -37,7 +36,7 @@ class TestDiscoveryEndpoints:
         """Test /.well-known/openid-configuration endpoint."""
         response = client.get("/.well-known/openid-configuration")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "issuer" in data
         assert "authorization_endpoint" in data
@@ -46,12 +45,12 @@ class TestDiscoveryEndpoints:
         assert "jwks_uri" in data
         assert "revocation_endpoint" in data
         assert "introspection_endpoint" in data
-        
+
         # Check supported features
         assert "authorization_code" in data["grant_types_supported"]
         assert "code" in data["response_types_supported"]
         assert "openid" in data["scopes_supported"]
-        
+
         # Check security features
         assert "S256" in data["code_challenge_methods_supported"]
 
@@ -59,11 +58,11 @@ class TestDiscoveryEndpoints:
         """Test /.well-known/jwks.json endpoint."""
         response = client.get("/.well-known/jwks.json")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "keys" in data
         assert len(data["keys"]) > 0
-        
+
         key = data["keys"][0]
         assert key["kty"] == "RSA"
         assert key["use"] == "sig"

@@ -15,7 +15,8 @@ import functools
 import hashlib
 import inspect
 import json
-from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -57,15 +58,15 @@ def build_cache_key(
         'module:get_user:123'
     """
     key_parts: list[str] = []
-    
+
     # Add prefix if provided
     if prefix:
         key_parts.append(prefix)
-    
+
     # Add function identity
     key_parts.append(func.__module__)
     key_parts.append(func.__qualname__)
-    
+
     # Determine if we should skip first argument (self/cls)
     args_to_use = args
     if skip_self and args:
@@ -73,29 +74,29 @@ def build_cache_key(
         params = list(sig.parameters.keys())
         if params and params[0] in ("self", "cls"):
             args_to_use = args[1:]
-    
+
     # Add args to key
     for arg in args_to_use:
         try:
             key_parts.append(json.dumps(arg, sort_keys=True, default=str))
         except (TypeError, ValueError):
             key_parts.append(str(arg))
-    
+
     # Add kwargs to key (sorted for consistency)
     for k, v in sorted(kwargs.items()):
         try:
             key_parts.append(f"{k}={json.dumps(v, sort_keys=True, default=str)}")
         except (TypeError, ValueError):
             key_parts.append(f"{k}={v}")
-    
+
     key_string = ":".join(key_parts)
-    
+
     # Hash if too long (Redis key limit and readability)
     if len(key_string) > 200:
         hash_suffix = hashlib.sha256(key_string.encode()).hexdigest()[:16]
         short_prefix = key_string[:100]
         return f"{short_prefix}:{hash_suffix}"
-    
+
     return key_string
 
 
@@ -154,30 +155,30 @@ def cached(
                     prefix=prefix,
                     skip_self=skip_self,
                 )
-            
+
             # Try to get from cache
             cached_value = await cache.get(cache_key)
             if cached_value is not None:
                 return cached_value  # type: ignore
-            
+
             # Call function and cache result
             result = await func(*args, **kwargs)
-            
+
             # Don't cache None results
             if result is not None:
                 await cache.set(cache_key, result, ttl=ttl)
-            
+
             return result
-        
+
         # Add utility methods to wrapper
         wrapper.cache = cache  # type: ignore
         wrapper.build_key = lambda *a, **kw: (  # type: ignore
             key_builder(*a, **kw) if key_builder
             else build_cache_key(func, a, kw, prefix=prefix, skip_self=skip_self)
         )
-        
+
         return wrapper
-    
+
     return decorator
 
 
@@ -272,26 +273,26 @@ def invalidate_cache(
                     for key in keys:
                         full_key = f"{prefix}:{key}" if prefix else key
                         await cache.delete(full_key)
-                
+
                 # Invalidate dynamic key
                 if key_builder:
                     key = key_builder(*args, **kwargs)
                     full_key = f"{prefix}:{key}" if prefix else key
                     await cache.delete(full_key)
-            
+
             if before:
                 await do_invalidate()
-            
+
             # Execute the function
             result = await func(*args, **kwargs)
-            
+
             if not before:
                 await do_invalidate()
-            
+
             return result
-        
+
         return wrapper
-    
+
     return decorator
 
 
@@ -332,42 +333,41 @@ def cached_method(
             # Build cache key
             if key_builder:
                 cache_key = key_builder(*args, **kwargs)
+            elif include_instance_id and args:
+                # Include instance id for per-instance caching
+                instance_id = id(args[0])
+                base_key = build_cache_key(
+                    func, args[1:], kwargs,
+                    prefix=None,
+                    skip_self=False,
+                )
+                cache_key = f"{instance_id}:{base_key}"
             else:
-                if include_instance_id and args:
-                    # Include instance id for per-instance caching
-                    instance_id = id(args[0])
-                    base_key = build_cache_key(
-                        func, args[1:], kwargs,
-                        prefix=None,
-                        skip_self=False,
-                    )
-                    cache_key = f"{instance_id}:{base_key}"
-                else:
-                    cache_key = build_cache_key(
-                        func, args, kwargs,
-                        prefix=None,
-                        skip_self=True,
-                    )
-            
+                cache_key = build_cache_key(
+                    func, args, kwargs,
+                    prefix=None,
+                    skip_self=True,
+                )
+
             # Add prefix
             if prefix:
                 cache_key = f"{prefix}:{cache_key}"
-            
+
             # Try to get from cache
             cached_value = await cache.get(cache_key)
             if cached_value is not None:
                 return cached_value  # type: ignore
-            
+
             # Call method and cache result
             result = await func(*args, **kwargs)
-            
+
             if result is not None:
                 await cache.set(cache_key, result, ttl=ttl)
-            
+
             return result
-        
+
         return wrapper
-    
+
     return decorator
 
 

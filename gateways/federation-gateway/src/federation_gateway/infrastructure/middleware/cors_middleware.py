@@ -1,6 +1,8 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
+
 from federation_gateway.configs.settings import FederationGatewaySettings
 
 logger = logging.getLogger(__name__)
@@ -14,11 +16,11 @@ def setup_cors_middleware(app: FastAPI, settings: FederationGatewaySettings):
         settings: Gateway settings with CORS configuration
     """
     cors_config = settings.security.cors
-    
+
     if not cors_config.enabled:
         logger.info("CORS is disabled")
         return
-    
+
     # Add CORS middleware to FastAPI
     app.add_middleware(
         CORSMiddleware,
@@ -29,5 +31,5 @@ def setup_cors_middleware(app: FastAPI, settings: FederationGatewaySettings):
         expose_headers=cors_config.expose_headers,
         max_age=cors_config.max_age,
     )
-    
+
     logger.info(f"CORS middleware configured with origins: {cors_config.allow_origins}")

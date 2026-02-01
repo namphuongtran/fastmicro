@@ -18,7 +18,6 @@ from metastore_service.application.dtos.metadata_dtos import (
 )
 from metastore_service.domain.entities.metadata import MetadataEntry
 from metastore_service.domain.repositories.metadata_repository import IMetadataRepository
-from metastore_service.domain.value_objects import MetadataKey, Namespace, TenantId
 
 logger = logging.getLogger(__name__)
 

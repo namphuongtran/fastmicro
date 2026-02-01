@@ -13,9 +13,7 @@ from __future__ import annotations
 import json
 import pickle
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Generic,
     Protocol,
@@ -235,7 +233,7 @@ class PickleSerializer:
             CacheSerializationError: If deserialization fails.
         """
         try:
-            return pickle.loads(data)  # noqa: S301
+            return pickle.loads(data)
         except (pickle.UnpicklingError, TypeError) as e:
             raise CacheSerializationError(
                 f"Failed to unpickle value: {e}",
@@ -443,7 +441,7 @@ class AbstractCacheBackend(ABC, Generic[V]):
         """Close backend (default: no-op)."""
         pass
 
-    async def __aenter__(self) -> "AbstractCacheBackend[V]":
+    async def __aenter__(self) -> AbstractCacheBackend[V]:
         """Async context manager entry."""
         return self
 

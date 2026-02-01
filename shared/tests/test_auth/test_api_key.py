@@ -8,8 +8,8 @@ from __future__ import annotations
 import pytest
 
 from shared.auth.api_key import (
-    APIKeyService,
     APIKeyData,
+    APIKeyService,
     InvalidAPIKeyError,
 )
 
@@ -24,7 +24,7 @@ class TestAPIKeyData:
             name="Test API Key",
             scopes=["read", "write"],
         )
-        
+
         assert data.key_id == "key_123"
         assert data.name == "Test API Key"
         assert data.scopes == ["read", "write"]
@@ -36,7 +36,7 @@ class TestAPIKeyData:
             key_id="key_123",
             name="Test Key",
         )
-        
+
         assert data.scopes == []
         assert data.is_active is True
         assert data.metadata == {}
@@ -48,7 +48,7 @@ class TestAPIKeyData:
             name="Test Key",
             scopes=["read", "write"],
         )
-        
+
         assert data.has_scope("read") is True
 
     def test_has_scope_false(self) -> None:
@@ -58,7 +58,7 @@ class TestAPIKeyData:
             name="Test Key",
             scopes=["read"],
         )
-        
+
         assert data.has_scope("admin") is False
 
 
@@ -73,7 +73,7 @@ class TestAPIKeyService:
     def test_generate_api_key(self, api_key_service: APIKeyService) -> None:
         """Should generate API key with prefix."""
         key = api_key_service.generate_key()
-        
+
         assert key.startswith("sk_test_")
         assert len(key) > len("sk_test_")
 
@@ -81,7 +81,7 @@ class TestAPIKeyService:
         """Should support custom key length."""
         service = APIKeyService(prefix="sk_", key_length=64)
         key = service.generate_key()
-        
+
         # Key should be prefix + base64-encoded bytes
         assert key.startswith("sk_")
         assert len(key) > 64  # Prefix + encoded key
@@ -90,7 +90,7 @@ class TestAPIKeyService:
         """Should hash API key for storage."""
         key = api_key_service.generate_key()
         hashed = api_key_service.hash_key(key)
-        
+
         assert hashed != key
         assert isinstance(hashed, str)
 
@@ -101,21 +101,21 @@ class TestAPIKeyService:
         key = api_key_service.generate_key()
         hash1 = api_key_service.hash_key(key)
         hash2 = api_key_service.hash_key(key)
-        
+
         assert hash1 == hash2
 
     def test_verify_valid_key(self, api_key_service: APIKeyService) -> None:
         """Should verify valid API key against hash."""
         key = api_key_service.generate_key()
         hashed = api_key_service.hash_key(key)
-        
+
         assert api_key_service.verify_key(key, hashed) is True
 
     def test_verify_invalid_key(self, api_key_service: APIKeyService) -> None:
         """Should reject invalid API key."""
         key = api_key_service.generate_key()
         hashed = api_key_service.hash_key(key)
-        
+
         wrong_key = api_key_service.generate_key()
         assert api_key_service.verify_key(wrong_key, hashed) is False
 
@@ -124,7 +124,7 @@ class TestAPIKeyService:
         # Generate a key with known structure
         key = api_key_service.generate_key()
         key_id = api_key_service.extract_key_id(key)
-        
+
         assert isinstance(key_id, str)
         assert len(key_id) > 0
 
@@ -133,7 +133,7 @@ class TestAPIKeyService:
     ) -> None:
         """Should validate correct key format."""
         key = api_key_service.generate_key()
-        
+
         assert api_key_service.validate_key_format(key) is True
 
     def test_validate_key_format_invalid_prefix(
@@ -155,6 +155,6 @@ class TestInvalidAPIKeyError:
     def test_invalid_api_key_error(self) -> None:
         """Should create invalid API key error."""
         error = InvalidAPIKeyError("Invalid API key format")
-        
+
         assert str(error) == "Invalid API key format"
         assert isinstance(error, Exception)

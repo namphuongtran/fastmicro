@@ -7,7 +7,6 @@ for multiple database backends (PostgreSQL, MySQL, SQLite, MSSQL).
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -105,7 +104,7 @@ class DatabaseSettings(BaseSettings):
     echo: bool = Field(default=False, description="Enable SQL query logging")
 
     @model_validator(mode="after")
-    def set_default_port(self) -> "DatabaseSettings":
+    def set_default_port(self) -> DatabaseSettings:
         """Set default port based on database type if not explicitly set."""
         if self.port is None:
             object.__setattr__(self, "port", DEFAULT_PORTS.get(self.db_type, 5432))

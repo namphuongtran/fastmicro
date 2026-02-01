@@ -16,21 +16,17 @@ Example:
 
 from __future__ import annotations
 
-import re
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import Any, Self
 
 from shared.exceptions.base import BaseServiceException, ErrorSeverity
 
-if TYPE_CHECKING:
-    pass
-
 __all__ = [
-    "DatabaseException",
     "ConnectionException",
-    "QueryException",
+    "DatabaseException",
     "IntegrityException",
-    "TransactionException",
+    "QueryException",
     "TimeoutException",
+    "TransactionException",
 ]
 
 

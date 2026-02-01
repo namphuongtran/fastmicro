@@ -6,13 +6,7 @@ histograms, gauges, and metric registration.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
-
 import pytest
-
-if TYPE_CHECKING:
-    pass
 
 from shared.observability.metrics import (
     Counter,
@@ -105,7 +99,7 @@ class TestGauge:
     def test_gauge_track_inprogress(self) -> None:
         """Should track in-progress operations."""
         gauge = Gauge(name="in_progress", description="Test")
-        
+
         with gauge.track_inprogress():
             # Gauge should be incremented during context
             pass
@@ -151,7 +145,7 @@ class TestHistogram:
     def test_time_context_manager(self) -> None:
         """Should time operations with context manager."""
         histogram = Histogram(name="operation_time", description="Test")
-        
+
         with histogram.time():
             # Simulate work
             pass
@@ -198,7 +192,7 @@ class TestMetricsRegistry:
         registry = MetricsRegistry()
         counter1 = registry.counter(name="shared_counter", description="Test")
         counter2 = registry.counter(name="shared_counter", description="Test")
-        
+
         # Should return the same counter
         assert counter1 is counter2
 
@@ -207,7 +201,7 @@ class TestMetricsRegistry:
         registry = MetricsRegistry()
         registry.counter(name="counter1", description="Test")
         registry.gauge(name="gauge1", description="Test")
-        
+
         metrics = registry.list_metrics()
         assert "counter1" in metrics
         assert "gauge1" in metrics
@@ -221,7 +215,7 @@ class TestTimedDecorator:
         @timed("sync_operation")
         def my_function() -> str:
             return "result"
-        
+
         result = my_function()
         assert result == "result"
 
@@ -230,7 +224,7 @@ class TestTimedDecorator:
         @timed("async_operation")
         async def my_async_function() -> str:
             return "async result"
-        
+
         import asyncio
         result = asyncio.run(my_async_function())
         assert result == "async result"
@@ -241,7 +235,7 @@ class TestTimedDecorator:
         def named_function() -> None:
             """Docstring."""
             pass
-        
+
         assert named_function.__name__ == "named_function"
 
     def test_handles_exceptions(self) -> None:
@@ -249,7 +243,7 @@ class TestTimedDecorator:
         @timed("failing_operation")
         def failing_function() -> None:
             raise RuntimeError("Error")
-        
+
         with pytest.raises(RuntimeError):
             failing_function()
 
@@ -258,7 +252,7 @@ class TestTimedDecorator:
         @timed("labeled_operation", labels={"type": "background"})
         def background_task() -> str:
             return "done"
-        
+
         result = background_task()
         assert result == "done"
 
@@ -293,7 +287,7 @@ class TestConfigureMetrics:
     def test_configure_disabled(self) -> None:
         """Should handle disabled metrics."""
         configure_metrics(enabled=False)
-        
+
         # Metrics should still work (as no-ops)
         registry = get_metrics_registry()
         counter = registry.counter(name="disabled_counter", description="Test")

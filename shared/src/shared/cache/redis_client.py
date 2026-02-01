@@ -10,13 +10,10 @@ This module provides an async Redis client with support for:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Self
+from dataclasses import dataclass
+from typing import Any, Self
 
 import redis.asyncio as redis
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 
 class CacheError(Exception):

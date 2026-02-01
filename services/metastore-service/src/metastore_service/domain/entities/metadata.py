@@ -7,7 +7,7 @@ multi-tenancy support, and content type awareness.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -51,7 +51,7 @@ class MetadataVersion:
             metadata_id=metadata_id,
             version_number=version_number,
             value=value,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             created_by=created_by,
             change_reason=change_reason,
         )
@@ -93,8 +93,8 @@ class MetadataEntry:
     is_secret: bool = False
     description: str | None = None
     versions: list[MetadataVersion] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     created_by: str | None = None
     updated_by: str | None = None
 
@@ -145,7 +145,7 @@ class MetadataEntry:
         value_vo = MetadataValue(raw_value=value, content_type=content_type)
 
         entry_id = uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create initial version
         initial_version = MetadataVersion.create(
@@ -201,7 +201,7 @@ class MetadataEntry:
 
         self.versions.append(new_version)
         self.current_value = new_value_vo
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     def add_tag(self, tag: str | Tag) -> None:
@@ -209,14 +209,14 @@ class MetadataEntry:
         tag_vo = tag if isinstance(tag, Tag) else Tag(tag)
         if tag_vo not in self.tags:
             self.tags.append(tag_vo)
-            self.updated_at = datetime.now(timezone.utc)
+            self.updated_at = datetime.now(UTC)
 
     def remove_tag(self, tag: str | Tag) -> None:
         """Remove a tag from the metadata entry."""
         tag_vo = tag if isinstance(tag, Tag) else Tag(tag)
         if tag_vo in self.tags:
             self.tags.remove(tag_vo)
-            self.updated_at = datetime.now(timezone.utc)
+            self.updated_at = datetime.now(UTC)
 
     def rollback_to_version(
         self,

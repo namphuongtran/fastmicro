@@ -6,7 +6,7 @@ between the API layer and the domain/infrastructure layers.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -19,12 +19,12 @@ from audit_service.domain.repositories.audit_repository import IAuditRepository
 
 # Import shared library components
 try:
-    from shared.observability import get_logger
     from shared.exceptions import NotFoundError
+    from shared.observability import get_logger
 except ImportError:
     import structlog
     get_logger = structlog.get_logger
-    
+
     class NotFoundError(Exception):
         """Resource not found error."""
         pass
@@ -36,7 +36,7 @@ logger = get_logger(__name__)
 @dataclass
 class PaginatedResult:
     """Paginated result container."""
-    
+
     items: list[AuditEventResponse]
     total: int
 
@@ -47,7 +47,7 @@ class AuditAppService:
     
     Coordinates business logic between API controllers and domain/infrastructure.
     """
-    
+
     def __init__(self, repository: IAuditRepository) -> None:
         """
         Initialize the audit application service.
@@ -57,7 +57,7 @@ class AuditAppService:
         """
         self._repository = repository
         self._logger = get_logger(__name__)
-    
+
     async def create_event(self, request: CreateAuditEventRequest) -> AuditEventResponse:
         """
         Create a new audit event.
@@ -89,10 +89,10 @@ class AuditAppService:
             new_value=request.new_value,
             compliance_tags=request.compliance_tags,
         )
-        
+
         # Persist the event
         created_event = await self._repository.create(event)
-        
+
         self._logger.info(
             "Audit event created",
             event_id=str(created_event.id),
@@ -100,9 +100,9 @@ class AuditAppService:
             actor_id=created_event.actor_id,
             resource_type=created_event.resource_type,
         )
-        
+
         return self._to_response(created_event)
-    
+
     async def get_event(self, event_id: UUID) -> AuditEventResponse:
         """
         Get an audit event by ID.
@@ -117,12 +117,12 @@ class AuditAppService:
             NotFoundError: If event not found.
         """
         event = await self._repository.get_by_id(event_id)
-        
+
         if event is None:
             raise NotFoundError(f"Audit event not found: {event_id}")
-        
+
         return self._to_response(event)
-    
+
     async def list_events(
         self,
         *,
@@ -148,18 +148,18 @@ class AuditAppService:
                 k: v for k, v in filters.model_dump().items()
                 if v is not None
             }
-        
+
         events, total = await self._repository.list(
             page=page,
             page_size=page_size,
             filters=filter_dict,
         )
-        
+
         return PaginatedResult(
             items=[self._to_response(e) for e in events],
             total=total,
         )
-    
+
     async def search_events(
         self,
         query: str,
@@ -182,11 +182,11 @@ class AuditAppService:
         """
         start_date = None
         end_date = None
-        
+
         if filters is not None:
             start_date = getattr(filters, "start_date", None)
             end_date = getattr(filters, "end_date", None)
-        
+
         events, total = await self._repository.search(
             query=query,
             page=page,
@@ -194,12 +194,12 @@ class AuditAppService:
             start_date=start_date,
             end_date=end_date,
         )
-        
+
         return PaginatedResult(
             items=[self._to_response(e) for e in events],
             total=total,
         )
-    
+
     async def delete_event(self, event_id: UUID) -> bool:
         """
         Delete an audit event.
@@ -211,12 +211,12 @@ class AuditAppService:
             bool: True if deleted, False if not found.
         """
         deleted = await self._repository.delete_by_id(event_id)
-        
+
         if deleted:
             self._logger.info("Audit event deleted", event_id=str(event_id))
-        
+
         return deleted
-    
+
     async def apply_retention_policy(self, retention_days: int) -> int:
         """
         Apply data retention policy by deleting old events.
@@ -228,18 +228,18 @@ class AuditAppService:
             int: Number of deleted events.
         """
         from datetime import timedelta
-        
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+
+        cutoff_date = datetime.now(UTC) - timedelta(days=retention_days)
         deleted_count = await self._repository.delete_before_date(cutoff_date)
-        
+
         self._logger.info(
             "Retention policy applied",
             retention_days=retention_days,
             deleted_count=deleted_count,
         )
-        
+
         return deleted_count
-    
+
     def _to_response(self, event: AuditEvent) -> AuditEventResponse:
         """Convert domain entity to response model."""
         return AuditEventResponse(
@@ -274,12 +274,12 @@ def get_audit_service() -> AuditAppService:
         AuditAppService: Audit application service instance.
     """
     global _audit_service
-    
+
     if _audit_service is None:
         # Import repository implementation
         from audit_service.infrastructure.persistence import InMemoryAuditRepository
-        
+
         repository = InMemoryAuditRepository()
         _audit_service = AuditAppService(repository)
-    
+
     return _audit_service

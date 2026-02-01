@@ -1,8 +1,8 @@
 """Identity Service - FastAPI Application Entry Point."""
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,11 +18,11 @@ from identity_service.configs import get_settings
 
 # Shared observability
 from shared.observability import (
+    LoggingConfig,
+    RequestLoggingConfig,
+    RequestLoggingMiddleware,
     configure_structlog,
     get_structlog_logger,
-    LoggingConfig,
-    RequestLoggingMiddleware,
-    RequestLoggingConfig,
 )
 
 # Paths for templates and static files

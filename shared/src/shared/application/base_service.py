@@ -23,12 +23,10 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Generic, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 if TYPE_CHECKING:
     from shared.cache.base import CacheBackend
-    from shared.dbs.repository import AbstractRepository
 
 # Type variables
 T = TypeVar("T")  # Entity type
@@ -40,7 +38,7 @@ ResponseDTO = TypeVar("ResponseDTO")
 
 class ServiceError(Exception):
     """Base exception for service layer errors."""
-    
+
     def __init__(
         self,
         message: str,
@@ -55,7 +53,7 @@ class ServiceError(Exception):
 
 class NotFoundError(ServiceError):
     """Raised when an entity is not found."""
-    
+
     def __init__(
         self,
         entity_type: str,
@@ -73,7 +71,7 @@ class NotFoundError(ServiceError):
 
 class ValidationError(ServiceError):
     """Raised when validation fails."""
-    
+
     def __init__(
         self,
         message: str,
@@ -91,7 +89,7 @@ class ValidationError(ServiceError):
 
 class ConflictError(ServiceError):
     """Raised when there's a conflict (e.g., duplicate)."""
-    
+
     def __init__(
         self,
         message: str,
@@ -120,23 +118,23 @@ class ServiceContext:
         ... )
         >>> await service.create(data, context=ctx)
     """
-    
+
     user_id: str | None = None
     tenant_id: str | None = None
     correlation_id: str | None = None
     roles: list[str] = field(default_factory=list)
     permissions: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     @property
     def is_authenticated(self) -> bool:
         """Check if context has authenticated user."""
         return self.user_id is not None
-    
+
     def has_role(self, role: str) -> bool:
         """Check if context has specific role."""
         return role in self.roles
-    
+
     def has_permission(self, permission: str) -> bool:
         """Check if context has specific permission."""
         return permission in self.permissions
@@ -155,7 +153,7 @@ class BaseService(ABC, Generic[T, ID]):
         cache_prefix: Prefix for cache keys
         cache_ttl: Default TTL for cached items in seconds
     """
-    
+
     def __init__(
         self,
         *,
@@ -167,18 +165,18 @@ class BaseService(ABC, Generic[T, ID]):
         self._cache_prefix = cache_prefix
         self._cache_ttl = cache_ttl
         self._logger = logging.getLogger(self.__class__.__name__)
-    
+
     def _cache_key(self, *parts: str) -> str:
         """Generate cache key from parts."""
         all_parts = [self._cache_prefix] + list(parts)
         return ":".join(filter(None, all_parts))
-    
+
     async def _get_cached(self, key: str) -> T | None:
         """Get item from cache."""
         if self._cache is None:
             return None
         return await self._cache.get(key)
-    
+
     async def _set_cached(
         self, key: str, value: T, ttl: int | None = None
     ) -> None:
@@ -186,13 +184,13 @@ class BaseService(ABC, Generic[T, ID]):
         if self._cache is None:
             return
         await self._cache.set(key, value, ttl=ttl or self._cache_ttl)
-    
+
     async def _delete_cached(self, key: str) -> None:
         """Delete item from cache."""
         if self._cache is None:
             return
         await self._cache.delete(key)
-    
+
     async def _invalidate_pattern(self, pattern: str) -> None:
         """Invalidate cache keys matching pattern."""
         if self._cache is None:
@@ -225,7 +223,7 @@ class BaseReadService(BaseService[T, ID]):
         ...             await self._set_cached(self._cache_key(id), user)
         ...         return user
     """
-    
+
     @abstractmethod
     async def get_by_id(
         self, id: ID, *, context: ServiceContext | None = None
@@ -240,7 +238,7 @@ class BaseReadService(BaseService[T, ID]):
             Entity if found, None otherwise
         """
         ...
-    
+
     async def get_by_id_or_raise(
         self,
         id: ID,
@@ -265,7 +263,7 @@ class BaseReadService(BaseService[T, ID]):
         if entity is None:
             raise NotFoundError(entity_type, id)
         return entity
-    
+
     async def exists(
         self, id: ID, *, context: ServiceContext | None = None
     ) -> bool:
@@ -293,7 +291,7 @@ class BaseWriteService(BaseService[T, ID]):
         ...         if not data.get("email"):
         ...             raise ValidationError("Email is required", field="email")
     """
-    
+
     async def _validate_create(
         self, data: dict[str, Any], *, context: ServiceContext | None = None
     ) -> None:
@@ -309,7 +307,7 @@ class BaseWriteService(BaseService[T, ID]):
             ValidationError: If validation fails
         """
         pass
-    
+
     async def _validate_update(
         self,
         id: ID,
@@ -330,7 +328,7 @@ class BaseWriteService(BaseService[T, ID]):
             ValidationError: If validation fails
         """
         pass
-    
+
     async def _validate_delete(
         self, id: ID, *, context: ServiceContext | None = None
     ) -> None:
@@ -346,7 +344,7 @@ class BaseWriteService(BaseService[T, ID]):
             ValidationError: If validation fails
         """
         pass
-    
+
     async def _before_create(
         self, data: dict[str, Any], *, context: ServiceContext | None = None
     ) -> dict[str, Any]:
@@ -362,7 +360,7 @@ class BaseWriteService(BaseService[T, ID]):
             Transformed data
         """
         return data
-    
+
     async def _after_create(
         self, entity: T, *, context: ServiceContext | None = None
     ) -> None:
@@ -375,7 +373,7 @@ class BaseWriteService(BaseService[T, ID]):
             context: Service context
         """
         pass
-    
+
     async def _before_update(
         self,
         entity: T,
@@ -396,7 +394,7 @@ class BaseWriteService(BaseService[T, ID]):
             Transformed data
         """
         return data
-    
+
     async def _after_update(
         self, entity: T, *, context: ServiceContext | None = None
     ) -> None:
@@ -409,7 +407,7 @@ class BaseWriteService(BaseService[T, ID]):
             context: Service context
         """
         pass
-    
+
     async def _after_delete(
         self, id: ID, *, context: ServiceContext | None = None
     ) -> None:
@@ -443,7 +441,7 @@ class CRUDService(BaseReadService[T, ID], BaseWriteService[T, ID]):
         ...         product = Product(**data.model_dump())
         ...         return await self._repository.add(product)
     """
-    
+
     @abstractmethod
     async def create(
         self,
@@ -461,7 +459,7 @@ class CRUDService(BaseReadService[T, ID], BaseWriteService[T, ID]):
             Created entity
         """
         ...
-    
+
     @abstractmethod
     async def update(
         self,
@@ -484,7 +482,7 @@ class CRUDService(BaseReadService[T, ID], BaseWriteService[T, ID]):
             NotFoundError: If entity not found
         """
         ...
-    
+
     @abstractmethod
     async def delete(
         self,
@@ -514,7 +512,7 @@ class PaginatedResult(Generic[T]):
         page_size: Number of items per page
         total_pages: Total number of pages
     """
-    
+
     def __init__(
         self,
         items: list[T],
@@ -526,24 +524,24 @@ class PaginatedResult(Generic[T]):
         self.total = total
         self.page = page
         self.page_size = page_size
-    
+
     @property
     def total_pages(self) -> int:
         """Calculate total pages."""
         if self.page_size <= 0:
             return 0
         return (self.total + self.page_size - 1) // self.page_size
-    
+
     @property
     def has_next(self) -> bool:
         """Check if there's a next page."""
         return self.page < self.total_pages
-    
+
     @property
     def has_previous(self) -> bool:
         """Check if there's a previous page."""
         return self.page > 1
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {

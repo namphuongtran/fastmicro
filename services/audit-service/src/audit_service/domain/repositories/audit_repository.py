@@ -20,7 +20,7 @@ class IAuditRepository(ABC):
     Defines the contract for audit event persistence operations.
     Implementations should provide concrete storage mechanisms.
     """
-    
+
     @abstractmethod
     async def create(self, event: AuditEvent) -> AuditEvent:
         """
@@ -33,7 +33,7 @@ class IAuditRepository(ABC):
             AuditEvent: Created audit event with generated ID.
         """
         ...
-    
+
     @abstractmethod
     async def get_by_id(self, event_id: UUID) -> AuditEvent | None:
         """
@@ -46,7 +46,7 @@ class IAuditRepository(ABC):
             AuditEvent | None: Audit event if found, None otherwise.
         """
         ...
-    
+
     @abstractmethod
     async def list(
         self,
@@ -67,7 +67,7 @@ class IAuditRepository(ABC):
             tuple[list[AuditEvent], int]: List of events and total count.
         """
         ...
-    
+
     @abstractmethod
     async def search(
         self,
@@ -92,7 +92,7 @@ class IAuditRepository(ABC):
             tuple[list[AuditEvent], int]: Matching events and total count.
         """
         ...
-    
+
     @abstractmethod
     async def delete_by_id(self, event_id: UUID) -> bool:
         """
@@ -105,7 +105,7 @@ class IAuditRepository(ABC):
             bool: True if deleted, False if not found.
         """
         ...
-    
+
     @abstractmethod
     async def delete_before_date(self, cutoff_date: datetime) -> int:
         """
@@ -120,7 +120,7 @@ class IAuditRepository(ABC):
             int: Number of deleted events.
         """
         ...
-    
+
     @abstractmethod
     async def count_by_actor(
         self,
@@ -141,7 +141,7 @@ class IAuditRepository(ABC):
             int: Event count for the actor.
         """
         ...
-    
+
     @abstractmethod
     async def count_by_resource(
         self,

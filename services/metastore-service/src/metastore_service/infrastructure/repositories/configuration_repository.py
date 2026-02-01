@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -529,7 +529,7 @@ class PostgresConfigurationRepository(IConfigurationRepository):
             .where(ConfigurationModel.id == config_id)
             .values(
                 is_active=True,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -549,7 +549,7 @@ class PostgresConfigurationRepository(IConfigurationRepository):
             .where(ConfigurationModel.id == config_id)
             .values(
                 is_active=False,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )

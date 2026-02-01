@@ -8,17 +8,16 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Generic, TypeVar
-
 
 T = TypeVar("T")
 
 
 class FilterOperator(Enum):
     """Filter comparison operators."""
-    
+
     EQ = "eq"
     NE = "ne"
     GT = "gt"
@@ -39,7 +38,7 @@ class FilterOperator(Enum):
 
 class OrderDirection(Enum):
     """Order direction."""
-    
+
     ASC = "asc"
     DESC = "desc"
 
@@ -47,7 +46,7 @@ class OrderDirection(Enum):
 @dataclass
 class Filter:
     """Filter specification for queries."""
-    
+
     field: str
     value: Any
     operator: FilterOperator = FilterOperator.EQ
@@ -56,7 +55,7 @@ class Filter:
 @dataclass
 class OrderBy:
     """Order specification for queries."""
-    
+
     field: str
     direction: OrderDirection = OrderDirection.ASC
 
@@ -64,7 +63,7 @@ class OrderBy:
 @dataclass
 class PageRequest:
     """Pagination request parameters."""
-    
+
     page: int = 1
     size: int = 10
 
@@ -81,7 +80,7 @@ class PageRequest:
 @dataclass
 class PageResponse(Generic[T]):
     """Paginated response with metadata."""
-    
+
     items: list[T]
     total: int
     page: int
@@ -241,7 +240,7 @@ class InMemoryRepository(AbstractRepository[T]):
             True if entity matches.
         """
         value = getattr(entity, filter.field, None)
-        
+
         match filter.operator:
             case FilterOperator.EQ:
                 return value == filter.value
@@ -350,13 +349,13 @@ class InMemoryRepository(AbstractRepository[T]):
             List of matching entities.
         """
         result = list(self._storage.values())
-        
+
         if filters:
             result = self._apply_filters(result, filters)
-        
+
         if order_by:
             result = self._apply_ordering(result, order_by)
-        
+
         return result
 
     async def find_one(
@@ -392,11 +391,11 @@ class InMemoryRepository(AbstractRepository[T]):
         """
         all_items = await self.find(filters=filters, order_by=order_by)
         total = len(all_items)
-        
+
         start = page_request.offset
         end = start + page_request.size
         items = all_items[start:end]
-        
+
         return PageResponse(
             items=items,
             total=total,
@@ -410,12 +409,12 @@ class InMemoryRepository(AbstractRepository[T]):
 
 
 __all__ = [
-    "FilterOperator",
-    "OrderDirection",
+    "AbstractRepository",
     "Filter",
+    "FilterOperator",
+    "InMemoryRepository",
     "OrderBy",
+    "OrderDirection",
     "PageRequest",
     "PageResponse",
-    "AbstractRepository",
-    "InMemoryRepository",
 ]

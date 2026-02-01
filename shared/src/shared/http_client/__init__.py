@@ -19,18 +19,18 @@ Example:
     ...     print(response.data)
 """
 
-from shared.http_client.client import (
-    ServiceClient,
-    ServiceClientConfig,
-    ServiceResponse,
-    HTTPClientError,
-    ServiceUnavailableError,
-)
 from shared.http_client.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
-    CircuitState,
     CircuitOpenError,
+    CircuitState,
+)
+from shared.http_client.client import (
+    HTTPClientError,
+    ServiceClient,
+    ServiceClientConfig,
+    ServiceResponse,
+    ServiceUnavailableError,
 )
 
 __all__ = [

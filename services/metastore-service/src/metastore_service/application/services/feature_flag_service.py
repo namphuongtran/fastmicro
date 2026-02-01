@@ -17,9 +17,9 @@ from metastore_service.application.dtos.feature_flag_dtos import (
     TargetingRuleDTO,
     UpdateFeatureFlagDTO,
 )
-from metastore_service.domain.entities.feature_flag import FeatureFlag, TargetingRule
+from metastore_service.domain.entities.feature_flag import FeatureFlag
 from metastore_service.domain.repositories.feature_flag_repository import IFeatureFlagRepository
-from metastore_service.domain.value_objects import Environment, Operator, Percentage
+from metastore_service.domain.value_objects import Environment
 
 logger = logging.getLogger(__name__)
 

@@ -6,15 +6,15 @@ context management, and easy configuration for production environments.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import sys
-import contextvars
 import uuid
+from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime, timezone
-from typing import Any, Generator
-
+from datetime import UTC, datetime
+from typing import Any
 
 # Context variables for correlation ID and extra context
 _correlation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
@@ -98,11 +98,11 @@ class JSONFormatter(logging.Formatter):
         if self.include_timestamp:
             if self.timestamp_format:
                 log_entry["timestamp"] = datetime.fromtimestamp(
-                    record.created, tz=timezone.utc
+                    record.created, tz=UTC
                 ).strftime(self.timestamp_format)
             else:
                 log_entry["timestamp"] = datetime.fromtimestamp(
-                    record.created, tz=timezone.utc
+                    record.created, tz=UTC
                 ).isoformat()
 
         # Add correlation ID if present
@@ -162,11 +162,11 @@ class CorrelationIdFilter(logging.Filter):
             Always True (we're adding data, not filtering).
         """
         correlation_id = get_correlation_id()
-        
+
         if correlation_id is None and self.auto_generate:
             correlation_id = generate_correlation_id()
             set_correlation_id(correlation_id)
-        
+
         record.correlation_id = correlation_id  # type: ignore[attr-defined]
         return True
 
@@ -209,10 +209,10 @@ def get_logger(name: str | None = None) -> logging.Logger:
     """
     if name is None:
         return logging.getLogger()
-    
+
     if name not in _loggers:
         _loggers[name] = logging.getLogger(name)
-    
+
     return _loggers[name]
 
 
@@ -256,7 +256,7 @@ def configure_logging(
         formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-    
+
     handler.setFormatter(formatter)
 
     # Add correlation ID filter
@@ -267,12 +267,12 @@ def configure_logging(
 
 
 __all__ = [
-    "JSONFormatter",
     "CorrelationIdFilter",
-    "set_correlation_id",
-    "get_correlation_id",
-    "generate_correlation_id",
-    "with_context",
-    "get_logger",
+    "JSONFormatter",
     "configure_logging",
+    "generate_correlation_id",
+    "get_correlation_id",
+    "get_logger",
+    "set_correlation_id",
+    "with_context",
 ]

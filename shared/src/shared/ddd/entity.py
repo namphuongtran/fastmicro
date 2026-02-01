@@ -9,9 +9,9 @@ This module provides the foundational entity classes:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Generic, TypeVar
 from uuid import uuid4
 
 if TYPE_CHECKING:
@@ -32,20 +32,20 @@ class EntityId(Generic[T]):
         >>> user_id.value
         'user-123'
     """
-    
+
     value: T
-    
+
     def __str__(self) -> str:
         return str(self.value)
-    
+
     def __hash__(self) -> int:
         return hash(self.value)
-    
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, EntityId):
             return self.value == other.value
         return self.value == other
-    
+
     @classmethod
     def generate(cls) -> EntityId[str]:
         """Generate a new UUID-based entity ID.
@@ -78,9 +78,9 @@ class Entity(ABC):
         ...     def name(self) -> str:
         ...         return self._name
     """
-    
-    __slots__ = ("_id", "_created_at", "_updated_at")
-    
+
+    __slots__ = ("_created_at", "_id", "_updated_at")
+
     def __init__(
         self,
         id: str | None = None,
@@ -96,38 +96,38 @@ class Entity(ABC):
             updated_at: Update timestamp. Defaults to None.
         """
         self._id = id or str(uuid4())
-        self._created_at = created_at or datetime.now(timezone.utc)
+        self._created_at = created_at or datetime.now(UTC)
         self._updated_at = updated_at
-    
+
     @property
     def id(self) -> str:
         """Get the entity's unique identifier."""
         return self._id
-    
+
     @property
     def created_at(self) -> datetime:
         """Get the creation timestamp."""
         return self._created_at
-    
+
     @property
     def updated_at(self) -> datetime | None:
         """Get the last update timestamp."""
         return self._updated_at
-    
+
     def mark_updated(self) -> None:
         """Mark the entity as updated with current timestamp."""
-        self._updated_at = datetime.now(timezone.utc)
-    
+        self._updated_at = datetime.now(UTC)
+
     def __eq__(self, other: object) -> bool:
         """Two entities are equal if they have the same ID."""
         if not isinstance(other, Entity):
             return False
         return self._id == other._id
-    
+
     def __hash__(self) -> int:
         """Hash based on entity ID."""
         return hash(self._id)
-    
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(id={self._id!r})"
 
@@ -155,9 +155,9 @@ class AggregateRoot(Entity):
         ...         self._items.append(item)
         ...         self.add_event(OrderItemAdded(self.id, product_id, quantity))
     """
-    
+
     __slots__ = ("_domain_events", "_version")
-    
+
     def __init__(
         self,
         id: str | None = None,
@@ -177,21 +177,21 @@ class AggregateRoot(Entity):
         super().__init__(id, created_at=created_at, updated_at=updated_at)
         self._domain_events: list[DomainEvent] = []
         self._version = version
-    
+
     @property
     def version(self) -> int:
         """Get optimistic concurrency version."""
         return self._version
-    
+
     def increment_version(self) -> None:
         """Increment version for optimistic concurrency."""
         self._version += 1
-    
+
     @property
     def domain_events(self) -> list[DomainEvent]:
         """Get pending domain events."""
         return list(self._domain_events)
-    
+
     def add_event(self, event: DomainEvent) -> None:
         """Add a domain event.
         
@@ -199,7 +199,7 @@ class AggregateRoot(Entity):
             event: Domain event to add.
         """
         self._domain_events.append(event)
-    
+
     def clear_events(self) -> list[DomainEvent]:
         """Clear and return pending domain events.
         
@@ -209,7 +209,7 @@ class AggregateRoot(Entity):
         events = list(self._domain_events)
         self._domain_events.clear()
         return events
-    
+
     def has_pending_events(self) -> bool:
         """Check if there are pending domain events.
         
@@ -231,7 +231,7 @@ class Specification(ABC, Generic[T]):
         ...     def is_satisfied_by(self, user: User) -> bool:
         ...         return user.is_active and not user.is_deleted
     """
-    
+
     @abstractmethod
     def is_satisfied_by(self, entity: T) -> bool:
         """Check if entity satisfies the specification.
@@ -243,15 +243,15 @@ class Specification(ABC, Generic[T]):
             True if specification is satisfied.
         """
         ...
-    
+
     def and_(self, other: Specification[T]) -> AndSpecification[T]:
         """Combine with AND logic."""
         return AndSpecification(self, other)
-    
+
     def or_(self, other: Specification[T]) -> OrSpecification[T]:
         """Combine with OR logic."""
         return OrSpecification(self, other)
-    
+
     def not_(self) -> NotSpecification[T]:
         """Negate specification."""
         return NotSpecification(self)
@@ -260,10 +260,10 @@ class Specification(ABC, Generic[T]):
 @dataclass
 class AndSpecification(Specification[T]):
     """AND combination of specifications."""
-    
+
     left: Specification[T]
     right: Specification[T]
-    
+
     def is_satisfied_by(self, entity: T) -> bool:
         return self.left.is_satisfied_by(entity) and self.right.is_satisfied_by(entity)
 
@@ -271,10 +271,10 @@ class AndSpecification(Specification[T]):
 @dataclass
 class OrSpecification(Specification[T]):
     """OR combination of specifications."""
-    
+
     left: Specification[T]
     right: Specification[T]
-    
+
     def is_satisfied_by(self, entity: T) -> bool:
         return self.left.is_satisfied_by(entity) or self.right.is_satisfied_by(entity)
 
@@ -282,8 +282,8 @@ class OrSpecification(Specification[T]):
 @dataclass
 class NotSpecification(Specification[T]):
     """NOT negation of specification."""
-    
+
     spec: Specification[T]
-    
+
     def is_satisfied_by(self, entity: T) -> bool:
         return not self.spec.is_satisfied_by(entity)

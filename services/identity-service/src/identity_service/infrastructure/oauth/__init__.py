@@ -1,14 +1,14 @@
 """OAuth2 infrastructure package."""
 
-from identity_service.infrastructure.oauth.oauth_server import (
-    AuthlibClient,
-    IdentityAuthorizationServer,
-)
 from identity_service.infrastructure.oauth.grants import (
     AuthorizationCodeGrant,
     ClientCredentialsGrant,
     OpenIDCode,
     RefreshTokenGrant,
+)
+from identity_service.infrastructure.oauth.oauth_server import (
+    AuthlibClient,
+    IdentityAuthorizationServer,
 )
 
 __all__ = [

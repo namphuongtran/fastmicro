@@ -35,13 +35,17 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
-# Import correlation ID functions from the single source of truth
 from shared.observability.structlog_config import (
-    get_correlation_id as _get_observability_correlation_id,
-    set_correlation_id as _set_correlation_id,
     generate_correlation_id as _generate_correlation_id,
 )
 
+# Import correlation ID functions from the single source of truth
+from shared.observability.structlog_config import (
+    get_correlation_id as _get_observability_correlation_id,
+)
+from shared.observability.structlog_config import (
+    set_correlation_id as _set_correlation_id,
+)
 
 # Context variable for request-scoped data (user context, NOT correlation ID)
 _request_context: ContextVar[RequestContext | None] = ContextVar(
@@ -142,7 +146,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         """
         # Generate unique request ID
         request_id = str(uuid.uuid4())
-        
+
         # Get correlation ID from observability context (set by RequestLoggingMiddleware)
         # or extract from header / generate if not available
         correlation_id = _get_observability_correlation_id()
@@ -153,24 +157,24 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             )
             # Set in observability context for structlog
             _set_correlation_id(correlation_id)
-        
+
         # Create request context with user-level data
         context = RequestContext(
             request_id=request_id,
             correlation_id=correlation_id,
         )
-        
+
         # Set request context (for user_id, metadata access)
         token_ctx = _request_context.set(context)
-        
+
         try:
             # Process request
             response = await call_next(request)
-            
+
             # Add headers to response
             response.headers[self.correlation_header] = correlation_id
             response.headers[self.request_id_header] = request_id
-            
+
             return response
         finally:
             # Reset request context
@@ -180,6 +184,6 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 __all__ = [
     "RequestContext",
     "RequestContextMiddleware",
-    "get_request_context",
     "get_correlation_id",
+    "get_request_context",
 ]

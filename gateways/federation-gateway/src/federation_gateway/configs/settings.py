@@ -12,10 +12,8 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from shared.config import (
-    AuthSettings,
     CORSSettings,
     CryptoSettings,
-    SecuritySettings,
     SessionSettings,
     get_settings,
 )

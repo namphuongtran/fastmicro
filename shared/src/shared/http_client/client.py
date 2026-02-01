@@ -8,9 +8,8 @@ This module provides an async HTTP client for microservice communication:
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Self
+from typing import Any, Self
 from uuid import uuid4
 
 import httpx
@@ -20,9 +19,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Mapping
 
 
 class HTTPClientError(Exception):
@@ -349,7 +345,7 @@ class ServiceClient:
         """
         # Prepare headers
         request_headers = dict(headers or {})
-        
+
         # Add correlation ID
         if correlation_id:
             request_headers[self._config.correlation_id_header] = correlation_id
@@ -365,7 +361,7 @@ class ServiceClient:
                 params=params,
                 headers=request_headers,
             )
-            
+
             # Retry on 5xx errors
             if response.status_code >= 500:
                 raise httpx.HTTPStatusError(
@@ -373,7 +369,7 @@ class ServiceClient:
                     request=response.request,
                     response=response,
                 )
-            
+
             return response
 
         try:

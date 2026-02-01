@@ -11,7 +11,6 @@ Best used as the second tier in a tiered cache setup.
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, TypeVar
 
 from pydantic import BaseModel
@@ -60,14 +59,14 @@ class RedisConfig(BaseModel):
         """
         if self.url:
             return self.url
-        
+
         scheme = "rediss" if self.ssl else "redis"
         auth = ""
         if self.username and self.password:
             auth = f"{self.username}:{self.password}@"
         elif self.password:
             auth = f":{self.password}@"
-        
+
         return f"{scheme}://{auth}{self.host}:{self.port}/{self.db}"
 
 
@@ -140,10 +139,10 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         if self._connected:
             return
-        
+
         try:
             import redis.asyncio as redis
-            
+
             self._client = redis.from_url(
                 self._config.build_url(),
                 socket_timeout=self._config.socket_timeout,
@@ -151,11 +150,11 @@ class RedisCache(AbstractCacheBackend[V]):
                 max_connections=self._config.max_connections,
                 decode_responses=False,  # We handle decoding
             )
-            
+
             # Test connection
             await self._client.ping()
             self._connected = True
-            
+
         except ImportError as e:
             raise CacheConnectionError(
                 "Redis library not installed. Install with: pip install redis",
@@ -184,13 +183,13 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         await self._ensure_connected()
         full_key = self.build_key(key)
-        
+
         try:
             data = await self._client.get(full_key)
             if data is None:
                 return default
             return self._serializer.deserialize(data)
-        except Exception as e:
+        except Exception:
             # Log but don't fail - return default
             return default
 
@@ -213,7 +212,7 @@ class RedisCache(AbstractCacheBackend[V]):
         await self._ensure_connected()
         full_key = self.build_key(key)
         effective_ttl = self._get_ttl(ttl)
-        
+
         try:
             data = self._serializer.serialize(value)
             if effective_ttl:
@@ -238,7 +237,7 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         await self._ensure_connected()
         full_key = self.build_key(key)
-        
+
         try:
             result = await self._client.delete(full_key)
             return result > 0
@@ -259,7 +258,7 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         await self._ensure_connected()
         full_key = self.build_key(key)
-        
+
         try:
             return await self._client.exists(full_key) > 0
         except Exception:
@@ -276,11 +275,11 @@ class RedisCache(AbstractCacheBackend[V]):
             Number of keys cleared.
         """
         await self._ensure_connected()
-        
+
         # Determine pattern to match
         ns = namespace if namespace is not None else self._namespace
         pattern = f"{ns}:*" if ns else "*"
-        
+
         try:
             # Use SCAN for large datasets to avoid blocking
             count = 0
@@ -314,7 +313,7 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         await self._ensure_connected()
         full_key = self.build_key(key)
-        
+
         try:
             if delta >= 0:
                 return await self._client.incrby(full_key, delta)
@@ -338,7 +337,7 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         await self._ensure_connected()
         full_key = self.build_key(key)
-        
+
         try:
             return await self._client.expire(full_key, ttl)
         except Exception as e:
@@ -358,7 +357,7 @@ class RedisCache(AbstractCacheBackend[V]):
         """
         await self._ensure_connected()
         full_key = self.build_key(key)
-        
+
         try:
             return await self._client.ttl(full_key)
         except Exception:
@@ -374,16 +373,16 @@ class RedisCache(AbstractCacheBackend[V]):
             Dictionary mapping keys to values (None if not found).
         """
         await self._ensure_connected()
-        
+
         if not keys:
             return {}
-        
+
         full_keys = [self.build_key(k) for k in keys]
-        
+
         try:
             values = await self._client.mget(full_keys)
             result: dict[str, V | None] = {}
-            
+
             for key, value in zip(keys, values):
                 if value is None:
                     result[key] = None
@@ -392,10 +391,10 @@ class RedisCache(AbstractCacheBackend[V]):
                         result[key] = self._serializer.deserialize(value)
                     except Exception:
                         result[key] = None
-            
+
             return result
         except Exception:
-            return {k: None for k in keys}
+            return dict.fromkeys(keys)
 
     async def set_many(
         self,
@@ -412,24 +411,24 @@ class RedisCache(AbstractCacheBackend[V]):
             True if all successful.
         """
         await self._ensure_connected()
-        
+
         if not mapping:
             return True
-        
+
         effective_ttl = self._get_ttl(ttl)
-        
+
         try:
             pipe = self._client.pipeline()
-            
+
             for key, value in mapping.items():
                 full_key = self.build_key(key)
                 data = self._serializer.serialize(value)
-                
+
                 if effective_ttl:
                     pipe.setex(full_key, effective_ttl, data)
                 else:
                     pipe.set(full_key, data)
-            
+
             await pipe.execute()
             return True
         except Exception as e:
@@ -448,12 +447,12 @@ class RedisCache(AbstractCacheBackend[V]):
             Number of keys deleted.
         """
         await self._ensure_connected()
-        
+
         if not keys:
             return 0
-        
+
         full_keys = [self.build_key(k) for k in keys]
-        
+
         try:
             return await self._client.delete(*full_keys)
         except Exception as e:
@@ -500,7 +499,7 @@ class RedisCache(AbstractCacheBackend[V]):
                 self._client = None
                 self._connected = False
 
-    async def __aenter__(self) -> "RedisCache[V]":
+    async def __aenter__(self) -> RedisCache[V]:
         """Async context manager entry."""
         await self.connect()
         return self

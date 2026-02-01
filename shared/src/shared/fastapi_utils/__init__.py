@@ -37,6 +37,16 @@ from shared.fastapi_utils.exception_handlers import (
     register_exception_handlers,
     validation_exception_handler,
 )
+from shared.fastapi_utils.health_router import (
+    DetailedHealthResponse,
+    HealthResponse,
+    LivenessResponse,
+    ReadinessResponse,
+    create_cache_health_check,
+    create_database_health_check,
+    create_external_service_health_check,
+    create_health_router,
+)
 from shared.fastapi_utils.lifespan import (
     LifespanManager,
     create_lifespan,
@@ -48,16 +58,6 @@ from shared.fastapi_utils.middleware import (
     RequestContextMiddleware,
     get_correlation_id,
     get_request_context,
-)
-from shared.fastapi_utils.health_router import (
-    create_health_router,
-    create_database_health_check,
-    create_cache_health_check,
-    create_external_service_health_check,
-    HealthResponse,
-    LivenessResponse,
-    ReadinessResponse,
-    DetailedHealthResponse,
 )
 
 __all__ = [

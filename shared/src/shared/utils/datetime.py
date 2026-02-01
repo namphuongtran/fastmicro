@@ -15,22 +15,18 @@ Example:
 from __future__ import annotations
 
 import datetime
-from datetime import date, timedelta, timezone
-from typing import TYPE_CHECKING, Union
-
-if TYPE_CHECKING:
-    pass
+from datetime import date, timedelta
 
 __all__ = [
-    "now_utc",
-    "utc_timestamp",
-    "format_iso8601",
-    "parse_iso8601",
-    "format_relative_time",
-    "start_of_day",
     "end_of_day",
-    "is_business_day",
+    "format_iso8601",
+    "format_relative_time",
     "get_date_range",
+    "is_business_day",
+    "now_utc",
+    "parse_iso8601",
+    "start_of_day",
+    "utc_timestamp",
 ]
 
 
@@ -49,7 +45,7 @@ def now_utc() -> datetime.datetime:
         >>> dt.tzinfo
         datetime.timezone.utc
     """
-    return datetime.datetime.now(tz=timezone.utc)
+    return datetime.datetime.now(tz=datetime.UTC)
 
 
 def utc_timestamp() -> float:
@@ -66,7 +62,7 @@ def utc_timestamp() -> float:
         >>> ts > 0
         True
     """
-    return datetime.datetime.now(tz=timezone.utc).timestamp()
+    return datetime.datetime.now(tz=datetime.UTC).timestamp()
 
 
 def format_iso8601(
@@ -94,7 +90,7 @@ def format_iso8601(
     """
     # Ensure timezone awareness
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=datetime.UTC)
 
     if not include_microseconds:
         dt = dt.replace(microsecond=0)
@@ -153,18 +149,18 @@ def format_relative_time(dt: datetime.datetime) -> str:
         '5 minutes ago'
     """
     now = now_utc()
-    
+
     # Ensure both have timezone info
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    
+        dt = dt.replace(tzinfo=datetime.UTC)
+
     diff = now - dt
     seconds = diff.total_seconds()
-    
+
     # Handle future times
     if seconds < 0:
         return _format_future_time(abs(seconds))
-    
+
     # Past times
     if seconds < 10:
         return "just now"
@@ -243,7 +239,7 @@ def end_of_day(dt: datetime.datetime) -> datetime.datetime:
     return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
-def is_business_day(d: Union[date, datetime.datetime]) -> bool:
+def is_business_day(d: date | datetime.datetime) -> bool:
     """
     Check if a date is a business day (Monday-Friday).
 
@@ -263,7 +259,7 @@ def is_business_day(d: Union[date, datetime.datetime]) -> bool:
     """
     if isinstance(d, datetime.datetime):
         d = d.date()
-    
+
     # weekday(): Monday = 0, Sunday = 6
     return d.weekday() < 5
 
@@ -289,11 +285,11 @@ def get_date_range(
     """
     if start > end:
         return []
-    
+
     result = []
     current = start
     while current <= end:
         result.append(current)
         current += timedelta(days=1)
-    
+
     return result

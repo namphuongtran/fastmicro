@@ -9,12 +9,11 @@ This module provides reusable mixins for SQLAlchemy models:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, String, event
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr
+from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class TimestampMixin:
@@ -31,14 +30,14 @@ class TimestampMixin:
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
-    
+
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=True,
     )
 
@@ -63,7 +62,7 @@ class SoftDeleteMixin:
         default=False,
         nullable=False,
     )
-    
+
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -72,7 +71,7 @@ class SoftDeleteMixin:
     def soft_delete(self) -> None:
         """Mark entity as soft deleted."""
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.now(UTC)
 
     def restore(self) -> None:
         """Restore soft deleted entity."""
@@ -115,7 +114,7 @@ class AuditMixin:
         String(100),
         nullable=True,
     )
-    
+
     updated_by: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
@@ -159,7 +158,7 @@ class VersionMixin:
         default=1,
         nullable=False,
     )
-    
+
     def increment_version(self) -> None:
         """Manually increment version."""
         self.version += 1

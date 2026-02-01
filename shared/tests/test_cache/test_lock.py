@@ -5,16 +5,14 @@ This module tests distributed locking.
 
 from __future__ import annotations
 
-import asyncio
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from shared.cache.lock import (
     DistributedLock,
-    LockConfig,
     LockAcquisitionError,
+    LockConfig,
     LockReleaseError,
 )
 from shared.cache.redis_client import AsyncRedisClient
@@ -31,7 +29,7 @@ class TestLockConfig:
             blocking=True,
             blocking_timeout=10.0,
         )
-        
+
         assert config.name == "my-lock"
         assert config.timeout == 30.0
         assert config.blocking is True
@@ -40,7 +38,7 @@ class TestLockConfig:
     def test_config_defaults(self) -> None:
         """Should have sensible defaults."""
         config = LockConfig(name="test-lock")
-        
+
         assert config.timeout == 30.0
         assert config.blocking is True
         assert config.blocking_timeout == 10.0
@@ -81,7 +79,7 @@ class TestDistributedLock:
     ) -> None:
         """Should create distributed lock."""
         lock = DistributedLock(mock_redis, config)
-        
+
         assert lock is not None
         assert lock.name == "test-lock"
 
@@ -91,9 +89,9 @@ class TestDistributedLock:
     ) -> None:
         """Should acquire lock."""
         mock_redis._redis.set.return_value = True
-        
+
         acquired = await lock.acquire()
-        
+
         assert acquired is True
 
     @pytest.mark.asyncio
@@ -102,9 +100,9 @@ class TestDistributedLock:
     ) -> None:
         """Should handle lock acquisition failure."""
         mock_redis._redis.set.return_value = False
-        
+
         acquired = await lock.acquire()
-        
+
         assert acquired is False
 
     @pytest.mark.asyncio
@@ -115,9 +113,9 @@ class TestDistributedLock:
         # Simulate owning the lock
         lock._token = "test-token"
         mock_redis._redis.get.return_value = b"test-token"
-        
+
         await lock.release()
-        
+
         mock_redis._redis.delete.assert_called()
 
     @pytest.mark.asyncio
@@ -127,9 +125,9 @@ class TestDistributedLock:
         """Should work as context manager."""
         mock_redis._redis.set.return_value = True
         mock_redis._redis.get.return_value = None
-        
+
         lock = DistributedLock(mock_redis, config)
-        
+
         async with lock:
             # Lock should be acquired
             assert lock._token is not None
@@ -141,9 +139,9 @@ class TestDistributedLock:
         """Should extend lock timeout."""
         lock._token = "test-token"
         mock_redis._redis.get.return_value = b"test-token"
-        
+
         result = await lock.extend(30)
-        
+
         assert result is True
         mock_redis._redis.expire.assert_called()
 
@@ -153,9 +151,9 @@ class TestDistributedLock:
     ) -> None:
         """Should check if resource is locked."""
         mock_redis._redis.get.return_value = b"some-token"
-        
+
         is_locked = await lock.is_locked()
-        
+
         assert is_locked is True
 
     @pytest.mark.asyncio
@@ -164,9 +162,9 @@ class TestDistributedLock:
     ) -> None:
         """Should return False when not locked."""
         mock_redis._redis.get.return_value = None
-        
+
         is_locked = await lock.is_locked()
-        
+
         assert is_locked is False
 
 
@@ -176,11 +174,11 @@ class TestLockErrors:
     def test_lock_acquisition_error(self) -> None:
         """Should create lock acquisition error."""
         error = LockAcquisitionError("Failed to acquire lock")
-        
+
         assert str(error) == "Failed to acquire lock"
 
     def test_lock_release_error(self) -> None:
         """Should create lock release error."""
         error = LockReleaseError("Failed to release lock")
-        
+
         assert str(error) == "Failed to release lock"

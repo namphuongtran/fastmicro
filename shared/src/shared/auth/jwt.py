@@ -17,14 +17,14 @@ Example:
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
 import jwt
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError as JWTInvalidToken
+from jwt.exceptions import ExpiredSignatureError
+from jwt.exceptions import InvalidTokenError as JWTInvalidToken
 
 
 class TokenType(str, Enum):
@@ -79,7 +79,7 @@ class TokenData:
         Returns:
             True if the token is expired.
         """
-        return datetime.now(timezone.utc) > self.exp
+        return datetime.now(UTC) > self.exp
 
 
 class InvalidTokenError(Exception):
@@ -176,7 +176,7 @@ class JWTService:
         """
         if expires_delta is None:
             expires_delta = timedelta(minutes=self.access_token_expire_minutes)
-        
+
         return self._create_token(
             subject=subject,
             token_type=TokenType.ACCESS,
@@ -206,7 +206,7 @@ class JWTService:
         """
         if expires_delta is None:
             expires_delta = timedelta(days=self.refresh_token_expire_days)
-        
+
         return self._create_token(
             subject=subject,
             token_type=TokenType.REFRESH,
@@ -242,52 +242,52 @@ class JWTService:
             decode_kwargs: dict[str, Any] = {
                 "algorithms": [self.algorithm],
             }
-            
+
             if self.audience:
                 decode_kwargs["audience"] = self.audience
             if self.issuer:
                 decode_kwargs["issuer"] = self.issuer
-            
+
             payload = jwt.decode(
                 token,
                 self.secret_key,
                 **decode_kwargs,
             )
-            
+
             # Extract token data
             token_type_str = payload.get("type", TokenType.ACCESS.value)
             token_type = TokenType(token_type_str)
-            
+
             # Validate expected type if specified
             if expected_type is not None and token_type != expected_type:
                 raise InvalidTokenError(
                     f"Expected {expected_type.value} token, got {token_type.value}"
                 )
-            
+
             # Parse timestamps
             iat = payload.get("iat")
             exp = payload.get("exp")
-            
+
             issued_at = (
-                datetime.fromtimestamp(iat, tz=timezone.utc)
+                datetime.fromtimestamp(iat, tz=UTC)
                 if iat is not None
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             )
             expires_at = (
-                datetime.fromtimestamp(exp, tz=timezone.utc)
+                datetime.fromtimestamp(exp, tz=UTC)
                 if exp is not None
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             )
-            
+
             # Extract scopes and custom claims
             scopes = payload.get("scopes", [])
-            
+
             # Standard claims to exclude from custom_claims
             standard_claims = {"sub", "iat", "exp", "type", "scopes", "iss", "aud"}
             custom_claims = {
                 k: v for k, v in payload.items() if k not in standard_claims
             }
-            
+
             return TokenData(
                 sub=payload["sub"],
                 exp=expires_at,
@@ -298,7 +298,7 @@ class JWTService:
                 iss=payload.get("iss"),
                 aud=payload.get("aud"),
             )
-            
+
         except ExpiredSignatureError as e:
             raise ExpiredTokenError("Token has expired") from e
         except JWTInvalidToken as e:
@@ -321,39 +321,39 @@ class JWTService:
         """
         if verify:
             return self.verify_token(token)
-        
+
         try:
             payload = jwt.decode(
                 token,
                 options={"verify_signature": False},
             )
-            
+
             # Parse timestamps
             iat = payload.get("iat")
             exp = payload.get("exp")
-            
+
             issued_at = (
-                datetime.fromtimestamp(iat, tz=timezone.utc)
+                datetime.fromtimestamp(iat, tz=UTC)
                 if iat is not None
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             )
             expires_at = (
-                datetime.fromtimestamp(exp, tz=timezone.utc)
+                datetime.fromtimestamp(exp, tz=UTC)
                 if exp is not None
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             )
-            
+
             # Extract token type
             token_type_str = payload.get("type", TokenType.ACCESS.value)
             token_type = TokenType(token_type_str)
-            
+
             # Extract scopes and custom claims
             scopes = payload.get("scopes", [])
             standard_claims = {"sub", "iat", "exp", "type", "scopes", "iss", "aud"}
             custom_claims = {
                 k: v for k, v in payload.items() if k not in standard_claims
             }
-            
+
             return TokenData(
                 sub=payload["sub"],
                 exp=expires_at,
@@ -389,9 +389,9 @@ class JWTService:
         Returns:
             Encoded JWT token string.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expire = now + expires_delta
-        
+
         payload: dict[str, Any] = {
             "sub": subject,
             "type": token_type.value,
@@ -400,20 +400,20 @@ class JWTService:
             "exp": int(expire.timestamp()),
             **custom_claims,
         }
-        
+
         # Add optional claims
         if self.issuer:
             payload["iss"] = self.issuer
         if self.audience:
             payload["aud"] = self.audience
-        
+
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
 
 __all__ = [
+    "ExpiredTokenError",
+    "InvalidTokenError",
     "JWTService",
     "TokenData",
     "TokenType",
-    "InvalidTokenError",
-    "ExpiredTokenError",
 ]

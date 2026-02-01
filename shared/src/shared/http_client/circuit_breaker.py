@@ -9,10 +9,11 @@ This module provides a circuit breaker for resilient service calls:
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -177,16 +178,16 @@ class CircuitBreaker:
         """Check if recovery should be attempted."""
         if self._opened_at is None:
             return False
-        
-        elapsed = (datetime.now(timezone.utc) - self._opened_at).total_seconds()
+
+        elapsed = (datetime.now(UTC) - self._opened_at).total_seconds()
         return elapsed >= self._config.recovery_timeout
 
     def _get_retry_after(self) -> float | None:
         """Calculate retry after time."""
         if self._opened_at is None:
             return None
-        
-        elapsed = (datetime.now(timezone.utc) - self._opened_at).total_seconds()
+
+        elapsed = (datetime.now(UTC) - self._opened_at).total_seconds()
         remaining = self._config.recovery_timeout - elapsed
         return max(0, remaining)
 
@@ -214,7 +215,7 @@ class CircuitBreaker:
     def _open(self) -> None:
         """Open the circuit."""
         self._state = CircuitState.OPEN
-        self._opened_at = datetime.now(timezone.utc)
+        self._opened_at = datetime.now(UTC)
 
     def _close(self) -> None:
         """Close the circuit."""

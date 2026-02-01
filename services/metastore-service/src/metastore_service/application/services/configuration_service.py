@@ -16,12 +16,12 @@ from metastore_service.application.dtos.configuration_dtos import (
     CreateConfigurationDTO,
     UpdateConfigurationDTO,
 )
-from metastore_service.domain.entities.configuration import Configuration, ConfigurationSchema
+from metastore_service.domain.entities.configuration import Configuration
 from metastore_service.domain.repositories.configuration_repository import (
     IConfigurationRepository,
     IConfigurationSchemaRepository,
 )
-from metastore_service.domain.value_objects import Environment, TenantId
+from metastore_service.domain.value_objects import Environment
 
 logger = logging.getLogger(__name__)
 

@@ -33,8 +33,8 @@ With configuration:
 from __future__ import annotations
 
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -49,7 +49,6 @@ from shared.observability.structlog_config import (
     get_structlog_logger,
     set_correlation_id,
 )
-
 
 # =============================================================================
 # Configuration
@@ -141,7 +140,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             ),
         )
     """
-    
+
     def __init__(
         self,
         app: ASGIApp,
@@ -156,7 +155,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.config = config or DEFAULT_CONFIG
         self.logger = get_structlog_logger("shared.observability.middleware")
-    
+
     async def dispatch(
         self,
         request: Request,
@@ -174,11 +173,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Check if this path should be excluded from logging
         if self._should_exclude_path(request.url.path):
             return await call_next(request)
-        
+
         # Extract or generate correlation ID
         correlation_id = self._extract_correlation_id(request)
         set_correlation_id(correlation_id)
-        
+
         # Bind request context to structlog
         bind_contextvars(
             correlation_id=correlation_id,
@@ -186,18 +185,18 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             http_path=request.url.path,
             client_ip=self._get_client_ip(request),
         )
-        
+
         # Record start time
         start_time = time.perf_counter()
-        
+
         # Log incoming request
         request_log_data = self._build_request_log_data(request)
         self.logger.info("Request started", **request_log_data)
-        
+
         # Process request
         response: Response | None = None
         error: Exception | None = None
-        
+
         try:
             response = await call_next(request)
         except Exception as exc:
@@ -206,7 +205,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         finally:
             # Calculate duration
             duration_ms = (time.perf_counter() - start_time) * 1000
-            
+
             # Log response/error
             self._log_response(
                 request=request,
@@ -214,16 +213,16 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 error=error,
                 duration_ms=duration_ms,
             )
-            
+
             # Clear context
             clear_contextvars()
-        
+
         # Add correlation ID to response headers
         if response is not None:
             response.headers[self.config.correlation_id_header] = correlation_id
-        
+
         return response
-    
+
     def _should_exclude_path(self, path: str) -> bool:
         """Check if the path should be excluded from logging.
         
@@ -236,14 +235,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Exact match
         if path in self.config.exclude_paths:
             return True
-        
+
         # Prefix match
         for prefix in self.config.exclude_paths_startswith:
             if path.startswith(prefix):
                 return True
-        
+
         return False
-    
+
     def _extract_correlation_id(self, request: Request) -> str:
         """Extract correlation ID from request headers or generate one.
         
@@ -257,15 +256,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         correlation_id = request.headers.get(self.config.correlation_id_header)
         if correlation_id:
             return correlation_id
-        
+
         # Try alternative header
         correlation_id = request.headers.get(self.config.request_id_header)
         if correlation_id:
             return correlation_id
-        
+
         # Generate new ID
         return generate_correlation_id()
-    
+
     def _get_client_ip(self, request: Request) -> str:
         """Extract client IP from request, handling proxies.
         
@@ -280,18 +279,18 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         if forwarded_for:
             # Take the first IP (original client)
             return forwarded_for.split(",")[0].strip()
-        
+
         # Check X-Real-IP header
         real_ip = request.headers.get("x-real-ip")
         if real_ip:
             return real_ip
-        
+
         # Fall back to direct client
         if request.client:
             return request.client.host
-        
+
         return "unknown"
-    
+
     def _build_request_log_data(self, request: Request) -> dict:
         """Build log data for the incoming request.
         
@@ -306,14 +305,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             "query_string": str(request.query_params) if request.query_params else None,
             "user_agent": request.headers.get("user-agent"),
         }
-        
+
         # Add headers if configured
         if self.config.log_request_headers:
             data["headers"] = self._sanitize_headers(dict(request.headers))
-        
+
         # Remove None values
         return {k: v for k, v in data.items() if v is not None}
-    
+
     def _sanitize_headers(self, headers: dict[str, str]) -> dict[str, str]:
         """Sanitize headers by redacting sensitive values.
         
@@ -330,7 +329,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             else:
                 sanitized[key] = value
         return sanitized
-    
+
     def _log_response(
         self,
         request: Request,
@@ -349,10 +348,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         log_data = {
             "duration_ms": round(duration_ms, 2),
         }
-        
+
         # Check for slow request
         is_slow = duration_ms >= self.config.slow_request_threshold_ms
-        
+
         if error is not None:
             # Log error
             log_data["error_type"] = type(error).__name__
@@ -362,13 +361,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             # Log response
             log_data["http_status"] = response.status_code
             log_data["content_type"] = response.headers.get("content-type")
-            
+
             # Add response headers if configured
             if self.config.log_response_headers:
                 log_data["response_headers"] = self._sanitize_headers(
                     dict(response.headers)
                 )
-            
+
             # Determine log level based on status and duration
             if response.status_code >= 500:
                 self.logger.error("Request completed", **log_data)

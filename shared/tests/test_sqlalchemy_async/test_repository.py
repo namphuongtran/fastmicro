@@ -5,19 +5,10 @@ This module tests async SQLAlchemy repository pattern.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, MagicMock
-
 import pytest
-from sqlalchemy import Column, Integer, String, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import DeclarativeBase
 
-from shared.sqlalchemy_async.database import AsyncDatabaseManager, DatabaseConfig
-from shared.sqlalchemy_async.repository import (
-    AsyncRepository,
-    AsyncCRUDRepository,
-)
 from shared.dbs.repository import (
     Filter,
     FilterOperator,
@@ -25,6 +16,10 @@ from shared.dbs.repository import (
     OrderDirection,
     PageRequest,
     PageResponse,
+)
+from shared.sqlalchemy_async.database import AsyncDatabaseManager, DatabaseConfig
+from shared.sqlalchemy_async.repository import (
+    AsyncCRUDRepository,
 )
 
 
@@ -36,7 +31,7 @@ class Base(DeclarativeBase):
 class User(Base):
     """Test user model."""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(100))
     email = Column(String(100), unique=True)
@@ -44,7 +39,7 @@ class User(Base):
 
 class UserRepository(AsyncCRUDRepository[User, int]):
     """Test user repository."""
-    
+
     @property
     def model_class(self) -> type[User]:
         return User
@@ -65,7 +60,7 @@ class TestAsyncRepository:
     ) -> None:
         """Should work with async session."""
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             assert repo.session == session
@@ -95,7 +90,7 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             user = await repo.create(name="John", email="john@example.com")
-            
+
             assert user.id is not None
             assert user.name == "John"
             assert user.email == "john@example.com"
@@ -108,11 +103,11 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             created = await repo.create(name="Jane", email="jane@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             user = await repo.get_by_id(created.id)
-            
+
             assert user is not None
             assert user.name == "Jane"
 
@@ -124,7 +119,7 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             user = await repo.get_by_id(99999)
-            
+
             assert user is None
 
     @pytest.mark.asyncio
@@ -136,11 +131,11 @@ class TestAsyncCRUDRepository:
             repo = UserRepository(session)
             await repo.create(name="User1", email="user1@example.com")
             await repo.create(name="User2", email="user2@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             users = await repo.get_all()
-            
+
             assert len(users) == 2
 
     @pytest.mark.asyncio
@@ -152,11 +147,11 @@ class TestAsyncCRUDRepository:
             repo = UserRepository(session)
             for i in range(5):
                 await repo.create(name=f"User{i}", email=f"user{i}@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             users = await repo.get_all(limit=3)
-            
+
             assert len(users) == 3
 
     @pytest.mark.asyncio
@@ -168,11 +163,11 @@ class TestAsyncCRUDRepository:
             repo = UserRepository(session)
             for i in range(5):
                 await repo.create(name=f"User{i}", email=f"user{i}@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             users = await repo.get_all(offset=3)
-            
+
             assert len(users) == 2
 
     @pytest.mark.asyncio
@@ -184,11 +179,11 @@ class TestAsyncCRUDRepository:
             repo = UserRepository(session)
             user = await repo.create(name="Original", email="original@example.com")
             user_id = user.id
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             updated = await repo.update(user_id, name="Updated")
-            
+
             assert updated is not None
             assert updated.name == "Updated"
             assert updated.email == "original@example.com"
@@ -201,7 +196,7 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             result = await repo.update(99999, name="Updated")
-            
+
             assert result is None
 
     @pytest.mark.asyncio
@@ -213,17 +208,17 @@ class TestAsyncCRUDRepository:
             repo = UserRepository(session)
             user = await repo.create(name="ToDelete", email="delete@example.com")
             user_id = user.id
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             deleted = await repo.delete(user_id)
-            
+
             assert deleted is True
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             user = await repo.get_by_id(user_id)
-            
+
             assert user is None
 
     @pytest.mark.asyncio
@@ -234,7 +229,7 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             result = await repo.delete(99999)
-            
+
             assert result is False
 
     @pytest.mark.asyncio
@@ -246,10 +241,10 @@ class TestAsyncCRUDRepository:
             repo = UserRepository(session)
             user = await repo.create(name="Exists", email="exists@example.com")
             user_id = user.id
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
-            
+
             assert await repo.exists(user_id) is True
             assert await repo.exists(99999) is False
 
@@ -263,11 +258,11 @@ class TestAsyncCRUDRepository:
             await repo.create(name="User1", email="user1@example.com")
             await repo.create(name="User2", email="user2@example.com")
             await repo.create(name="User3", email="user3@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             count = await repo.count()
-            
+
             assert count == 3
 
     @pytest.mark.asyncio
@@ -280,11 +275,11 @@ class TestAsyncCRUDRepository:
             await repo.create(name="John", email="john@example.com")
             await repo.create(name="Jane", email="jane@example.com")
             await repo.create(name="John", email="john2@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             johns = await repo.find_by(name="John")
-            
+
             assert len(johns) == 2
             assert all(u.name == "John" for u in johns)
 
@@ -296,11 +291,11 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             await repo.create(name="Unique", email="unique@example.com")
-        
+
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             user = await repo.find_one_by(email="unique@example.com")
-            
+
             assert user is not None
             assert user.name == "Unique"
 
@@ -312,7 +307,7 @@ class TestAsyncCRUDRepository:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             user = await repo.find_one_by(email="nonexistent@example.com")
-            
+
             assert user is None
 
 
@@ -353,7 +348,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.EQ, value="Alice")]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 1
             assert users[0].name == "Alice"
 
@@ -366,7 +361,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.NE, value="Alice")]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 4
             assert all(u.name != "Alice" for u in users)
 
@@ -379,7 +374,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="email", operator=FilterOperator.CONTAINS, value="@example")]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 5
 
     @pytest.mark.asyncio
@@ -391,7 +386,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.STARTS_WITH, value="A")]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 1
             assert users[0].name == "Alice"
 
@@ -404,7 +399,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.IN, value=["Alice", "Bob"])]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 2
             names = {u.name for u in users}
             assert names == {"Alice", "Bob"}
@@ -418,7 +413,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.NOT_IN, value=["Alice", "Bob"])]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 3
             names = {u.name for u in users}
             assert names == {"Charlie", "David", "Eve"}
@@ -435,7 +430,7 @@ class TestFilteringAndPagination:
                 Filter(field="email", operator=FilterOperator.CONTAINS, value="alice"),
             ]
             users = await repo.find_with_filters(filters)
-            
+
             assert len(users) == 1
             assert users[0].name == "Alice"
 
@@ -448,7 +443,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             order_by = [OrderBy(field="name", direction=OrderDirection.ASC)]
             users = await repo.find_with_filters(order_by=order_by)
-            
+
             names = [u.name for u in users]
             assert names == ["Alice", "Bob", "Charlie", "David", "Eve"]
 
@@ -461,7 +456,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             order_by = [OrderBy(field="name", direction=OrderDirection.DESC)]
             users = await repo.find_with_filters(order_by=order_by)
-            
+
             names = [u.name for u in users]
             assert names == ["Eve", "David", "Charlie", "Bob", "Alice"]
 
@@ -473,7 +468,7 @@ class TestFilteringAndPagination:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             users = await repo.find_with_filters(limit=2)
-            
+
             assert len(users) == 2
 
     @pytest.mark.asyncio
@@ -485,7 +480,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.IN, value=["Alice", "Bob"])]
             count = await repo.count(filters)
-            
+
             assert count == 2
 
     @pytest.mark.asyncio
@@ -496,7 +491,7 @@ class TestFilteringAndPagination:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             page = await repo.paginate(PageRequest(page=1, size=2))
-            
+
             assert isinstance(page, PageResponse)
             assert len(page.items) == 2
             assert page.total == 5
@@ -514,7 +509,7 @@ class TestFilteringAndPagination:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             page = await repo.paginate(PageRequest(page=2, size=2))
-            
+
             assert len(page.items) == 2
             assert page.page == 2
             assert page.has_next is True
@@ -528,7 +523,7 @@ class TestFilteringAndPagination:
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
             page = await repo.paginate(PageRequest(page=3, size=2))
-            
+
             assert len(page.items) == 1  # 5 total, last page has 1
             assert page.page == 3
             assert page.has_next is False
@@ -543,7 +538,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="name", operator=FilterOperator.IN, value=["Alice", "Bob", "Charlie"])]
             page = await repo.paginate(PageRequest(page=1, size=2), filters=filters)
-            
+
             assert len(page.items) == 2
             assert page.total == 3
             assert page.total_pages == 2
@@ -557,7 +552,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             order_by = [OrderBy(field="name", direction=OrderDirection.DESC)]
             page = await repo.paginate(PageRequest(page=1, size=3), order_by=order_by)
-            
+
             names = [u.name for u in page.items]
             assert names == ["Eve", "David", "Charlie"]
 
@@ -570,7 +565,7 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             filters = [Filter(field="nonexistent", operator=FilterOperator.EQ, value="test")]
             users = await repo.find_with_filters(filters)
-            
+
             # Should return all users (filter ignored)
             assert len(users) == 5
 
@@ -583,6 +578,6 @@ class TestFilteringAndPagination:
             repo = UserRepository(session)
             order_by = [OrderBy(field="nonexistent", direction=OrderDirection.ASC)]
             users = await repo.find_with_filters(order_by=order_by)
-            
+
             # Should return all users (order ignored)
             assert len(users) == 5

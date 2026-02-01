@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, status
+from fastapi import APIRouter, Form, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
 from identity_service.api.dependencies import OAuth2ServiceDep

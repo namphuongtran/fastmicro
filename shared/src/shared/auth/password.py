@@ -16,8 +16,6 @@ Example:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
-from typing import Any
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
@@ -33,7 +31,7 @@ class PasswordStrengthError(ValueError):
         message: Description of what requirements were not met.
         failed_requirements: List of requirement names that failed.
     """
-    
+
     def __init__(
         self,
         message: str,
@@ -191,42 +189,42 @@ def check_password_strength(
     """
     errors: list[str] = []
     failed_requirements: list[str] = []
-    
+
     # Check minimum length
     if len(password) < min_length:
         errors.append(
             f"Password must be at least {min_length} characters long"
         )
         failed_requirements.append("min_length")
-    
+
     # Check uppercase requirement
     if require_uppercase and not re.search(r"[A-Z]", password):
         errors.append("Password must contain at least one uppercase letter")
         failed_requirements.append("uppercase")
-    
+
     # Check lowercase requirement
     if require_lowercase and not re.search(r"[a-z]", password):
         errors.append("Password must contain at least one lowercase letter")
         failed_requirements.append("lowercase")
-    
+
     # Check digit requirement
     if require_digit and not re.search(r"\d", password):
         errors.append("Password must contain at least one digit")
         failed_requirements.append("digit")
-    
+
     # Check special character requirement
     if require_special:
         escaped_chars = re.escape(special_characters)
         if not re.search(f"[{escaped_chars}]", password):
             errors.append("Password must contain at least one special character")
             failed_requirements.append("special")
-    
+
     if errors:
         raise PasswordStrengthError(
             "; ".join(errors),
             failed_requirements=failed_requirements,
         )
-    
+
     return True
 
 

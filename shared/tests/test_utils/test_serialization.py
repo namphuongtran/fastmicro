@@ -9,23 +9,19 @@ from __future__ import annotations
 import datetime
 import json
 from dataclasses import dataclass
-from datetime import timezone
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
 
 import pytest
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    pass
-
 from shared.utils.serialization import (
     CustomJSONEncoder,
     deserialize_json,
-    serialize_json,
     safe_serialize,
+    serialize_json,
 )
 
 
@@ -53,7 +49,7 @@ class TestCustomJSONEncoder:
 
     def test_encodes_datetime(self) -> None:
         """Should encode datetime to ISO8601 string."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = json.dumps({"dt": dt}, cls=CustomJSONEncoder)
         parsed = json.loads(result)
         assert "2024-01-15" in parsed["dt"]
@@ -131,7 +127,7 @@ class TestCustomJSONEncoder:
         """Should raise TypeError for unknown types."""
         class UnknownType:
             pass
-        
+
         with pytest.raises(TypeError):
             json.dumps({"obj": UnknownType()}, cls=CustomJSONEncoder)
 
@@ -164,7 +160,7 @@ class TestSerializeJson:
     def test_handles_nested_objects(self) -> None:
         """Should handle nested complex objects."""
         data = {
-            "datetime": datetime.datetime(2024, 1, 15, tzinfo=timezone.utc),
+            "datetime": datetime.datetime(2024, 1, 15, tzinfo=datetime.UTC),
             "nested": {
                 "uuid": UUID("12345678-1234-5678-1234-567812345678"),
                 "decimal": Decimal("99.99"),
@@ -216,7 +212,7 @@ class TestSafeSerialize:
         """Should return fallback string for unserializable data."""
         class Unserializable:
             pass
-        
+
         result = safe_serialize(Unserializable())
         assert isinstance(result, str)
         assert "error" in result.lower() or "unserializable" in result.lower() or "Unserializable" in result
@@ -225,7 +221,7 @@ class TestSafeSerialize:
         """Should use custom fallback when provided."""
         class Unserializable:
             pass
-        
+
         result = safe_serialize(Unserializable(), fallback="<failed>")
         assert result == "<failed>"
 
@@ -233,7 +229,7 @@ class TestSafeSerialize:
         """Should handle circular references gracefully."""
         data: dict[str, Any] = {"self": None}
         data["self"] = data  # Circular reference
-        
+
         result = safe_serialize(data)
         # Should return fallback or truncated representation
         assert isinstance(result, str)

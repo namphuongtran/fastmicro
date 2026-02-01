@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -187,8 +187,8 @@ class FeatureFlag:
     environment_overrides: dict[Environment, Any] = field(default_factory=dict)
     expires_at: datetime | None = None
     tags: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     created_by: str | None = None
     updated_by: str | None = None
 
@@ -226,7 +226,7 @@ class FeatureFlag:
             else Percentage(rollout_percentage)
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         return cls(
             id=uuid4(),
@@ -380,7 +380,7 @@ class FeatureFlag:
         )
 
         self.targeting_rules.append(rule)
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
         return rule
 
@@ -389,7 +389,7 @@ class FeatureFlag:
         for rule in self.targeting_rules:
             if rule.id == rule_id:
                 self.targeting_rules.remove(rule)
-                self.updated_at = datetime.now(timezone.utc)
+                self.updated_at = datetime.now(UTC)
                 return True
         return False
 
@@ -397,40 +397,40 @@ class FeatureFlag:
         """Set an override value for a specific tenant."""
         tenant_key = str(tenant_id)
         self.tenant_overrides[tenant_key] = value
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     def remove_tenant_override(self, tenant_id: str | TenantId) -> bool:
         """Remove a tenant override."""
         tenant_key = str(tenant_id)
         if tenant_key in self.tenant_overrides:
             del self.tenant_overrides[tenant_key]
-            self.updated_at = datetime.now(timezone.utc)
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
     def set_environment_override(self, environment: Environment, value: Any) -> None:
         """Set an override value for a specific environment."""
         self.environment_overrides[environment] = value
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     def remove_environment_override(self, environment: Environment) -> bool:
         """Remove an environment override."""
         if environment in self.environment_overrides:
             del self.environment_overrides[environment]
-            self.updated_at = datetime.now(timezone.utc)
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
     def enable(self, updated_by: str | None = None) -> None:
         """Enable the feature flag."""
         self.enabled = True
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     def disable(self, updated_by: str | None = None) -> None:
         """Disable the feature flag."""
         self.enabled = False
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     def set_rollout_percentage(
@@ -442,7 +442,7 @@ class FeatureFlag:
         self.rollout_percentage = (
             percentage if isinstance(percentage, Percentage) else Percentage(percentage)
         )
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     @property
@@ -450,7 +450,7 @@ class FeatureFlag:
         """Check if the feature flag has expired."""
         if self.expires_at is None:
             return False
-        return datetime.now(timezone.utc) > self.expires_at
+        return datetime.now(UTC) > self.expires_at
 
     @property
     def rule_count(self) -> int:

@@ -5,21 +5,19 @@ This module tests base model utilities.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from datetime import datetime
 from uuid import UUID
 
 import pytest
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
 from shared.sqlalchemy_async.database import AsyncDatabaseManager, DatabaseConfig
 from shared.sqlalchemy_async.models import (
-    TimestampMixin,
-    SoftDeleteMixin,
-    UUIDPrimaryKeyMixin,
     AuditMixin,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
 )
 
 
@@ -31,12 +29,12 @@ class TestTimestampMixin:
         """Create model with timestamp mixin."""
         class Base(DeclarativeBase):
             pass
-        
+
         class TestModel(TimestampMixin, Base):
             __tablename__ = "test_timestamps"
             id = Column(Integer, primary_key=True)
             name = Column(String(100))
-        
+
         return Base, TestModel
 
     @pytest.fixture
@@ -52,12 +50,12 @@ class TestTimestampMixin:
         """Should set created_at on insert."""
         Base, TestModel = model_with_timestamps
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="test")
             session.add(model)
             await session.flush()
-            
+
             assert model.created_at is not None
             assert isinstance(model.created_at, datetime)
 
@@ -68,18 +66,18 @@ class TestTimestampMixin:
         """Should set updated_at on update."""
         Base, TestModel = model_with_timestamps
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="original")
             session.add(model)
             await session.flush()
-            
+
             original_updated_at = model.updated_at
-            
+
             # Update the model
             model.name = "updated"
             await session.flush()
-            
+
             assert model.updated_at is not None
             # Note: updated_at should be >= original on update
 
@@ -92,12 +90,12 @@ class TestSoftDeleteMixin:
         """Create model with soft delete mixin."""
         class Base(DeclarativeBase):
             pass
-        
+
         class TestModel(SoftDeleteMixin, Base):
             __tablename__ = "test_soft_delete"
             id = Column(Integer, primary_key=True)
             name = Column(String(100))
-        
+
         return Base, TestModel
 
     @pytest.fixture
@@ -113,12 +111,12 @@ class TestSoftDeleteMixin:
         """Should default is_deleted to False."""
         Base, TestModel = model_with_soft_delete
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="test")
             session.add(model)
             await session.flush()
-            
+
             assert model.is_deleted is False
             assert model.deleted_at is None
 
@@ -129,16 +127,16 @@ class TestSoftDeleteMixin:
         """Should soft delete model."""
         Base, TestModel = model_with_soft_delete
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="test")
             session.add(model)
             await session.flush()
-            
+
             # Soft delete
             model.soft_delete()
             await session.flush()
-            
+
             assert model.is_deleted is True
             assert model.deleted_at is not None
 
@@ -149,18 +147,18 @@ class TestSoftDeleteMixin:
         """Should restore soft deleted model."""
         Base, TestModel = model_with_soft_delete
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="test")
             session.add(model)
             await session.flush()
-            
+
             model.soft_delete()
             await session.flush()
-            
+
             model.restore()
             await session.flush()
-            
+
             assert model.is_deleted is False
             assert model.deleted_at is None
 
@@ -173,11 +171,11 @@ class TestUUIDPrimaryKeyMixin:
         """Create model with UUID primary key."""
         class Base(DeclarativeBase):
             pass
-        
+
         class TestModel(UUIDPrimaryKeyMixin, Base):
             __tablename__ = "test_uuid"
             name = Column(String(100))
-        
+
         return Base, TestModel
 
     @pytest.fixture
@@ -193,12 +191,12 @@ class TestUUIDPrimaryKeyMixin:
         """Should generate UUID on insert."""
         Base, TestModel = model_with_uuid
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="test")
             session.add(model)
             await session.flush()
-            
+
             assert model.id is not None
             # Should be a valid UUID string
             UUID(str(model.id))
@@ -210,14 +208,14 @@ class TestUUIDPrimaryKeyMixin:
         """Should generate unique UUIDs."""
         Base, TestModel = model_with_uuid
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model1 = TestModel(name="test1")
             model2 = TestModel(name="test2")
             session.add(model1)
             session.add(model2)
             await session.flush()
-            
+
             assert model1.id != model2.id
 
 
@@ -229,12 +227,12 @@ class TestAuditMixin:
         """Create model with audit mixin."""
         class Base(DeclarativeBase):
             pass
-        
+
         class TestModel(AuditMixin, Base):
             __tablename__ = "test_audit"
             id = Column(Integer, primary_key=True)
             name = Column(String(100))
-        
+
         return Base, TestModel
 
     @pytest.fixture
@@ -250,12 +248,12 @@ class TestAuditMixin:
         """Should have audit fields."""
         Base, TestModel = model_with_audit
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="test", created_by="user1")
             session.add(model)
             await session.flush()
-            
+
             assert model.created_by == "user1"
             assert model.updated_by is None
 
@@ -266,14 +264,14 @@ class TestAuditMixin:
         """Should set updated_by on update."""
         Base, TestModel = model_with_audit
         await db_manager.create_all(Base)
-        
+
         async with db_manager.get_session() as session:
             model = TestModel(name="original", created_by="user1")
             session.add(model)
             await session.flush()
-            
+
             model.name = "updated"
             model.updated_by = "user2"
             await session.flush()
-            
+
             assert model.updated_by == "user2"

@@ -8,6 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from metastore_service.api.dependencies import get_feature_flag_service
 from metastore_service.application.dtos.feature_flag_dtos import (
     BulkEvaluateRequestDTO,
     BulkEvaluateResponseDTO,
@@ -19,7 +20,6 @@ from metastore_service.application.dtos.feature_flag_dtos import (
     UpdateFeatureFlagDTO,
 )
 from metastore_service.application.services.feature_flag_service import FeatureFlagService
-from metastore_service.api.dependencies import get_feature_flag_service
 
 logger = logging.getLogger(__name__)
 

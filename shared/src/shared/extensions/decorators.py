@@ -7,6 +7,7 @@ rate limiting, timeouts, deprecation warnings, logging, and more.
 from __future__ import annotations
 
 import asyncio
+import builtins
 import functools
 import hashlib
 import logging
@@ -14,17 +15,12 @@ import threading
 import time
 import warnings
 from collections import OrderedDict
+from collections.abc import Callable
 from typing import (
-    TYPE_CHECKING,
     Any,
-    Callable,
     ParamSpec,
     TypeVar,
-    overload,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -53,7 +49,7 @@ class RateLimitExceededError(Exception):
         super().__init__(message)
 
 
-class TimeoutError(Exception):  # noqa: A001
+class TimeoutError(Exception):
     """Raised when operation times out."""
 
     def __init__(self, message: str = "Operation timed out") -> None:
@@ -315,7 +311,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                     func(*args, **kwargs),  # type: ignore[arg-type]
                     timeout=seconds,
                 )
-            except asyncio.TimeoutError:
+            except builtins.TimeoutError:
                 raise TimeoutError(
                     f"Operation timed out after {seconds} seconds"
                 ) from None
@@ -358,7 +354,7 @@ def deprecated(
                 message_parts.append(f": {reason}")
             if alternative:
                 message_parts.append(f". Use {alternative} instead")
-            
+
             warnings.warn(
                 "".join(message_parts),
                 DeprecationWarning,

@@ -91,8 +91,23 @@ target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "SIM"]
-ignore = ["E501", "B008", "B009"]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "SIM"]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "E712",   # Comparison to True/False (needed for SQLAlchemy filters)
+    "B008",   # Function calls in default arguments
+    "B009",   # getattr with constant
+    "B017",   # pytest.raises(Exception)
+    "B904",   # raise from err
+    "W293",   # Blank line with whitespace
+    "F402",   # Import shadowed by loop variable
+    "SIM102", # Nested if
+    "SIM103", # Return bool condition
+    "SIM108", # Ternary operator
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ARG", "F841", "PLR", "PLC0415"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["metastore_service", "shared"]

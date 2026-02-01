@@ -36,12 +36,11 @@ import sys
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Sequence
+from typing import Any
 from uuid import uuid4
 
 import structlog
 from structlog.types import EventDict, Processor, WrappedLogger
-
 
 # =============================================================================
 # Context Variables for Request Context
@@ -117,22 +116,22 @@ class LoggingConfig:
     add_timestamp: bool = True
     utc_timestamps: bool = True
     extra_processors: list[Processor] = field(default_factory=list)
-    
+
     @property
     def is_development(self) -> bool:
         """Check if running in development environment."""
         return self.environment.lower() in ("development", "dev", "local")
-    
+
     @property
     def is_production(self) -> bool:
         """Check if running in production environment."""
         return self.environment.lower() in ("production", "prod")
-    
+
     @property
     def is_testing(self) -> bool:
         """Check if running in testing environment."""
         return self.environment.lower() in ("testing", "test")
-    
+
     @property
     def should_use_json(self) -> bool:
         """Determine if JSON output should be used."""
@@ -147,8 +146,8 @@ class LoggingConfig:
 # =============================================================================
 
 def add_service_context(
-    logger: WrappedLogger, 
-    method_name: str, 
+    logger: WrappedLogger,
+    method_name: str,
     event_dict: EventDict,
 ) -> EventDict:
     """Add service context to log events.
@@ -161,18 +160,18 @@ def add_service_context(
     service_name = _service_name_ctx.get()
     if service_name:
         event_dict["service"] = service_name
-    
+
     # Add correlation ID
     correlation_id = _correlation_id_ctx.get()
     if correlation_id:
         event_dict["correlation_id"] = correlation_id
-    
+
     return event_dict
 
 
 def add_opentelemetry_context(
-    logger: WrappedLogger, 
-    method_name: str, 
+    logger: WrappedLogger,
+    method_name: str,
     event_dict: EventDict,
 ) -> EventDict:
     """Add OpenTelemetry trace context to log events.
@@ -182,7 +181,7 @@ def add_opentelemetry_context(
     """
     try:
         from opentelemetry import trace
-        
+
         span = trace.get_current_span()
         if span and span.is_recording():
             ctx = span.get_span_context()
@@ -196,13 +195,13 @@ def add_opentelemetry_context(
     except Exception:
         # Any other error - don't break logging
         pass
-    
+
     return event_dict
 
 
 def drop_color_message_key(
-    logger: WrappedLogger, 
-    method_name: str, 
+    logger: WrappedLogger,
+    method_name: str,
     event_dict: EventDict,
 ) -> EventDict:
     """Drop the color_message key from event dict.
@@ -236,10 +235,10 @@ def configure_structlog(config: LoggingConfig) -> None:
         ))
     """
     global _configured
-    
+
     # Set service name in context
     _service_name_ctx.set(config.service_name)
-    
+
     # Build processor chain
     processors: list[Processor] = [
         # Merge context variables first
@@ -251,13 +250,13 @@ def configure_structlog(config: LoggingConfig) -> None:
         # Add log level
         structlog.processors.add_log_level,
     ]
-    
+
     # Add timestamp
     if config.add_timestamp:
         processors.append(
             structlog.processors.TimeStamper(fmt="iso", utc=config.utc_timestamps)
         )
-    
+
     # Add caller info (file, function, line)
     if config.add_caller_info and not config.is_production:
         processors.append(
@@ -269,16 +268,16 @@ def configure_structlog(config: LoggingConfig) -> None:
                 ]
             )
         )
-    
+
     # Add custom processors
     processors.extend(config.extra_processors)
-    
+
     # Handle exceptions
     processors.append(structlog.processors.format_exc_info)
-    
+
     # Drop uvicorn color_message key
     processors.append(drop_color_message_key)
-    
+
     # Choose renderer based on environment
     if config.should_use_json:
         # Production: JSON output
@@ -300,10 +299,10 @@ def configure_structlog(config: LoggingConfig) -> None:
             )
         )
         logger_factory = structlog.PrintLoggerFactory()
-    
+
     # Get numeric log level
     numeric_level = getattr(logging, config.log_level.upper(), logging.INFO)
-    
+
     # Configure structlog
     structlog.configure(
         processors=processors,
@@ -311,10 +310,10 @@ def configure_structlog(config: LoggingConfig) -> None:
         logger_factory=logger_factory,
         cache_logger_on_first_use=True,
     )
-    
+
     # Also configure stdlib logging for third-party libraries
     _configure_stdlib_logging(config)
-    
+
     _configured = True
 
 
@@ -325,7 +324,7 @@ def _configure_stdlib_logging(config: LoggingConfig) -> None:
     are formatted consistently.
     """
     numeric_level = getattr(logging, config.log_level.upper(), logging.INFO)
-    
+
     # Create a handler with structlog-compatible formatting
     if config.should_use_json:
         # JSON format for production
@@ -353,13 +352,13 @@ def _configure_stdlib_logging(config: LoggingConfig) -> None:
                 ],
             )
         )
-    
+
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
     root_logger.setLevel(numeric_level)
-    
+
     # Reduce noise from common libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -408,7 +407,7 @@ def reset_structlog_configuration() -> None:
 # =============================================================================
 
 def get_structlog_logger(
-    name: str | None = None, 
+    name: str | None = None,
     **initial_context: Any,
 ) -> structlog.BoundLogger:
     """Get a structlog logger with optional initial context.
@@ -429,10 +428,10 @@ def get_structlog_logger(
         logger.info("Processing request")  # Includes component="auth"
     """
     logger = structlog.get_logger(name)
-    
+
     if initial_context:
         logger = logger.bind(**initial_context)
-    
+
     return logger
 
 

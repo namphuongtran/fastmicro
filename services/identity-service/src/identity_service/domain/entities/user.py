@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from shared.utils import now_utc
 
 if TYPE_CHECKING:
-    from identity_service.domain.value_objects import Email
+    pass
 
 
 @dataclass
@@ -38,7 +38,6 @@ class UserCredential:
 
     def increment_failed_attempts(self, max_attempts: int, lockout_duration: int) -> None:
         """Increment failed login attempts and lock if exceeded."""
-        from datetime import timedelta
 
         self.failed_login_attempts += 1
         if self.failed_login_attempts >= max_attempts:

@@ -1,16 +1,14 @@
 """Test configuration and fixtures for metastore-service tests."""
 
 import asyncio
-from typing import AsyncGenerator
-from uuid import uuid4
+from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from metastore_service.infrastructure.database.models import Base
 from shared.cache.backends.null import NullCache
-
 
 # Test database URL (use SQLite for faster tests)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -32,15 +30,15 @@ async def test_engine():
         echo=False,
         future=True,
     )
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     yield engine
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    
+
     await engine.dispose()
 
 
@@ -52,7 +50,7 @@ async def test_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
         class_=AsyncSession,
         expire_on_commit=False,
     )
-    
+
     async with async_session_maker() as session:
         yield session
         await session.rollback()

@@ -7,10 +7,9 @@ multiple repository operations within a single transaction.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from shared.dbs.repository import AbstractRepository
-
 
 T = TypeVar("T")
 
@@ -22,7 +21,7 @@ class AbstractUnitOfWork(ABC):
     """
 
     @abstractmethod
-    async def __aenter__(self) -> "AbstractUnitOfWork":
+    async def __aenter__(self) -> AbstractUnitOfWork:
         """Enter the unit of work context."""
         ...
 
@@ -96,7 +95,7 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
             raise KeyError(f"Repository '{name}' not registered")
         return self._repositories[name]
 
-    async def __aenter__(self) -> "InMemoryUnitOfWork":
+    async def __aenter__(self) -> InMemoryUnitOfWork:
         """Enter the unit of work context."""
         self._is_active = True
         return self

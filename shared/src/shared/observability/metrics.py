@@ -6,19 +6,20 @@ a registry for managing application metrics.
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import time
-import asyncio
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from threading import Lock
-from typing import Any, Callable, Generator, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 
 @dataclass
 class LabeledMetric:
     """A metric instance with specific label values."""
-    
+
     _values: dict[str, float] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
 
@@ -69,12 +70,12 @@ class Counter:
         """
         if amount < 0:
             raise ValueError("Counter cannot be decremented")
-        
+
         with self._lock:
             key = self._get_key({})
             self._values[key] = self._values.get(key, 0) + amount
 
-    def labels(self, **label_values: str) -> "_CounterChild":
+    def labels(self, **label_values: str) -> _CounterChild:
         """Get a child counter with specific label values.
         
         Args:
@@ -97,7 +98,7 @@ class _CounterChild:
         """Increment the counter."""
         if amount < 0:
             raise ValueError("Counter cannot be decremented")
-        
+
         with self._parent._lock:
             key = self._parent._get_key(self._label_values)
             self._parent._values[key] = self._parent._values.get(key, 0) + amount
@@ -165,7 +166,7 @@ class Gauge:
             key = self._get_key({})
             self._values[key] = self._values.get(key, 0) - amount
 
-    def labels(self, **label_values: str) -> "_GaugeChild":
+    def labels(self, **label_values: str) -> _GaugeChild:
         """Get a child gauge with specific label values.
         
         Args:
@@ -271,7 +272,7 @@ class Histogram:
                 self._observations[key] = []
             self._observations[key].append(value)
 
-    def labels(self, **label_values: str) -> "_HistogramChild":
+    def labels(self, **label_values: str) -> _HistogramChild:
         """Get a child histogram with specific label values.
         
         Args:
@@ -340,11 +341,11 @@ class MetricsRegistry:
             Counter instance.
         """
         full_name = f"{self._namespace}_{name}" if self._namespace else name
-        
+
         with self._lock:
             if full_name in self._metrics:
                 return self._metrics[full_name]  # type: ignore[return-value]
-            
+
             counter = Counter(full_name, description, labels)
             self._metrics[full_name] = counter
             return counter
@@ -366,11 +367,11 @@ class MetricsRegistry:
             Gauge instance.
         """
         full_name = f"{self._namespace}_{name}" if self._namespace else name
-        
+
         with self._lock:
             if full_name in self._metrics:
                 return self._metrics[full_name]  # type: ignore[return-value]
-            
+
             gauge = Gauge(full_name, description, labels)
             self._metrics[full_name] = gauge
             return gauge
@@ -394,11 +395,11 @@ class MetricsRegistry:
             Histogram instance.
         """
         full_name = f"{self._namespace}_{name}" if self._namespace else name
-        
+
         with self._lock:
             if full_name in self._metrics:
                 return self._metrics[full_name]  # type: ignore[return-value]
-            
+
             histogram = Histogram(full_name, description, labels, buckets)
             self._metrics[full_name] = histogram
             return histogram
@@ -425,7 +426,7 @@ def get_metrics_registry() -> MetricsRegistry:
         The global metrics registry instance.
     """
     global _registry
-    
+
     with _registry_lock:
         if _registry is None:
             _registry = MetricsRegistry()
@@ -477,7 +478,7 @@ def timed(
             name=f"{name}_seconds",
             description=f"Duration of {name} in seconds",
         )
-        
+
         if asyncio.iscoroutinefunction(func):
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -498,7 +499,7 @@ def timed(
                     duration = time.perf_counter() - start
                     histogram.observe(duration)
             return sync_wrapper  # type: ignore[return-value]
-    
+
     return decorator
 
 
@@ -507,7 +508,7 @@ __all__ = [
     "Gauge",
     "Histogram",
     "MetricsRegistry",
-    "get_metrics_registry",
     "configure_metrics",
+    "get_metrics_registry",
     "timed",
 ]

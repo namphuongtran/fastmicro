@@ -8,10 +8,12 @@ This module provides utilities for managing async SQLAlchemy databases:
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, AsyncGenerator
+from typing import Any
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -19,10 +21,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
 
 
 @dataclass
@@ -94,7 +92,7 @@ class AsyncDatabaseManager:
                 "echo": self._config.echo,
                 "echo_pool": self._config.echo_pool,
             }
-            
+
             # SQLite doesn't support pool configuration
             if not self._config.url.startswith("sqlite"):
                 engine_options.update({
@@ -103,15 +101,15 @@ class AsyncDatabaseManager:
                     "pool_timeout": self._config.pool_timeout,
                     "pool_recycle": self._config.pool_recycle,
                 })
-            
+
             if self._config.connect_args:
                 engine_options["connect_args"] = self._config.connect_args
-            
+
             self._engine = create_async_engine(
                 self._config.url,
                 **engine_options,
             )
-        
+
         return self._engine
 
     @property
@@ -128,7 +126,7 @@ class AsyncDatabaseManager:
                 expire_on_commit=False,
                 autoflush=False,
             )
-        
+
         return self._session_factory
 
     @asynccontextmanager

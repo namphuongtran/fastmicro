@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from cachetools import TTLCache
 
@@ -21,7 +21,6 @@ from shared.cache.base import (
     AbstractCacheBackend,
     CacheError,
     NullSerializer,
-    Serializer,
 )
 
 V = TypeVar("V")
@@ -103,7 +102,7 @@ class MemoryCache(AbstractCacheBackend[V]):
             Cached value or default.
         """
         full_key = self.build_key(key)
-        
+
         async with self._lock:
             # Check custom TTL expiry
             if full_key in self._ttls:
@@ -112,7 +111,7 @@ class MemoryCache(AbstractCacheBackend[V]):
                     self._cache.pop(full_key, None)
                     del self._ttls[full_key]
                     return default
-            
+
             try:
                 return self._cache[full_key]
             except KeyError:
@@ -136,17 +135,17 @@ class MemoryCache(AbstractCacheBackend[V]):
         """
         full_key = self.build_key(key)
         effective_ttl = self._get_ttl(ttl)
-        
+
         async with self._lock:
             self._cache[full_key] = value
-            
+
             # Track custom TTL if different from default
             if effective_ttl and effective_ttl != self._default_ttl:
                 self._ttls[full_key] = time.time() + effective_ttl
             elif full_key in self._ttls:
                 # Remove custom TTL if using default
                 del self._ttls[full_key]
-        
+
         return True
 
     async def delete(self, key: str) -> bool:
@@ -159,7 +158,7 @@ class MemoryCache(AbstractCacheBackend[V]):
             True if key was deleted, False if not found.
         """
         full_key = self.build_key(key)
-        
+
         async with self._lock:
             existed = full_key in self._cache
             self._cache.pop(full_key, None)
@@ -176,7 +175,7 @@ class MemoryCache(AbstractCacheBackend[V]):
             True if key exists and not expired.
         """
         full_key = self.build_key(key)
-        
+
         async with self._lock:
             # Check custom TTL expiry
             if full_key in self._ttls:
@@ -184,7 +183,7 @@ class MemoryCache(AbstractCacheBackend[V]):
                     self._cache.pop(full_key, None)
                     del self._ttls[full_key]
                     return False
-            
+
             return full_key in self._cache
 
     async def clear(self, namespace: str | None = None) -> int:
@@ -203,15 +202,15 @@ class MemoryCache(AbstractCacheBackend[V]):
                 self._cache.clear()
                 self._ttls.clear()
                 return count
-            
+
             # Clear only keys matching namespace
             prefix = f"{namespace}:"
             keys_to_delete = [k for k in self._cache if k.startswith(prefix)]
-            
+
             for key in keys_to_delete:
                 self._cache.pop(key, None)
                 self._ttls.pop(key, None)
-            
+
             return len(keys_to_delete)
 
     async def increment(self, key: str, delta: int = 1) -> int:
@@ -228,16 +227,16 @@ class MemoryCache(AbstractCacheBackend[V]):
             CacheError: If value is not numeric.
         """
         full_key = self.build_key(key)
-        
+
         async with self._lock:
             current = self._cache.get(full_key, 0)
-            
+
             if not isinstance(current, (int, float)):
                 raise CacheError(
                     f"Cannot increment non-numeric value: {type(current).__name__}",
                     details={"key": key, "value_type": type(current).__name__},
                 )
-            
+
             new_value = int(current) + delta
             self._cache[full_key] = new_value
             return new_value
@@ -252,12 +251,12 @@ class MemoryCache(AbstractCacheBackend[V]):
             Dictionary mapping keys to values (None if not found).
         """
         result: dict[str, V | None] = {}
-        
+
         async with self._lock:
             now = time.time()
             for key in keys:
                 full_key = self.build_key(key)
-                
+
                 # Check expiry
                 if full_key in self._ttls and now > self._ttls[full_key]:
                     self._cache.pop(full_key, None)
@@ -265,7 +264,7 @@ class MemoryCache(AbstractCacheBackend[V]):
                     result[key] = None
                 else:
                     result[key] = self._cache.get(full_key)
-        
+
         return result
 
     async def set_many(
@@ -284,17 +283,17 @@ class MemoryCache(AbstractCacheBackend[V]):
         """
         effective_ttl = self._get_ttl(ttl)
         expiry = time.time() + effective_ttl if effective_ttl else None
-        
+
         async with self._lock:
             for key, value in mapping.items():
                 full_key = self.build_key(key)
                 self._cache[full_key] = value
-                
+
                 if expiry and effective_ttl != self._default_ttl:
                     self._ttls[full_key] = expiry
                 elif full_key in self._ttls:
                     del self._ttls[full_key]
-        
+
         return True
 
     async def delete_many(self, keys: list[str]) -> int:
@@ -307,7 +306,7 @@ class MemoryCache(AbstractCacheBackend[V]):
             Number of keys deleted.
         """
         count = 0
-        
+
         async with self._lock:
             for key in keys:
                 full_key = self.build_key(key)
@@ -315,7 +314,7 @@ class MemoryCache(AbstractCacheBackend[V]):
                     self._cache.pop(full_key, None)
                     self._ttls.pop(full_key, None)
                     count += 1
-        
+
         return count
 
     def stats(self) -> dict[str, Any]:

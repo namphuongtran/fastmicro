@@ -1,9 +1,9 @@
 """Domain value objects for Identity Service."""
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Self
-import re
 
 
 class TokenType(StrEnum):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -16,7 +16,6 @@ from metastore_service.domain.repositories.feature_flag_repository import IFeatu
 from metastore_service.domain.value_objects import (
     Environment,
     FeatureName,
-    Operator,
     Percentage,
     TenantId,
 )
@@ -169,7 +168,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
 
     async def list_active(self) -> list[FeatureFlag]:
         """List all active (enabled and not expired) feature flags."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         query = (
             select(FeatureFlagModel)
@@ -473,7 +472,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
             .where(FeatureFlagModel.id == flag_id)
             .values(
                 enabled=True,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -493,7 +492,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
             .where(FeatureFlagModel.id == flag_id)
             .values(
                 enabled=False,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -514,7 +513,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
             .where(FeatureFlagModel.id == flag_id)
             .values(
                 rollout_percentage=percentage,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )

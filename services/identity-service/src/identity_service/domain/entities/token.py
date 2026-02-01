@@ -7,9 +7,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from shared.utils import now_utc
-
 from identity_service.domain.value_objects import TokenType
+from shared.utils import now_utc
 
 
 @dataclass

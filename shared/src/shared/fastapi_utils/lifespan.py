@@ -15,11 +15,11 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Callable, Awaitable, TypeVar
+from typing import TypeVar
 
 from fastapi import FastAPI
-
 
 # Type for async handler functions
 AsyncHandler = Callable[[], Awaitable[None]]
@@ -134,7 +134,7 @@ def create_lifespan(manager: LifespanManager):
         yield
         # Shutdown
         await manager.shutdown()
-    
+
     return lifespan
 
 
@@ -181,6 +181,6 @@ def register_shutdown_handler(app: FastAPI) -> Callable[[F], F]:
 __all__ = [
     "LifespanManager",
     "create_lifespan",
-    "register_startup_handler",
     "register_shutdown_handler",
+    "register_startup_handler",
 ]

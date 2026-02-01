@@ -8,6 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from metastore_service.api.dependencies import get_metadata_service
 from metastore_service.application.dtos.metadata_dtos import (
     CreateMetadataDTO,
     MetadataDTO,
@@ -16,7 +17,6 @@ from metastore_service.application.dtos.metadata_dtos import (
     UpdateMetadataDTO,
 )
 from metastore_service.application.services.metadata_service import MetadataService
-from metastore_service.api.dependencies import get_metadata_service
 
 logger = logging.getLogger(__name__)
 

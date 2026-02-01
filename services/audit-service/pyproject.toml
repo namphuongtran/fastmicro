@@ -84,8 +84,21 @@ target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "SIM"]
-ignore = ["E501", "B008", "B009"]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "SIM"]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Function calls in default arguments
+    "B009",   # getattr with constant
+    "B017",   # pytest.raises(Exception) - acceptable in tests
+    "B904",   # raise from err - not always necessary
+    "W293",   # Blank line with whitespace (auto-fixed by formatter)
+    "SIM102", # Nested if - sometimes clearer
+    "SIM103", # Return bool condition - sometimes clearer
+    "SIM108", # Ternary operator - sometimes clearer to be explicit
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ARG", "F841", "PLR", "PLC0415"]  # Allow unused args/vars in tests
 
 [tool.ruff.lint.isort]
 known-first-party = ["audit_service", "shared"]

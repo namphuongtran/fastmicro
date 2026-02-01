@@ -11,27 +11,24 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import Any, ClassVar, Self
 
 from shared.exceptions.base import BaseServiceException, ErrorSeverity
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
 __all__ = [
-    "HTTPException",
-    "BadRequestException",
-    "UnauthorizedException",
-    "ForbiddenException",
-    "NotFoundException",
-    "MethodNotAllowedException",
-    "ConflictException",
-    "UnprocessableEntityException",
-    "RateLimitException",
-    "InternalServerException",
     "BadGatewayException",
-    "ServiceUnavailableException",
+    "BadRequestException",
+    "ConflictException",
+    "ForbiddenException",
     "GatewayTimeoutException",
+    "HTTPException",
+    "InternalServerException",
+    "MethodNotAllowedException",
+    "NotFoundException",
+    "RateLimitException",
+    "ServiceUnavailableException",
+    "UnauthorizedException",
+    "UnprocessableEntityException",
 ]
 
 

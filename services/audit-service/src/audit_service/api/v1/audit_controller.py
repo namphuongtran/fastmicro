@@ -5,7 +5,7 @@ Provides CRUD operations for audit events including create, list, get, search,
 and export functionality.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -28,7 +28,7 @@ router = APIRouter()
 
 class PaginatedResponse(BaseModel):
     """Paginated response wrapper."""
-    
+
     items: list[AuditEventResponse] = Field(description="List of audit events")
     total: int = Field(description="Total number of items")
     page: int = Field(description="Current page number")
@@ -38,7 +38,7 @@ class PaginatedResponse(BaseModel):
 
 class SearchFilters(BaseModel):
     """Search filters for audit events."""
-    
+
     actor_id: str | None = Field(default=None, description="Filter by actor ID")
     resource_type: str | None = Field(default=None, description="Filter by resource type")
     action: AuditAction | None = Field(default=None, description="Filter by action")
@@ -111,13 +111,13 @@ async def list_audit_events(
         action=action,
         severity=severity,
     )
-    
+
     result = await service.list_events(
         page=page,
         page_size=page_size,
         filters=filters,
     )
-    
+
     return PaginatedResponse(
         items=result.items,
         total=result.total,
@@ -186,14 +186,14 @@ async def search_audit_events(
         start_date=start_date,
         end_date=end_date,
     )
-    
+
     result = await service.search_events(
         query=q,
         page=page,
         page_size=page_size,
         filters=filters,
     )
-    
+
     return PaginatedResponse(
         items=result.items,
         total=result.total,

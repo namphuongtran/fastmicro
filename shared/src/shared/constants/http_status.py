@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-__all__ = ["HTTPStatus", "HTTP_REASON_PHRASES"]
+__all__ = ["HTTP_REASON_PHRASES", "HTTPStatus"]
 
 
 # Module-level reason phrases mapping - kept outside enum for Python 3.14 compatibility

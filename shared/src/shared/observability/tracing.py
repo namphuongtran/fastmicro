@@ -11,15 +11,16 @@ import contextvars
 import functools
 import time
 import uuid
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Generator, ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 
 class SpanKind(Enum):
     """Span kind indicating the role in a trace."""
-    
+
     INTERNAL = "internal"
     SERVER = "server"
     CLIENT = "client"
@@ -30,7 +31,7 @@ class SpanKind(Enum):
 @dataclass
 class TracingConfig:
     """Configuration for tracing."""
-    
+
     service_name: str = "unknown-service"
     enabled: bool = True
     sample_rate: float = 1.0
@@ -41,7 +42,7 @@ class TracingConfig:
 @dataclass
 class Span:
     """Represents a tracing span."""
-    
+
     name: str
     trace_id: str
     span_id: str
@@ -191,7 +192,7 @@ def create_span(
 
     # Set as current span
     token = _current_span.set(span)
-    
+
     try:
         yield span
     except BaseException as e:
@@ -210,7 +211,7 @@ def inject_context(carrier: dict[str, str]) -> None:
     """
     trace_id = get_trace_id()
     span = get_current_span()
-    
+
     if trace_id:
         carrier["traceparent"] = f"00-{trace_id}-{span.span_id if span else '0'*16}-01"
 
@@ -225,7 +226,7 @@ def extract_context(carrier: dict[str, str]) -> dict[str, str | None]:
         Extracted context with trace_id and parent_span_id.
     """
     traceparent = carrier.get("traceparent", "")
-    
+
     if traceparent:
         parts = traceparent.split("-")
         if len(parts) >= 3:
@@ -233,7 +234,7 @@ def extract_context(carrier: dict[str, str]) -> dict[str, str | None]:
                 "trace_id": parts[1],
                 "parent_span_id": parts[2],
             }
-    
+
     return {"trace_id": None, "parent_span_id": None}
 
 
@@ -264,7 +265,7 @@ def traced(
     """
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         span_name = name or func.__name__
-        
+
         if asyncio.iscoroutinefunction(func):
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -283,19 +284,19 @@ def traced(
                     except BaseException:
                         raise
             return sync_wrapper  # type: ignore[return-value]
-    
+
     return decorator
 
 
 __all__ = [
+    "Span",
     "SpanKind",
     "TracingConfig",
-    "Span",
     "configure_tracing",
+    "create_span",
+    "extract_context",
     "get_current_span",
     "get_trace_id",
-    "create_span",
     "inject_context",
-    "extract_context",
     "traced",
 ]

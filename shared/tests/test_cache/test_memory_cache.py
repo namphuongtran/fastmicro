@@ -45,7 +45,7 @@ class TestMemoryCacheBasicOperations:
         await cache.set("key1", "value1", ttl=1)
         result = await cache.get("key1")
         assert result == "value1"
-        
+
         # Wait for expiration
         await asyncio.sleep(1.1)
         result = await cache.get("key1")
@@ -81,10 +81,10 @@ class TestMemoryCacheNamespace:
         """Test that namespaces provide key isolation."""
         cache1 = MemoryCache(namespace="ns1")
         cache2 = MemoryCache(namespace="ns2")
-        
+
         await cache1.set("key", "value1")
         await cache2.set("key", "value2")
-        
+
         assert await cache1.get("key") == "value1"
         assert await cache2.get("key") == "value2"
 
@@ -116,9 +116,9 @@ class TestMemoryCacheBulkOperations:
         """Test getting multiple values."""
         await cache.set("key1", "value1")
         await cache.set("key2", "value2")
-        
+
         result = await cache.get_many(["key1", "key2", "key3"])
-        
+
         assert result == {
             "key1": "value1",
             "key2": "value2",
@@ -130,7 +130,7 @@ class TestMemoryCacheBulkOperations:
         """Test setting multiple values."""
         mapping = {"key1": "value1", "key2": "value2", "key3": "value3"}
         result = await cache.set_many(mapping)
-        
+
         assert result is True
         assert await cache.get("key1") == "value1"
         assert await cache.get("key2") == "value2"
@@ -140,9 +140,9 @@ class TestMemoryCacheBulkOperations:
     async def test_delete_many(self, cache: MemoryCache) -> None:
         """Test deleting multiple values."""
         await cache.set_many({"key1": "v1", "key2": "v2", "key3": "v3"})
-        
+
         count = await cache.delete_many(["key1", "key2"])
-        
+
         assert count == 2
         assert await cache.exists("key1") is False
         assert await cache.exists("key2") is False
@@ -193,9 +193,9 @@ class TestMemoryCacheClear:
         """Test clearing all entries."""
         cache = MemoryCache(namespace="test")
         await cache.set_many({"key1": "v1", "key2": "v2", "key3": "v3"})
-        
+
         count = await cache.clear()
-        
+
         assert count == 3
         assert await cache.exists("key1") is False
         assert await cache.exists("key2") is False
@@ -210,9 +210,9 @@ class TestMemoryCacheStats:
         """Test stats collection."""
         cache = MemoryCache(namespace="test", max_size=100, default_ttl=60)
         await cache.set_many({"key1": "v1", "key2": "v2"})
-        
+
         stats = cache.stats()
-        
+
         assert stats["backend"] == "memory"
         assert stats["namespace"] == "test"
         assert stats["max_size"] == 100
@@ -227,14 +227,14 @@ class TestMemoryCacheEviction:
     async def test_max_size_eviction(self) -> None:
         """Test that cache evicts when max size is exceeded."""
         cache = MemoryCache(namespace="test", max_size=3)
-        
+
         await cache.set("key1", "value1")
         await cache.set("key2", "value2")
         await cache.set("key3", "value3")
-        
+
         # Adding a 4th key should evict the least recently used
         await cache.set("key4", "value4")
-        
+
         # One of the earlier keys should be evicted
         stats = cache.stats()
         assert stats["size"] == 3
@@ -291,7 +291,7 @@ class TestMemoryCacheDataTypes:
         """Test caching boolean values."""
         await cache.set("flag_true", True)
         await cache.set("flag_false", False)
-        
+
         assert await cache.get("flag_true") is True
         assert await cache.get("flag_false") is False
 
@@ -300,6 +300,6 @@ class TestMemoryCacheDataTypes:
         """Test caching numeric values."""
         await cache.set("int_val", 42)
         await cache.set("float_val", 3.14)
-        
+
         assert await cache.get("int_val") == 42
         assert await cache.get("float_val") == 3.14

@@ -1,9 +1,9 @@
 """Pytest configuration and fixtures for identity service tests."""
 
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import AsyncGenerator
 from uuid import uuid4
 
 import pytest
@@ -11,8 +11,8 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
-from identity_service.configs import Settings, get_settings
-from identity_service.domain.entities.client import Client, ClientScope, ClientRedirectUri
+from identity_service.configs import Settings
+from identity_service.domain.entities.client import Client, ClientRedirectUri, ClientScope
 from identity_service.domain.entities.user import User, UserCredential, UserProfile
 from identity_service.domain.value_objects import (
     AuthMethod,
@@ -54,13 +54,13 @@ def test_settings(temp_key_dir: str) -> Settings:
 def app(test_settings: Settings, monkeypatch):
     """Create test FastAPI application."""
     # Clear all caches before test to ensure fresh state
-    from identity_service.infrastructure.security import jwt_service
     from identity_service import configs
-    
+    from identity_service.infrastructure.security import jwt_service
+
     jwt_service.get_key_manager.cache_clear()
     jwt_service._jwt_service_cache.clear()
     configs.get_settings.cache_clear()
-    
+
     # Set environment variables for settings
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("APP_PORT", str(test_settings.app_port))
@@ -71,14 +71,14 @@ def app(test_settings: Settings, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", test_settings.database_url.get_secret_value())
     monkeypatch.setenv("REDIS_URL", test_settings.redis_url)
     monkeypatch.setenv("BCRYPT_ROUNDS", str(test_settings.bcrypt_rounds))
-    
+
     # Clear the cache again after setting env vars so Settings picks them up
     configs.get_settings.cache_clear()
-    
+
     application = create_app()
-    
+
     yield application
-    
+
     # Cleanup caches
     jwt_service.get_key_manager.cache_clear()
     jwt_service._jwt_service_cache.clear()
@@ -111,9 +111,9 @@ def password_service(test_settings: Settings) -> PasswordService:
 def test_user(password_service: PasswordService) -> User:
     """Create test user."""
     user_id = str(uuid4())
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     password_hash = password_service.hash_password("TestPassword123!")
-    
+
     return User(
         id=user_id,
         email=Email("test@example.com"),
@@ -139,8 +139,8 @@ def test_user(password_service: PasswordService) -> User:
 def test_client_entity() -> Client:
     """Create test OAuth client."""
     client_id = str(uuid4())
-    now = datetime.now(timezone.utc)
-    
+    now = datetime.now(UTC)
+
     return Client(
         id=client_id,
         client_id=ClientId("test-client"),
@@ -170,8 +170,8 @@ def test_client_entity() -> Client:
 def test_public_client() -> Client:
     """Create test public OAuth client."""
     client_id = str(uuid4())
-    now = datetime.now(timezone.utc)
-    
+    now = datetime.now(UTC)
+
     return Client(
         id=client_id,
         client_id=ClientId("test-spa"),

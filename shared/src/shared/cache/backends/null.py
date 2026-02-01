@@ -150,7 +150,7 @@ class NullCache(AbstractCacheBackend[V]):
             Dictionary with all values as None.
         """
         self._get_count += len(keys)
-        return {k: None for k in keys}
+        return dict.fromkeys(keys)
 
     async def set_many(
         self,
@@ -205,7 +205,7 @@ class NullCache(AbstractCacheBackend[V]):
         self._set_count = 0
         self._delete_count = 0
 
-    async def __aenter__(self) -> "NullCache[V]":
+    async def __aenter__(self) -> NullCache[V]:
         """Async context manager entry."""
         return self
 
