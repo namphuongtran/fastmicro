@@ -75,16 +75,16 @@ src/metastore_service/
 
 ```bash
 cd services/metastore-service
-poetry install
+uv sync
 
 # Set up environment variables
 cp .env.example .env
 
 # Run database migrations
-poetry run alembic upgrade head
+uv run alembic upgrade head
 
 # Start the service
-poetry run uvicorn metastore_service.main:app --reload --port 8002
+uv run uvicorn metastore_service.main:app --reload --port 8002
 ```
 
 ### Environment Variables
@@ -219,13 +219,13 @@ curl -X POST http://localhost:8002/api/v1/configurations \
 
 ```bash
 # Run all tests
-poetry run pytest
+uv run pytest
 
 # Run with coverage
-poetry run pytest --cov=metastore_service --cov-report=html
+uv run pytest --cov=metastore_service --cov-report=html
 
 # Run specific test file
-poetry run pytest tests/unit/domain/test_entities.py -v
+uv run pytest tests/unit/domain/test_entities.py -v
 ```
 
 ## Development
@@ -234,26 +234,26 @@ poetry run pytest tests/unit/domain/test_entities.py -v
 
 ```bash
 # Format code
-poetry run ruff format src tests
+uv run ruff format src tests
 
 # Lint code
-poetry run ruff check src tests --fix
+uv run ruff check src tests --fix
 
 # Type checking
-poetry run mypy src
+uv run mypy src
 ```
 
 ### Database Migrations
 
 ```bash
 # Generate migration
-poetry run alembic revision --autogenerate -m "Description"
+uv run alembic revision --autogenerate -m "Description"
 
 # Apply migrations
-poetry run alembic upgrade head
+uv run alembic upgrade head
 
 # Rollback
-poetry run alembic downgrade -1
+uv run alembic downgrade -1
 ```
 
 ## License

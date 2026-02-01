@@ -58,7 +58,7 @@ src/audit_service/
 ### Prerequisites
 
 - Python 3.12+
-- Poetry 1.8+
+- uv (Python package manager)
 - Docker & Docker Compose
 
 ### Local Development
@@ -68,13 +68,13 @@ src/audit_service/
 cd services/audit-service
 
 # Install dependencies
-poetry install
+uv sync
 
 # Run database migrations
-poetry run alembic upgrade head
+uv run alembic upgrade head
 
 # Start the service
-poetry run uvicorn audit_service.main:app --reload --port 8001
+uv run uvicorn audit_service.main:app --reload --port 8001
 ```
 
 ### Docker Development
@@ -88,13 +88,13 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up audit-service
 
 ```bash
 # Run all tests
-poetry run pytest
+uv run pytest
 
 # Run with coverage
-poetry run pytest --cov=src/audit_service --cov-report=html
+uv run pytest --cov=src/audit_service --cov-report=html
 
 # Run specific test file
-poetry run pytest tests/unit/test_audit_service.py -v
+uv run pytest tests/unit/test_audit_service.py -v
 ```
 
 ## API Endpoints

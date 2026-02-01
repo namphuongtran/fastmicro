@@ -54,7 +54,7 @@ A scalable, production-ready Python microservices architecture using FastAPI, mo
 
 ## 🧑‍💻 Development Workflow
 
-- Use **Poetry** or **pip-tools** for dependency management.
+- Use **uv** for dependency management.
 - Apply **pre-commit** hooks with:
   - `black` (code formatting)
   - `isort` (import sorting)
