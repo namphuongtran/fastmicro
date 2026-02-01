@@ -106,7 +106,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: shared
-        run: uv sync --locked
+        run: uv sync --all-groups
 
       - name: Run linting
         working-directory: shared
@@ -165,13 +165,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: '${{ matrix.service.path }}/uv.lock'
 
-      - name: Install shared library
-        working-directory: shared
-        run: uv sync --locked
-
       - name: Install service dependencies
         working-directory: ${{ matrix.service.path }}
-        run: uv sync --locked
+        run: uv sync --all-groups
 
       - name: Run linting
         working-directory: ${{ matrix.service.path }}
