@@ -1,17 +1,53 @@
 ---
-description: 'MANDATORY: Use Serena MCP tools FIRST for all Python code exploration, symbol management, and memory tracking. These tools are more efficient than standard file operations.'
+description: 'MANDATORY: Use Serena, Context7, and Sequential Thinking MCP tools for Python development. These tools provide semantic code exploration, up-to-date documentation, and structured problem-solving.'
 applyTo: '**/*.py'
 ---
 
-# Serena Tools Usage Guidelines - MANDATORY
+# MCP Tools Usage Guidelines - MANDATORY
 
-## ⚠️ CRITICAL INSTRUCTION
+## ⚠️ CRITICAL: THREE MANDATORY MCP TOOLS
 
+### 1. SERENA - Code Exploration & Editing
 **ALWAYS use Serena tools BEFORE using standard file operations for Python files.**
+- Provides semantic, token-efficient code exploration
+- Symbol-based navigation and editing
+- Memory persistence across sessions
 
-Serena provides semantic, token-efficient code exploration. Using `read_file` to read entire Python files is wasteful and should be avoided.
+### 2. CONTEXT7 - Library Documentation
+**ALWAYS verify library APIs with Context7 BEFORE implementation.**
+- Training data may be outdated
+- APIs change between library versions
+- Best practices evolve
 
-## Decision Tree: Which Tool to Use?
+### 3. SEQUENTIAL THINKING - Complex Problem Solving
+**Use for architecture decisions, multi-step implementations, and debugging.**
+- Structured iterative reasoning
+- Hypothesis-verification workflow
+- Course correction capabilities
+
+## Decision Tree: Which MCP Tool to Use?
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TASK TYPE                        │ MCP TOOL                    │
+├──────────────────────────────────┼─────────────────────────────┤
+│ Complex problem / Architecture   │ SEQUENTIAL THINKING         │
+│ Multi-step implementation        │ sequential-thinking         │
+│ Debugging complex issues         │                             │
+├──────────────────────────────────┼─────────────────────────────┤
+│ Using any library/framework      │ CONTEXT7                    │
+│ Datetime/timezone operations     │ resolve-library-id →        │
+│ Unsure about API patterns        │ get-library-docs            │
+├──────────────────────────────────┼─────────────────────────────┤
+│ Explore Python code structure    │ SERENA                      │
+│ Find symbol usages               │ find_symbol,                │
+│ Edit Python functions/classes    │ find_referencing_symbols,   │
+│ Track progress across sessions   │ replace_symbol_body,        │
+│                                  │ write_memory                │
+└──────────────────────────────────┴─────────────────────────────┘
+```
+
+### Serena-Specific Decision Tree
 
 ```
 Need to understand Python code structure?
@@ -32,6 +68,84 @@ Need to understand Python code structure?
 │
 └── About to make changes?
     └── FIRST call `think_about_task_adherence`
+```
+
+## Context7 Usage Patterns
+
+### When to Use Context7
+
+| Scenario | Why Verify |
+|----------|------------|
+| Using any library/framework | APIs change between versions |
+| Datetime/timezone operations | Common source of bugs |
+| Database operations | ORM patterns change significantly |
+| Authentication/Security | Critical to use current patterns |
+| Testing frameworks | pytest, asyncio patterns change |
+| Pydantic models | v1 vs v2 have breaking changes |
+
+### Context7 Workflow
+
+```markdown
+# Step 1: Resolve the library ID
+mcp_context7_resolve-library-id
+  libraryName: "pydantic v2"
+
+# Step 2: Get documentation for specific topic
+mcp_context7_get-library-docs
+  context7CompatibleLibraryID: "/pydantic/pydantic"
+  topic: "model_config validation"
+```
+
+### Key Libraries in This Project
+
+| Library | Context7 ID | Common Topics |
+|---------|-------------|---------------|
+| FastAPI | `/fastapi/fastapi` | dependencies, lifespan, middleware |
+| Pydantic | `/pydantic/pydantic` | model_config, validators, Field |
+| SQLAlchemy | `/sqlalchemy/sqlalchemy` | async, session, relationships |
+| structlog | `/hynek/structlog` | configuration, processors |
+| pytest | `/pytest-dev/pytest` | fixtures, markers, async |
+
+## Sequential Thinking Usage Patterns
+
+### When to Use Sequential Thinking
+
+1. **Architecture decisions** - Designing module structures, choosing patterns
+2. **Complex problem decomposition** - Breaking down large features
+3. **Multi-step implementations** - Changes across multiple files
+4. **Debugging complex issues** - Tracing through multiple layers
+5. **Risk analysis** - Security, performance, breaking changes
+
+### Sequential Thinking Workflow
+
+```markdown
+# Each thought builds on previous understanding
+mcp_sequential-th_sequentialthinking
+  thought: "Analyzing the repository pattern implementation..."
+  thoughtNumber: 1
+  totalThoughts: 5  # Can be adjusted dynamically
+  nextThoughtNeeded: true
+  isRevision: false  # Set true if revising earlier thinking
+```
+
+### Integration: Sequential Thinking + Serena + Context7
+
+```
+1. Sequential Thinking: Analyze problem, plan approach
+   ↓
+2. Context7: Verify library APIs and best practices
+   ↓
+3. Serena: Gather code context with symbolic tools
+   ↓
+4. Sequential Thinking: Refine plan based on findings
+   ↓
+5. Serena: think_about_task_adherence
+   ↓
+6. Serena: Make changes with editing tools
+   ↓
+7. Serena: think_about_whether_you_are_done
+   ↓
+8. Serena: Write memory to track progress
 ```
 
 ## Mandatory Checkpoints
@@ -273,44 +387,67 @@ Use when you believe task is complete:
 | Add new code | `create_file` / manual | `insert_after_symbol` |
 | Search patterns | `grep_search` | `search_for_pattern` |
 
-### Mandatory Workflow
+### Mandatory Workflow (All Three MCP Tools)
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ 1. ACTIVATE TOOLS (if not active)               │
+│ 1. ACTIVATE SERENA TOOLS (if not active)        │
 │    → activate_symbol_management_tools           │
 │    → activate_memory_management_tools           │
 ├─────────────────────────────────────────────────┤
-│ 2. READ MEMORIES (understand context)           │
+│ 2. READ MEMORIES (understand prior context)     │
 │    → list_memories → read relevant ones         │
 ├─────────────────────────────────────────────────┤
-│ 3. EXPLORE CODE (symbolic navigation)           │
+│ 3. COMPLEX TASK? → SEQUENTIAL THINKING          │
+│    → Plan approach with structured thoughts     │
+│    → Break down into steps                      │
+├─────────────────────────────────────────────────┤
+│ 4. USING LIBRARIES? → CONTEXT7                  │
+│    → resolve-library-id                         │
+│    → get-library-docs for relevant topics       │
+├─────────────────────────────────────────────────┤
+│ 5. EXPLORE CODE (Serena symbolic navigation)    │
 │    → get_symbols_overview                       │
 │    → find_symbol (include_body=False first)     │
 │    → find_referencing_symbols                   │
 ├─────────────────────────────────────────────────┤
-│ 4. VALIDATE UNDERSTANDING                       │
+│ 6. VALIDATE UNDERSTANDING                       │
 │    → think_about_collected_information          │
 ├─────────────────────────────────────────────────┤
-│ 5. BEFORE CHANGES                               │
+│ 7. BEFORE CHANGES                               │
 │    → think_about_task_adherence ⚠️ MANDATORY    │
 ├─────────────────────────────────────────────────┤
-│ 6. MAKE CHANGES (symbolic editing)              │
+│ 8. MAKE CHANGES (Serena symbolic editing)       │
 │    → replace_symbol_body                        │
 │    → insert_before/after_symbol                 │
 ├─────────────────────────────────────────────────┤
-│ 7. VERIFY COMPLETION                            │
+│ 9. VERIFY COMPLETION                            │
 │    → think_about_whether_you_are_done           │
 ├─────────────────────────────────────────────────┤
-│ 8. SAVE PROGRESS                                │
+│ 10. SAVE PROGRESS                               │
 │    → write_memory (if important)                │
 └─────────────────────────────────────────────────┘
 ```
 
-## Why Serena?
+## Why These Three MCP Tools?
 
+### Serena
 1. **Token Efficiency**: Reading symbols is cheaper than reading entire files
 2. **Semantic Understanding**: Tools understand code structure, not just text
 3. **Safe Editing**: Symbol-based edits are more precise than string replacement
 4. **Context Preservation**: Memories persist across sessions
 5. **Quality Checkpoints**: Thinking tools catch errors before they happen
+
+### Context7
+1. **Up-to-Date Documentation**: Training data becomes outdated, Context7 is current
+2. **Version-Specific**: Get docs for the exact library version you're using
+3. **Topic-Focused**: Query specific features instead of reading entire docs
+4. **Avoid Deprecated Patterns**: Libraries evolve, APIs change
+5. **Best Practices**: Current community recommendations, not stale patterns
+
+### Sequential Thinking
+1. **Structured Analysis**: Break complex problems into manageable steps
+2. **Hypothesis-Verification**: Test assumptions before implementing
+3. **Course Correction**: Revise earlier thoughts when new info emerges
+4. **Branching Exploration**: Explore multiple approaches before committing
+5. **Audit Trail**: Record of reasoning for complex decisions

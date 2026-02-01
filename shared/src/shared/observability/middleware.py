@@ -246,9 +246,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             return True
 
         # Prefix match
-        return any(
-            path.startswith(prefix) for prefix in self.config.exclude_paths_startswith
-        )
+        return any(path.startswith(prefix) for prefix in self.config.exclude_paths_startswith)
 
     def _extract_correlation_id(self, request: Request) -> str:
         """Extract correlation ID from request headers or generate one.

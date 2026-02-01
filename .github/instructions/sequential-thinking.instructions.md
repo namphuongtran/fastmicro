@@ -1,11 +1,35 @@
 ---
-description: 'Guidelines for using sequential thinking MCP tool for complex problem-solving, architecture decisions, and multi-step implementations'
+description: 'MANDATORY: Use Sequential Thinking MCP for complex problem-solving, architecture decisions, and multi-step implementations. Structured reasoning prevents errors.'
 applyTo: '**/*'
 ---
 
-# Sequential Thinking Tool Guidelines
+# Sequential Thinking Tool Guidelines - MANDATORY
 
-Instructions for effectively using the sequential-thinking MCP tool to solve complex problems through structured, iterative reasoning.
+## ⚠️ CRITICAL: THINK BEFORE IMPLEMENTING
+
+**Use Sequential Thinking for ANY task involving:**
+- Architecture decisions
+- Multi-step implementations
+- Complex debugging
+- Risk analysis
+- Trade-off evaluation
+
+Rushing into implementation without structured thinking leads to:
+- Architectural mistakes that are costly to fix
+- Missed edge cases and requirements
+- Scope creep and wasted effort
+- Poor decisions without clear rationale
+
+## Quick Start
+
+```markdown
+mcp_sequential-th_sequentialthinking
+  thought: "Analyzing the problem: [describe what you're solving]"
+  thoughtNumber: 1
+  totalThoughts: 5  # Estimate, can adjust
+  nextThoughtNeeded: true
+  isRevision: false
+```
 
 ## Overview
 
