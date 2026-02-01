@@ -129,7 +129,7 @@ Response ← Traefik ← Service API ← Application Service ← Domain ←─�
 | Frontend | Next.js 15, React 19, TypeScript | Web application |
 | API Gateway | Traefik 3.x | Routing, load balancing, TLS |
 | Backend | FastAPI, Python 3.12+ | Microservices |
-| Shared Code | Poetry monorepo | Common utilities |
+| Shared Code | uv monorepo | Common utilities |
 | Auth | Keycloak 24+ | Identity & access management |
 | Databases | PostgreSQL 17, MongoDB 7 | Data persistence |
 | Caching | Redis 8 | Session, caching |

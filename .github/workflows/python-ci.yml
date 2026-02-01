@@ -34,7 +34,7 @@ on:
 
 env:
   PYTHON_VERSION: '3.12'
-  POETRY_VERSION: '1.8.5'
+  UV_VERSION: '0.5.14'
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -97,37 +97,31 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          version: ${{ env.POETRY_VERSION }}
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: shared/.venv
-          key: shared-${{ runner.os }}-${{ hashFiles('shared/pyproject.toml') }}
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: 'shared/uv.lock'
 
       - name: Install dependencies
         working-directory: shared
-        run: poetry install --no-interaction
+        run: uv sync --locked
 
       - name: Run linting
         working-directory: shared
         run: |
-          poetry run ruff check .
-          poetry run ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Run type checking
         working-directory: shared
-        run: poetry run mypy .
+        run: uv run mypy .
         continue-on-error: true
 
       - name: Run tests
         working-directory: shared
-        run: poetry run pytest --cov=. --cov-report=xml --cov-report=html -v
+        run: uv run pytest --cov=. --cov-report=xml --cov-report=html -v
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -164,36 +158,30 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          version: ${{ env.POETRY_VERSION }}
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ matrix.service.path }}/.venv
-          key: ${{ matrix.service.name }}-${{ runner.os }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.service.path)) }}
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: '${{ matrix.service.path }}/uv.lock'
 
       - name: Install shared library
         working-directory: shared
-        run: poetry install --no-interaction
+        run: uv sync --locked
 
       - name: Install service dependencies
         working-directory: ${{ matrix.service.path }}
-        run: poetry install --no-interaction
+        run: uv sync --locked
 
       - name: Run linting
         working-directory: ${{ matrix.service.path }}
         run: |
-          poetry run ruff check .
-          poetry run ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Run tests
         working-directory: ${{ matrix.service.path }}
-        run: poetry run pytest --cov=src --cov-report=xml -v
+        run: uv run pytest --cov=src --cov-report=xml -v
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

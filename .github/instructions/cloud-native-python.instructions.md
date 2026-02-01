@@ -16,8 +16,8 @@ Guidelines for building cloud-native Python microservices that are resilient, sc
 
 ### 2. Dependencies
 - Explicitly declare and isolate dependencies
-- Use `pyproject.toml` with Poetry or uv
-- Pin exact versions for reproducibility
+- Use `pyproject.toml` with uv
+- Pin exact versions for reproducibility (use `uv.lock`)
 
 ```toml
 [project]
@@ -543,9 +543,14 @@ class EnvFeatureFlags(IFeatureFlags):
 
 ```dockerfile
 # Build stage
-FROM python:3.12-slim as builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /app
+
+# Set uv environment variables
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -553,22 +558,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY pyproject.toml poetry.lock ./
-RUN pip install poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-interaction --no-ansi
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-install-project --no-dev
 
 # Runtime stage
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy dependencies from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy virtual environment from builder
+COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy application
 COPY --chown=appuser:appuser . .

@@ -21,15 +21,20 @@ We need to decide how to share this code effectively.
 We will maintain a monorepo with a shared library (`shared/`) that:
 
 1. **Contains 16 modules** covering cross-cutting concerns
-2. **Uses Poetry local dependencies** for development
+2. **Uses uv workspace dependencies** for development
 3. **Can be published as a package** for external consumption
 
 ### Integration Pattern
-Services reference the shared library via Poetry's path dependencies:
+Services reference the shared library via uv's path dependencies:
 
 ```toml
-[tool.poetry.group.local.dependencies]
-shared = { path = "../../shared", develop = true }
+[project]
+dependencies = [
+    "shared",
+]
+
+[tool.uv.sources]
+shared = { path = "../../shared", editable = true }
 ```
 
 ### Module Structure

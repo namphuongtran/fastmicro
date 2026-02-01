@@ -46,7 +46,7 @@ Helm charts for deploying services to Kubernetes:
 
 Setup and deployment automation:
 
-- `1-prerequisites/` - Install required tools (Poetry, Helm, kubectl)
+- `1-prerequisites/` - Install required tools (uv, Helm, kubectl)
 - `2-deployment/` - Service deployment scripts
 
 ### Traefik
@@ -60,7 +60,7 @@ Local reverse proxy configuration for routing:
 1. Install prerequisites:
    ```bash
    ./scripts/1-prerequisites/0-install-pipx.sh
-   ./scripts/1-prerequisites/1-install-poetry.sh
+   ./scripts/1-prerequisites/1-install-uv.sh
    ```
 
 2. Start observability stack:

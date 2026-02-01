@@ -54,8 +54,8 @@ src/identity_service/
 
 ```bash
 cd services/identity-service
-poetry install
-poetry run uvicorn identity_service.main:app --reload --port 8003
+uv sync
+uv run uvicorn identity_service.main:app --reload --port 8003
 ```
 
 ## Endpoints

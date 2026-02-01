@@ -37,14 +37,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install pip-audit
-        run: pip install pip-audit
+      - name: Install uv and pip-audit
+        run: |
+          pip install uv pip-audit
 
       - name: Run pip-audit
         working-directory: ${{ matrix.service }}
         run: |
-          pip install poetry
-          poetry export -f requirements.txt --output requirements.txt --without-hashes || true
+          uv export --no-hashes -o requirements.txt || true
           if [ -f requirements.txt ]; then
             pip-audit -r requirements.txt --format json --output audit.json || true
           fi

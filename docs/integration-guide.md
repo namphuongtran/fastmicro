@@ -5,7 +5,7 @@ This guide explains how to integrate the shared library into your microservice.
 ## Prerequisites
 
 - Python 3.12+
-- Poetry 2.x installed
+- uv package manager installed
 
 ## Quick Start
 
@@ -14,15 +14,20 @@ This guide explains how to integrate the shared library into your microservice.
 In your service's `pyproject.toml`:
 
 ```toml
-[tool.poetry.group.local.dependencies]
-shared = { path = "../../shared", develop = true }
+[project]
+dependencies = [
+    "shared",
+]
+
+[tool.uv.sources]
+shared = { path = "../../shared", editable = true }
 ```
 
 ### 2. Install Dependencies
 
 ```bash
 cd services/your-service
-poetry install
+uv sync
 ```
 
 ### 3. Import and Use
@@ -168,15 +173,15 @@ register_exception_handlers(app)
 
 ### Import Errors
 If you get import errors, ensure:
-1. Poetry virtual environment is activated
-2. Shared library is installed: `poetry install`
+1. Virtual environment is activated
+2. Shared library is installed: `uv sync`
 3. Python path includes shared: `PYTHONPATH=/app/shared`
 
 ### Version Conflicts
 If dependencies conflict:
 1. Check shared library versions in `shared/pyproject.toml`
 2. Update your service to compatible versions
-3. Run `poetry update` to resolve
+3. Run `uv sync` to resolve
 
 ## See Also
 
