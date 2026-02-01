@@ -15,7 +15,6 @@ from shared.config import (
     CORSSettings,
     CryptoSettings,
     SessionSettings,
-    get_settings,
 )
 
 

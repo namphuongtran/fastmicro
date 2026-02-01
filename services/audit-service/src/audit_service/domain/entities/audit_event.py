@@ -47,7 +47,7 @@ class AuditSeverity(str, Enum):
 class AuditEvent(BaseModel):
     """
     Core domain entity for audit events.
-    
+
     Represents a single audit log entry capturing an action performed
     by an actor on a resource.
     """
@@ -82,7 +82,9 @@ class AuditEvent(BaseModel):
     # Additional context
     description: str | None = Field(default=None, description="Human-readable event description")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
-    old_value: dict[str, Any] | None = Field(default=None, description="Previous state (for updates)")
+    old_value: dict[str, Any] | None = Field(
+        default=None, description="Previous state (for updates)"
+    )
     new_value: dict[str, Any] | None = Field(default=None, description="New state (for updates)")
 
     # Compliance

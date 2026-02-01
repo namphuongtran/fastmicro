@@ -32,11 +32,13 @@ from shared.sqlalchemy_async import AsyncDatabaseManager
 settings = get_settings()
 
 # Configure structured logging using shared library
-configure_structlog(LoggingConfig(
-    service_name="metastore-service",
-    environment=settings.environment,
-    log_level=getattr(settings, "log_level", "INFO"),
-))
+configure_structlog(
+    LoggingConfig(
+        service_name="metastore-service",
+        environment=settings.environment,
+        log_level=getattr(settings, "log_level", "INFO"),
+    )
+)
 
 logger = get_structlog_logger(__name__)
 
@@ -44,7 +46,7 @@ logger = get_structlog_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager.
-    
+
     Initializes and cleans up:
     - Database connection pool (AsyncDatabaseManager)
     - Cache manager (TieredCacheManager with L1/L2)

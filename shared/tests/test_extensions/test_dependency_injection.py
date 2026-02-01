@@ -27,18 +27,15 @@ from shared.extensions.dependency_injection import (
 class IDatabase(Protocol):
     """Database interface."""
 
-    def query(self, sql: str) -> list[dict]:
-        ...
+    def query(self, sql: str) -> list[dict]: ...
 
 
 class ICache(Protocol):
     """Cache interface."""
 
-    def get(self, key: str) -> str | None:
-        ...
+    def get(self, key: str) -> str | None: ...
 
-    def set(self, key: str, value: str) -> None:
-        ...
+    def set(self, key: str, value: str) -> None: ...
 
 
 class MockDatabase:
@@ -64,6 +61,7 @@ class MockCache:
 @dataclass
 class AppConfig:
     """Application configuration."""
+
     debug: bool = False
     database_url: str = "sqlite:///:memory:"
 
@@ -137,9 +135,7 @@ class TestContainer:
         with pytest.raises(KeyError):
             container.resolve(MockDatabase)
 
-    def test_register_interface_to_implementation(
-        self, container: Container
-    ) -> None:
+    def test_register_interface_to_implementation(self, container: Container) -> None:
         """Should map interface to implementation."""
         container.register_type(MockDatabase, interface=IDatabase)
 
@@ -179,6 +175,7 @@ class TestInjectDecorator:
 
     def test_injects_dependencies(self) -> None:
         """Should inject registered dependencies."""
+
         @inject
         def service_func(db: IDatabase = Depends(IDatabase)) -> list[dict]:
             return db.query("SELECT * FROM users")
@@ -188,6 +185,7 @@ class TestInjectDecorator:
 
     def test_injects_multiple_dependencies(self) -> None:
         """Should inject multiple dependencies."""
+
         @inject
         def multi_service(
             db: IDatabase = Depends(IDatabase),
@@ -201,6 +199,7 @@ class TestInjectDecorator:
 
     def test_allows_override(self) -> None:
         """Should allow manual override of dependencies."""
+
         @inject
         def overridable(db: IDatabase = Depends(IDatabase)) -> list[dict]:
             return db.query("SELECT 1")
@@ -214,6 +213,7 @@ class TestInjectDecorator:
     @pytest.mark.asyncio
     async def test_async_inject(self) -> None:
         """Should work with async functions."""
+
         @inject
         async def async_service(
             config: AppConfig = Depends(AppConfig),

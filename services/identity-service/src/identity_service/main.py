@@ -32,11 +32,13 @@ STATIC_DIR = BASE_DIR / "static"
 
 # Configure structured logging using shared library
 settings = get_settings()
-configure_structlog(LoggingConfig(
-    service_name="identity-service",
-    environment=settings.app_env,
-    log_level=settings.log_level,
-))
+configure_structlog(
+    LoggingConfig(
+        service_name="identity-service",
+        environment=settings.app_env,
+        log_level=settings.log_level,
+    )
+)
 
 logger = get_structlog_logger(__name__)
 
@@ -103,7 +105,14 @@ def create_app() -> FastAPI:
     app.add_middleware(
         RequestLoggingMiddleware,
         config=RequestLoggingConfig(
-            exclude_paths=["/health", "/healthz", "/ready", "/readyz", "/.well-known/openid-configuration", "/.well-known/jwks.json"],
+            exclude_paths=[
+                "/health",
+                "/healthz",
+                "/ready",
+                "/readyz",
+                "/.well-known/openid-configuration",
+                "/.well-known/jwks.json",
+            ],
             slow_request_threshold_ms=500.0,
         ),
     )

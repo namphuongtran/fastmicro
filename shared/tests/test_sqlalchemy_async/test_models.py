@@ -27,6 +27,7 @@ class TestTimestampMixin:
     @pytest.fixture
     def model_with_timestamps(self):
         """Create model with timestamp mixin."""
+
         class Base(DeclarativeBase):
             pass
 
@@ -88,6 +89,7 @@ class TestSoftDeleteMixin:
     @pytest.fixture
     def model_with_soft_delete(self):
         """Create model with soft delete mixin."""
+
         class Base(DeclarativeBase):
             pass
 
@@ -141,9 +143,7 @@ class TestSoftDeleteMixin:
             assert model.deleted_at is not None
 
     @pytest.mark.asyncio
-    async def test_restore(
-        self, db_manager: AsyncDatabaseManager, model_with_soft_delete
-    ) -> None:
+    async def test_restore(self, db_manager: AsyncDatabaseManager, model_with_soft_delete) -> None:
         """Should restore soft deleted model."""
         Base, TestModel = model_with_soft_delete
         await db_manager.create_all(Base)
@@ -169,6 +169,7 @@ class TestUUIDPrimaryKeyMixin:
     @pytest.fixture
     def model_with_uuid(self):
         """Create model with UUID primary key."""
+
         class Base(DeclarativeBase):
             pass
 
@@ -202,9 +203,7 @@ class TestUUIDPrimaryKeyMixin:
             UUID(str(model.id))
 
     @pytest.mark.asyncio
-    async def test_uuid_is_unique(
-        self, db_manager: AsyncDatabaseManager, model_with_uuid
-    ) -> None:
+    async def test_uuid_is_unique(self, db_manager: AsyncDatabaseManager, model_with_uuid) -> None:
         """Should generate unique UUIDs."""
         Base, TestModel = model_with_uuid
         await db_manager.create_all(Base)
@@ -225,6 +224,7 @@ class TestAuditMixin:
     @pytest.fixture
     def model_with_audit(self):
         """Create model with audit mixin."""
+
         class Base(DeclarativeBase):
             pass
 
@@ -258,9 +258,7 @@ class TestAuditMixin:
             assert model.updated_by is None
 
     @pytest.mark.asyncio
-    async def test_set_updated_by(
-        self, db_manager: AsyncDatabaseManager, model_with_audit
-    ) -> None:
+    async def test_set_updated_by(self, db_manager: AsyncDatabaseManager, model_with_audit) -> None:
         """Should set updated_by on update."""
         Base, TestModel = model_with_audit
         await db_manager.create_all(Base)

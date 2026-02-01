@@ -76,6 +76,7 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_success_keeps_closed(self, breaker: CircuitBreaker) -> None:
         """Should stay closed on success."""
+
         async def success_call():
             return "success"
 
@@ -86,10 +87,9 @@ class TestCircuitBreaker:
         assert breaker.failure_count == 0
 
     @pytest.mark.asyncio
-    async def test_failure_increments_count(
-        self, breaker: CircuitBreaker
-    ) -> None:
+    async def test_failure_increments_count(self, breaker: CircuitBreaker) -> None:
         """Should increment failure count."""
+
         async def failing_call():
             raise ValueError("error")
 
@@ -100,10 +100,9 @@ class TestCircuitBreaker:
         assert breaker.state == CircuitState.CLOSED
 
     @pytest.mark.asyncio
-    async def test_opens_after_threshold(
-        self, breaker: CircuitBreaker
-    ) -> None:
+    async def test_opens_after_threshold(self, breaker: CircuitBreaker) -> None:
         """Should open after failure threshold reached."""
+
         async def failing_call():
             raise ValueError("error")
 
@@ -116,9 +115,7 @@ class TestCircuitBreaker:
         assert breaker.failure_count == 3
 
     @pytest.mark.asyncio
-    async def test_rejects_calls_when_open(
-        self, breaker: CircuitBreaker
-    ) -> None:
+    async def test_rejects_calls_when_open(self, breaker: CircuitBreaker) -> None:
         """Should reject calls when open."""
         # Force open state
         breaker._state = CircuitState.OPEN
@@ -133,10 +130,9 @@ class TestCircuitBreaker:
         assert "test-service" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_transitions_to_half_open(
-        self, breaker: CircuitBreaker
-    ) -> None:
+    async def test_transitions_to_half_open(self, breaker: CircuitBreaker) -> None:
         """Should transition to half-open after recovery timeout."""
+
         async def failing_call():
             raise ValueError("error")
 
@@ -160,10 +156,9 @@ class TestCircuitBreaker:
         assert result == "success"
 
     @pytest.mark.asyncio
-    async def test_closes_after_success_in_half_open(
-        self, breaker: CircuitBreaker
-    ) -> None:
+    async def test_closes_after_success_in_half_open(self, breaker: CircuitBreaker) -> None:
         """Should close after successes in half-open state."""
+
         async def success_call():
             return "success"
 
@@ -179,10 +174,9 @@ class TestCircuitBreaker:
         assert breaker.failure_count == 0
 
     @pytest.mark.asyncio
-    async def test_reopens_on_failure_in_half_open(
-        self, breaker: CircuitBreaker
-    ) -> None:
+    async def test_reopens_on_failure_in_half_open(self, breaker: CircuitBreaker) -> None:
         """Should reopen on failure in half-open state."""
+
         async def failing_call():
             raise ValueError("error")
 

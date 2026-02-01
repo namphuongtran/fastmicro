@@ -35,7 +35,7 @@ class HealthCheckResult:
     @property
     def is_healthy(self) -> bool:
         """Check if the result indicates healthy status.
-        
+
         Returns:
             True if status is HEALTHY.
         """
@@ -43,7 +43,7 @@ class HealthCheckResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary.
-        
+
         Returns:
             Dictionary representation.
         """
@@ -79,7 +79,7 @@ class HealthCheck:
 
     async def run(self) -> HealthCheckResult:
         """Run the health check.
-        
+
         Returns:
             Health check result.
         """
@@ -122,7 +122,7 @@ def register_health_check(
     timeout_seconds: float = 10.0,
 ) -> None:
     """Register a health check.
-    
+
     Args:
         name: Health check name.
         check_fn: Async function that returns HealthCheckResult.
@@ -144,20 +144,21 @@ def create_health_check(
     timeout_seconds: float = 10.0,
 ) -> Callable[[HealthCheckFn], HealthCheckFn]:
     """Decorator to create a health check.
-    
+
     Args:
         name: Health check name.
         critical: Whether this check is critical for readiness.
         timeout_seconds: Timeout for the check.
-        
+
     Returns:
         Decorator function.
-        
+
     Example:
         @create_health_check("database", critical=True)
         async def check_database() -> HealthCheckResult:
             ...
     """
+
     def decorator(func: HealthCheckFn) -> HealthCheckFn:
         register_health_check(
             name=name,
@@ -172,10 +173,10 @@ def create_health_check(
 
 async def check_liveness() -> HealthCheckResult:
     """Check if the application is alive.
-    
+
     Liveness probes indicate if the application is running.
     A simple check that always returns healthy if the app is responsive.
-    
+
     Returns:
         Health check result.
     """
@@ -188,16 +189,16 @@ async def check_liveness() -> HealthCheckResult:
 
 async def check_readiness() -> dict[str, Any]:
     """Check if the application is ready to serve traffic.
-    
+
     Readiness probes check that all dependencies are available.
-    
+
     Returns:
         Dictionary with overall status and individual check results.
     """
     results: list[HealthCheckResult] = []
 
     # Run all registered checks
-    for name, check in _health_checks.items():
+    for _name, check in _health_checks.items():
         result = await check.run()
         results.append(result)
 
@@ -208,15 +209,9 @@ async def check_readiness() -> dict[str, Any]:
         for result in results
     )
 
-    has_unhealthy = any(
-        result.status == HealthStatus.UNHEALTHY
-        for result in results
-    )
+    has_unhealthy = any(result.status == HealthStatus.UNHEALTHY for result in results)
 
-    has_degraded = any(
-        result.status == HealthStatus.DEGRADED
-        for result in results
-    )
+    has_degraded = any(result.status == HealthStatus.DEGRADED for result in results)
 
     if has_unhealthy_critical or (has_unhealthy and not results):
         overall_status = "unhealthy"
@@ -233,7 +228,7 @@ async def check_readiness() -> dict[str, Any]:
 
 async def get_health_status() -> dict[str, Any]:
     """Get overall health status.
-    
+
     Returns:
         Dictionary with status and all check results.
     """

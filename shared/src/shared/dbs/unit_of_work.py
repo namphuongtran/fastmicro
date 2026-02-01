@@ -16,7 +16,7 @@ T = TypeVar("T")
 
 class AbstractUnitOfWork(ABC):
     """Abstract Unit of Work interface.
-    
+
     Defines the transaction boundaries and repository coordination.
     """
 
@@ -48,7 +48,7 @@ class AbstractUnitOfWork(ABC):
 
 class InMemoryUnitOfWork(AbstractUnitOfWork):
     """In-memory Unit of Work implementation.
-    
+
     Useful for testing and prototyping.
     """
 
@@ -60,7 +60,7 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
     @property
     def is_active(self) -> bool:
         """Check if the unit of work is active.
-        
+
         Returns:
             True if within a transaction context.
         """
@@ -72,7 +72,7 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
         repository: AbstractRepository[Any],
     ) -> None:
         """Register a repository with this unit of work.
-        
+
         Args:
             name: Repository name for lookup.
             repository: The repository instance.
@@ -81,13 +81,13 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
 
     def get_repository(self, name: str) -> AbstractRepository[Any]:
         """Get a registered repository by name.
-        
+
         Args:
             name: Repository name.
-            
+
         Returns:
             The repository instance.
-            
+
         Raises:
             KeyError: If repository not found.
         """
@@ -113,7 +113,7 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
 
     async def commit(self) -> None:
         """Commit the transaction.
-        
+
         For in-memory implementation, this is a no-op since
         changes are applied immediately.
         """
@@ -121,7 +121,7 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
 
     async def rollback(self) -> None:
         """Rollback the transaction.
-        
+
         For in-memory implementation, this is a no-op.
         A real implementation would restore previous state.
         """

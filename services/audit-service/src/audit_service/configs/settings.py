@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """
     Application settings with environment variable support.
-    
+
     All settings can be overridden via environment variables.
     Environment variables should be prefixed with the service name
     or use the exact field name.
@@ -54,8 +54,12 @@ class Settings(BaseSettings):
         description="PostgreSQL connection string",
     )
     database_pool_size: int = Field(default=5, ge=1, le=100, description="Database pool size")
-    database_max_overflow: int = Field(default=10, ge=0, le=100, description="Database max overflow")
-    database_pool_timeout: int = Field(default=30, ge=1, description="Database pool timeout in seconds")
+    database_max_overflow: int = Field(
+        default=10, ge=0, le=100, description="Database max overflow"
+    )
+    database_pool_timeout: int = Field(
+        default=30, ge=1, description="Database pool timeout in seconds"
+    )
 
     # Redis Settings
     redis_url: str = Field(
@@ -116,9 +120,9 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """
     Get cached settings instance.
-    
+
     Uses LRU cache to ensure settings are only loaded once.
-    
+
     Returns:
         Settings: Application settings instance.
     """

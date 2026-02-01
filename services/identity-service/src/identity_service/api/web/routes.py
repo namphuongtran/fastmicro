@@ -178,16 +178,21 @@ async def login_submit(
 
     # Create session
     response = RedirectResponse(
-        url="/consent?" + "&".join([
-            f"response_type={response_type}",
-            f"client_id={client_id}",
-            f"redirect_uri={redirect_uri}",
-            f"scope={scope}",
-            f"state={state}",
-            f"nonce={nonce}",
-            f"code_challenge={code_challenge}",
-            f"code_challenge_method={code_challenge_method}",
-        ]) if client_id else "/",
+        url="/consent?"
+        + "&".join(
+            [
+                f"response_type={response_type}",
+                f"client_id={client_id}",
+                f"redirect_uri={redirect_uri}",
+                f"scope={scope}",
+                f"state={state}",
+                f"nonce={nonce}",
+                f"code_challenge={code_challenge}",
+                f"code_challenge_method={code_challenge_method}",
+            ]
+        )
+        if client_id
+        else "/",
         status_code=status.HTTP_302_FOUND,
     )
 

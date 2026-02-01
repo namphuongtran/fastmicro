@@ -8,20 +8,20 @@ This module provides enterprise-grade authentication services:
 
 Example:
     >>> from shared.auth import JWTService, PasswordService, APIKeyService
-    
+
     # JWT tokens
     >>> jwt = JWTService(secret_key="secret")
     >>> token = jwt.create_access_token("user_123", scopes=["read"])
     >>> data = jwt.verify_token(token)
     >>> print(data.sub)
     'user_123'
-    
+
     # Password hashing
     >>> pwd = PasswordService()
     >>> hashed = pwd.hash("SecureP@ssw0rd!")
     >>> pwd.verify("SecureP@ssw0rd!", hashed)
     True
-    
+
     # API keys
     >>> api = APIKeyService(prefix="sk_test_")
     >>> key = api.generate_key()

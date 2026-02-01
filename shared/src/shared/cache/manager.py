@@ -13,6 +13,7 @@ The manager automatically handles cache hierarchy:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
@@ -27,10 +28,10 @@ V = TypeVar("V")
 
 class CacheConfig(BaseModel):
     """Cache tier configuration.
-    
+
     Configures the two-tier cache system. Memory cache (L1) is
     always enabled, Redis cache (L2) is optional.
-    
+
     Example:
         >>> # Memory only
         >>> config = CacheConfig()
@@ -75,23 +76,23 @@ class CacheConfig(BaseModel):
 
 class TieredCacheManager(CacheBackend[V]):
     """Two-tier cache manager orchestrating L1 (memory) and L2 (Redis).
-    
+
     Implements a hierarchical caching strategy:
-    
+
     Read Flow (GET):
         1. Check L1 (memory) - ~1μs latency
         2. If miss, check L2 (Redis) - ~1-5ms latency
         3. If L2 hit, backfill L1 for future requests
         4. Return value or default
-    
+
     Write Flow (SET):
         1. Write to L1 (memory) - always
         2. Write to L2 (Redis) - if enabled (write-through)
-    
+
     Delete Flow (DELETE):
         1. Delete from L1 (memory) - always
         2. Delete from L2 (Redis) - if enabled
-    
+
     Example:
         >>> config = CacheConfig(
         ...     redis_enabled=True,
@@ -106,7 +107,7 @@ class TieredCacheManager(CacheBackend[V]):
         >>> # Fast reads from L1
         >>> await cache.get("user:123")
         {'name': 'John'}
-    
+
     Note:
         Call connect() before use, or use as async context manager.
     """
@@ -119,7 +120,7 @@ class TieredCacheManager(CacheBackend[V]):
         l2_cache: CacheBackend[V] | None = None,
     ) -> None:
         """Initialize tiered cache manager.
-        
+
         Args:
             config: Cache configuration.
             l1_cache: Custom L1 backend (for testing).
@@ -173,7 +174,7 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def connect(self) -> None:
         """Connect to cache backends.
-        
+
         Connects to Redis if enabled. Memory cache doesn't need connection.
         """
         if self._connected:
@@ -187,14 +188,14 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def get(self, key: str, default: V | None = None) -> V | None:
         """Get value with tiered lookup.
-        
+
         Lookup order: L1 (memory) → L2 (Redis)
         On L2 hit, backfills L1 for faster subsequent access.
-        
+
         Args:
             key: Cache key.
             default: Default value if not found.
-            
+
         Returns:
             Cached value or default.
         """
@@ -213,10 +214,8 @@ class TieredCacheManager(CacheBackend[V]):
             if value is not None:
                 self._l2_hits += 1
                 # Backfill L1 for future requests (best effort)
-                try:
+                with contextlib.suppress(Exception):
                     await self._l1.set(key, value)
-                except Exception:
-                    pass
                 return value
         except Exception:
             pass  # L2 failure, return default
@@ -231,14 +230,14 @@ class TieredCacheManager(CacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set value in both tiers (write-through).
-        
+
         Writes to both L1 and L2 for consistency.
-        
+
         Args:
             key: Cache key.
             value: Value to cache.
             ttl: Time-to-live in seconds.
-            
+
         Returns:
             True if successful.
         """
@@ -255,10 +254,10 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def delete(self, key: str) -> bool:
         """Delete from both tiers.
-        
+
         Args:
             key: Cache key to delete.
-            
+
         Returns:
             True if deleted from at least one tier.
         """
@@ -275,10 +274,10 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def exists(self, key: str) -> bool:
         """Check if key exists in either tier.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             True if key exists in L1 or L2.
         """
@@ -291,10 +290,10 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def clear(self, namespace: str | None = None) -> int:
         """Clear both cache tiers.
-        
+
         Args:
             namespace: Namespace prefix to clear.
-            
+
         Returns:
             Total number of keys cleared.
         """
@@ -311,14 +310,14 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def increment(self, key: str, delta: int = 1) -> int:
         """Increment value in both tiers.
-        
+
         Note: This operation may have race conditions between tiers.
         For strict atomic increments, use Redis directly.
-        
+
         Args:
             key: Cache key.
             delta: Amount to increment.
-            
+
         Returns:
             New value after increment.
         """
@@ -332,10 +331,10 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def get_many(self, keys: list[str]) -> dict[str, V | None]:
         """Get multiple values with tiered lookup.
-        
+
         Args:
             keys: List of cache keys.
-            
+
         Returns:
             Dictionary mapping keys to values.
         """
@@ -368,11 +367,11 @@ class TieredCacheManager(CacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set multiple values in both tiers.
-        
+
         Args:
             mapping: Dictionary of key-value pairs.
             ttl: Time-to-live in seconds.
-            
+
         Returns:
             True if successful.
         """
@@ -389,10 +388,10 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def delete_many(self, keys: list[str]) -> int:
         """Delete multiple keys from both tiers.
-        
+
         Args:
             keys: List of cache keys.
-            
+
         Returns:
             Number of keys deleted.
         """
@@ -413,7 +412,7 @@ class TieredCacheManager(CacheBackend[V]):
 
     async def health_check(self) -> dict[str, bool]:
         """Check health of both cache tiers.
-        
+
         Returns:
             Dictionary with health status of each tier.
         """
@@ -431,7 +430,7 @@ class TieredCacheManager(CacheBackend[V]):
 
     def stats(self) -> dict[str, Any]:
         """Get comprehensive cache statistics.
-        
+
         Returns:
             Dictionary with stats for both tiers.
         """
@@ -452,15 +451,9 @@ class TieredCacheManager(CacheBackend[V]):
             },
             "misses": self._misses,
             "hit_rate": (
-                (self._l1_hits + self._l2_hits) / total_requests
-                if total_requests > 0
-                else 0.0
+                (self._l1_hits + self._l2_hits) / total_requests if total_requests > 0 else 0.0
             ),
-            "l1_hit_rate": (
-                self._l1_hits / total_requests
-                if total_requests > 0
-                else 0.0
-            ),
+            "l1_hit_rate": (self._l1_hits / total_requests if total_requests > 0 else 0.0),
         }
 
     def reset_stats(self) -> None:
@@ -507,7 +500,7 @@ def create_cache(
     namespace: str = "",
 ) -> TieredCacheManager[Any]:
     """Create a tiered cache manager with common settings.
-    
+
     Args:
         memory_enabled: Enable L1 memory cache.
         memory_max_size: Max items in memory cache.
@@ -518,10 +511,10 @@ def create_cache(
         redis_port: Redis port.
         redis_ttl: Default TTL for Redis cache.
         namespace: Key namespace prefix.
-        
+
     Returns:
         Configured TieredCacheManager instance.
-        
+
     Example:
         >>> # Memory only
         >>> cache = create_cache()

@@ -18,10 +18,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 class TimestampMixin:
     """Mixin that adds automatic timestamp columns.
-    
+
     Adds created_at and updated_at columns that are automatically
     managed on insert and update operations.
-    
+
     Example:
         >>> class User(TimestampMixin, Base):
         ...     __tablename__ = "users"
@@ -44,10 +44,10 @@ class TimestampMixin:
 
 class SoftDeleteMixin:
     """Mixin that adds soft delete functionality.
-    
+
     Instead of actually deleting records, marks them as deleted
     with is_deleted flag and deleted_at timestamp.
-    
+
     Example:
         >>> class Document(SoftDeleteMixin, Base):
         ...     __tablename__ = "documents"
@@ -81,9 +81,9 @@ class SoftDeleteMixin:
 
 class UUIDPrimaryKeyMixin:
     """Mixin that provides UUID primary key.
-    
+
     Generates UUID4 as the primary key for the model.
-    
+
     Example:
         >>> class Event(UUIDPrimaryKeyMixin, Base):
         ...     __tablename__ = "events"
@@ -99,9 +99,9 @@ class UUIDPrimaryKeyMixin:
 
 class AuditMixin:
     """Mixin that adds user audit fields.
-    
+
     Tracks which user created and last updated the entity.
-    
+
     Example:
         >>> class Order(AuditMixin, Base):
         ...     __tablename__ = "orders"
@@ -123,9 +123,9 @@ class AuditMixin:
 
 class TenantMixin:
     """Mixin that adds multi-tenant support.
-    
+
     Adds a tenant_id column for multi-tenant data isolation.
-    
+
     Example:
         >>> class Document(TenantMixin, Base):
         ...     __tablename__ = "documents"
@@ -143,10 +143,10 @@ class TenantMixin:
 
 class VersionMixin:
     """Mixin for optimistic concurrency control.
-    
+
     Adds a version column that auto-increments on updates.
     Use with SQLAlchemy's version_id_col for optimistic locking.
-    
+
     Example:
         >>> class Order(VersionMixin, Base):
         ...     __tablename__ = "orders"
@@ -166,25 +166,27 @@ class VersionMixin:
 
 class FullAuditMixin(TimestampMixin, AuditMixin, VersionMixin):
     """Combined mixin with timestamps, user audit, and versioning.
-    
+
     Provides complete audit trail for entities.
-    
+
     Example:
         >>> class Invoice(FullAuditMixin, Base):
         ...     __tablename__ = "invoices"
         ...     id = Column(Integer, primary_key=True)
     """
+
     pass
 
 
 class TenantAuditMixin(TimestampMixin, AuditMixin, TenantMixin):
     """Combined mixin with timestamps, user audit, and multi-tenancy.
-    
+
     Ideal for multi-tenant applications requiring audit trails.
-    
+
     Example:
         >>> class Contract(TenantAuditMixin, Base):
         ...     __tablename__ = "contracts"
         ...     id = Column(Integer, primary_key=True)
     """
+
     pass

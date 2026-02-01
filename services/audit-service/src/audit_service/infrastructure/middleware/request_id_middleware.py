@@ -18,7 +18,7 @@ CORRELATION_ID_HEADER = "X-Correlation-ID"
 class RequestIdMiddleware(BaseHTTPMiddleware):
     """
     Middleware to add request ID to all requests.
-    
+
     If X-Request-ID header is present, uses it; otherwise generates a new UUID.
     Also propagates X-Correlation-ID if present.
     """
@@ -30,11 +30,11 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """
         Process the request and add request ID.
-        
+
         Args:
             request: Incoming HTTP request.
             call_next: Next middleware/handler in the chain.
-        
+
         Returns:
             Response: HTTP response with request ID header.
         """

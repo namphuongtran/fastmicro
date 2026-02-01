@@ -522,9 +522,7 @@ class FeatureFlagService:
         Returns:
             True if updated, False if not found
         """
-        result = await self._repository.set_rollout_percentage(
-            flag_id, percentage, updated_by
-        )
+        result = await self._repository.set_rollout_percentage(flag_id, percentage, updated_by)
 
         if result:
             # Invalidate cache

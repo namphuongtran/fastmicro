@@ -317,8 +317,8 @@ class FeatureFlag:
             return None
 
         # Try common user identifier fields
-        for field in ["user.id", "user_id", "userId", "user.email", "email"]:
-            value = self._get_nested_value(context, field)
+        for field_path in ["user.id", "user_id", "userId", "user.email", "email"]:
+            value = self._get_nested_value(context, field_path)
             if value:
                 return str(value)
 

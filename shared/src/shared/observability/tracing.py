@@ -57,7 +57,7 @@ class Span:
 
     def set_attribute(self, key: str, value: Any) -> None:
         """Set an attribute on the span.
-        
+
         Args:
             key: Attribute key.
             value: Attribute value.
@@ -66,20 +66,22 @@ class Span:
 
     def add_event(self, name: str, attributes: dict[str, Any] | None = None) -> None:
         """Add an event to the span.
-        
+
         Args:
             name: Event name.
             attributes: Event attributes.
         """
-        self.events.append({
-            "name": name,
-            "timestamp": time.time(),
-            "attributes": attributes or {},
-        })
+        self.events.append(
+            {
+                "name": name,
+                "timestamp": time.time(),
+                "attributes": attributes or {},
+            }
+        )
 
     def record_exception(self, exception: BaseException) -> None:
         """Record an exception on the span.
-        
+
         Args:
             exception: The exception to record.
         """
@@ -102,9 +104,7 @@ class Span:
 _current_span: contextvars.ContextVar[Span | None] = contextvars.ContextVar(
     "current_span", default=None
 )
-_trace_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "trace_id", default=None
-)
+_trace_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("trace_id", default=None)
 
 # Global tracing configuration
 _tracing_config: TracingConfig = TracingConfig()
@@ -112,7 +112,7 @@ _tracing_config: TracingConfig = TracingConfig()
 
 def configure_tracing(config: TracingConfig) -> None:
     """Configure tracing globally.
-    
+
     Args:
         config: Tracing configuration.
     """
@@ -122,7 +122,7 @@ def configure_tracing(config: TracingConfig) -> None:
 
 def get_current_span() -> Span | None:
     """Get the current span from context.
-    
+
     Returns:
         The current span or None if no span is active.
     """
@@ -131,7 +131,7 @@ def get_current_span() -> Span | None:
 
 def get_trace_id() -> str | None:
     """Get the current trace ID from context.
-    
+
     Returns:
         The current trace ID or None if no trace is active.
     """
@@ -151,15 +151,15 @@ def create_span(
     attributes: dict[str, Any] | None = None,
 ) -> Generator[Span, None, None]:
     """Create a new span as a context manager.
-    
+
     Args:
         name: Span name.
         kind: Span kind.
         attributes: Initial span attributes.
-        
+
     Yields:
         The created span.
-        
+
     Example:
         with create_span("process_order", kind=SpanKind.SERVER) as span:
             span.set_attribute("order_id", "12345")
@@ -205,7 +205,7 @@ def create_span(
 
 def inject_context(carrier: dict[str, str]) -> None:
     """Inject trace context into a carrier (e.g., HTTP headers).
-    
+
     Args:
         carrier: Dictionary to inject context into.
     """
@@ -213,15 +213,15 @@ def inject_context(carrier: dict[str, str]) -> None:
     span = get_current_span()
 
     if trace_id:
-        carrier["traceparent"] = f"00-{trace_id}-{span.span_id if span else '0'*16}-01"
+        carrier["traceparent"] = f"00-{trace_id}-{span.span_id if span else '0' * 16}-01"
 
 
 def extract_context(carrier: dict[str, str]) -> dict[str, str | None]:
     """Extract trace context from a carrier (e.g., HTTP headers).
-    
+
     Args:
         carrier: Dictionary containing trace context.
-        
+
     Returns:
         Extracted context with trace_id and parent_span_id.
     """
@@ -249,40 +249,45 @@ def traced(
     attributes: dict[str, Any] | None = None,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Decorator to trace a function.
-    
+
     Args:
         name: Span name (defaults to function name).
         kind: Span kind.
         attributes: Initial span attributes.
-        
+
     Returns:
         Decorated function.
-        
+
     Example:
         @traced("process_payment", kind=SpanKind.CLIENT)
         async def process_payment(order_id: str) -> bool:
             ...
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         span_name = name or func.__name__
 
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-                with create_span(span_name, kind=kind, attributes=attributes) as span:
+                with create_span(span_name, kind=kind, attributes=attributes):
                     try:
                         return await func(*args, **kwargs)
                     except BaseException:
                         raise
+
             return async_wrapper  # type: ignore[return-value]
         else:
+
             @functools.wraps(func)
             def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-                with create_span(span_name, kind=kind, attributes=attributes) as span:
+                with create_span(span_name, kind=kind, attributes=attributes):
                     try:
                         return func(*args, **kwargs)
                     except BaseException:
                         raise
+
             return sync_wrapper  # type: ignore[return-value]
 
     return decorator

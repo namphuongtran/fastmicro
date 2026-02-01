@@ -27,12 +27,14 @@ from shared.utils.serialization import (
 
 class SampleEnum(Enum):
     """Sample enum for testing."""
+
     VALUE_A = "a"
     VALUE_B = "b"
 
 
 class SamplePydanticModel(BaseModel):
     """Sample Pydantic model for testing."""
+
     name: str
     value: int
 
@@ -40,6 +42,7 @@ class SamplePydanticModel(BaseModel):
 @dataclass
 class SampleDataclass:
     """Sample dataclass for testing."""
+
     name: str
     value: int
 
@@ -125,6 +128,7 @@ class TestCustomJSONEncoder:
 
     def test_raises_on_unknown_type(self) -> None:
         """Should raise TypeError for unknown types."""
+
         class UnknownType:
             pass
 
@@ -164,7 +168,7 @@ class TestSerializeJson:
             "nested": {
                 "uuid": UUID("12345678-1234-5678-1234-567812345678"),
                 "decimal": Decimal("99.99"),
-            }
+            },
         }
         result = serialize_json(data)
         parsed = json.loads(result)
@@ -183,7 +187,7 @@ class TestDeserializeJson:
 
     def test_deserializes_to_list(self) -> None:
         """Should deserialize JSON string to list."""
-        json_str = '[1, 2, 3]'
+        json_str = "[1, 2, 3]"
         result = deserialize_json(json_str)
         assert result == [1, 2, 3]
 
@@ -210,15 +214,21 @@ class TestSafeSerialize:
 
     def test_returns_fallback_for_invalid_data(self) -> None:
         """Should return fallback string for unserializable data."""
+
         class Unserializable:
             pass
 
         result = safe_serialize(Unserializable())
         assert isinstance(result, str)
-        assert "error" in result.lower() or "unserializable" in result.lower() or "Unserializable" in result
+        assert (
+            "error" in result.lower()
+            or "unserializable" in result.lower()
+            or "Unserializable" in result
+        )
 
     def test_custom_fallback(self) -> None:
         """Should use custom fallback when provided."""
+
         class Unserializable:
             pass
 

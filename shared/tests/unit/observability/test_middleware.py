@@ -40,6 +40,7 @@ def app() -> FastAPI:
     @app.get("/slow")
     async def slow_endpoint():
         import asyncio
+
         await asyncio.sleep(0.01)
         return {"message": "slow"}
 

@@ -110,9 +110,7 @@ class TestAuditAppService:
         """Test listing events with data."""
         # Create multiple events
         for i in range(5):
-            request = sample_request.model_copy(
-                update={"resource_id": f"doc-{i}"}
-            )
+            request = sample_request.model_copy(update={"resource_id": f"doc-{i}"})
             await service.create_event(request)
 
         result = await service.list_events(page=1, page_size=3)
@@ -129,9 +127,7 @@ class TestAuditAppService:
         """Test pagination of events."""
         # Create 10 events
         for i in range(10):
-            request = sample_request.model_copy(
-                update={"resource_id": f"doc-{i}"}
-            )
+            request = sample_request.model_copy(update={"resource_id": f"doc-{i}"})
             await service.create_event(request)
 
         # Get page 1

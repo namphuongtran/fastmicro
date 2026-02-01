@@ -28,9 +28,7 @@ class TestTieredCacheManagerBasic:
         return MemoryCache(namespace="test", max_size=100)
 
     @pytest.fixture
-    def manager(
-        self, l1_cache: MemoryCache, l2_cache: MemoryCache
-    ) -> TieredCacheManager:
+    def manager(self, l1_cache: MemoryCache, l2_cache: MemoryCache) -> TieredCacheManager:
         """Create tiered cache manager."""
         return TieredCacheManager(
             config=CacheConfig(),
@@ -234,7 +232,7 @@ class TestTieredCacheManagerStats:
 
         stats = manager.stats()
 
-        assert stats["hit_rate"] == pytest.approx(2/3, rel=0.01)
+        assert stats["hit_rate"] == pytest.approx(2 / 3, rel=0.01)
 
 
 class TestTieredCacheManagerIncrement:

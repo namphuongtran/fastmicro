@@ -17,6 +17,7 @@ try:
     from shared.observability import get_logger
 except ImportError:
     import structlog
+
     get_logger = structlog.get_logger
 
 logger = get_logger(__name__)
@@ -25,7 +26,7 @@ logger = get_logger(__name__)
 class LoggingMiddleware(BaseHTTPMiddleware):
     """
     Middleware for structured request/response logging.
-    
+
     Logs request start, completion, and timing for observability.
     """
 
@@ -36,11 +37,11 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """
         Process the request with logging.
-        
+
         Args:
             request: Incoming HTTP request.
             call_next: Next middleware/handler in the chain.
-        
+
         Returns:
             Response: HTTP response.
         """
@@ -103,10 +104,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     def _get_client_ip(self, request: Request) -> str:
         """
         Extract client IP from request, handling proxies.
-        
+
         Args:
             request: HTTP request.
-        
+
         Returns:
             str: Client IP address.
         """

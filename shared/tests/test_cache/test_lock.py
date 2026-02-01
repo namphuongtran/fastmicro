@@ -68,15 +68,11 @@ class TestDistributedLock:
         )
 
     @pytest.fixture
-    def lock(
-        self, mock_redis: MagicMock, config: LockConfig
-    ) -> DistributedLock:
+    def lock(self, mock_redis: MagicMock, config: LockConfig) -> DistributedLock:
         """Create test lock."""
         return DistributedLock(mock_redis, config)
 
-    def test_create_lock(
-        self, mock_redis: MagicMock, config: LockConfig
-    ) -> None:
+    def test_create_lock(self, mock_redis: MagicMock, config: LockConfig) -> None:
         """Should create distributed lock."""
         lock = DistributedLock(mock_redis, config)
 
@@ -84,9 +80,7 @@ class TestDistributedLock:
         assert lock.name == "test-lock"
 
     @pytest.mark.asyncio
-    async def test_acquire_lock(
-        self, lock: DistributedLock, mock_redis: MagicMock
-    ) -> None:
+    async def test_acquire_lock(self, lock: DistributedLock, mock_redis: MagicMock) -> None:
         """Should acquire lock."""
         mock_redis._redis.set.return_value = True
 
@@ -95,9 +89,7 @@ class TestDistributedLock:
         assert acquired is True
 
     @pytest.mark.asyncio
-    async def test_acquire_lock_failure(
-        self, lock: DistributedLock, mock_redis: MagicMock
-    ) -> None:
+    async def test_acquire_lock_failure(self, lock: DistributedLock, mock_redis: MagicMock) -> None:
         """Should handle lock acquisition failure."""
         mock_redis._redis.set.return_value = False
 
@@ -106,9 +98,7 @@ class TestDistributedLock:
         assert acquired is False
 
     @pytest.mark.asyncio
-    async def test_release_lock(
-        self, lock: DistributedLock, mock_redis: MagicMock
-    ) -> None:
+    async def test_release_lock(self, lock: DistributedLock, mock_redis: MagicMock) -> None:
         """Should release lock."""
         # Simulate owning the lock
         lock._token = "test-token"
@@ -119,9 +109,7 @@ class TestDistributedLock:
         mock_redis._redis.delete.assert_called()
 
     @pytest.mark.asyncio
-    async def test_context_manager(
-        self, mock_redis: MagicMock, config: LockConfig
-    ) -> None:
+    async def test_context_manager(self, mock_redis: MagicMock, config: LockConfig) -> None:
         """Should work as context manager."""
         mock_redis._redis.set.return_value = True
         mock_redis._redis.get.return_value = None
@@ -133,9 +121,7 @@ class TestDistributedLock:
             assert lock._token is not None
 
     @pytest.mark.asyncio
-    async def test_lock_extend(
-        self, lock: DistributedLock, mock_redis: MagicMock
-    ) -> None:
+    async def test_lock_extend(self, lock: DistributedLock, mock_redis: MagicMock) -> None:
         """Should extend lock timeout."""
         lock._token = "test-token"
         mock_redis._redis.get.return_value = b"test-token"
@@ -146,9 +132,7 @@ class TestDistributedLock:
         mock_redis._redis.expire.assert_called()
 
     @pytest.mark.asyncio
-    async def test_is_locked(
-        self, lock: DistributedLock, mock_redis: MagicMock
-    ) -> None:
+    async def test_is_locked(self, lock: DistributedLock, mock_redis: MagicMock) -> None:
         """Should check if resource is locked."""
         mock_redis._redis.get.return_value = b"some-token"
 
@@ -157,9 +141,7 @@ class TestDistributedLock:
         assert is_locked is True
 
     @pytest.mark.asyncio
-    async def test_is_not_locked(
-        self, lock: DistributedLock, mock_redis: MagicMock
-    ) -> None:
+    async def test_is_not_locked(self, lock: DistributedLock, mock_redis: MagicMock) -> None:
         """Should return False when not locked."""
         mock_redis._redis.get.return_value = None
 

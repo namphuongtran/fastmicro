@@ -78,9 +78,13 @@ class TestLoggingConfig:
     def test_should_use_json_explicit(self):
         """Test explicit JSON configuration."""
         # Force JSON in development
-        assert LoggingConfig(service_name="test", environment="development", json_logs=True).should_use_json
+        assert LoggingConfig(
+            service_name="test", environment="development", json_logs=True
+        ).should_use_json
         # Force console in production
-        assert not LoggingConfig(service_name="test", environment="production", json_logs=False).should_use_json
+        assert not LoggingConfig(
+            service_name="test", environment="production", json_logs=False
+        ).should_use_json
 
 
 class TestConfigureStructlog:
@@ -88,20 +92,24 @@ class TestConfigureStructlog:
 
     def test_basic_configuration(self):
         """Test basic structlog configuration."""
-        configure_structlog(LoggingConfig(
-            service_name="test-service",
-            environment="testing",
-        ))
+        configure_structlog(
+            LoggingConfig(
+                service_name="test-service",
+                environment="testing",
+            )
+        )
 
         logger = get_structlog_logger("test")
         assert logger is not None
 
     def test_logger_has_service_context(self, capsys):
         """Test that logger includes service name."""
-        configure_structlog(LoggingConfig(
-            service_name="my-test-service",
-            environment="development",
-        ))
+        configure_structlog(
+            LoggingConfig(
+                service_name="my-test-service",
+                environment="development",
+            )
+        )
 
         logger = get_structlog_logger("test")
         logger.info("test message")

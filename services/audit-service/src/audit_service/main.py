@@ -27,6 +27,7 @@ try:
 except ImportError:
     # Fallback for standalone development
     import structlog
+
     get_logger = structlog.get_logger
 
     def setup_tracing(_: object) -> None:  # noqa: E731
@@ -43,7 +44,7 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Application lifespan manager.
-    
+
     Handles startup and shutdown events for the application.
     """
     # Startup
@@ -77,7 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """
     Create and configure the FastAPI application.
-    
+
     Returns:
         FastAPI: Configured FastAPI application instance.
     """
@@ -143,9 +144,7 @@ def configure_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def general_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """Handle unhandled exceptions."""
         logger.exception(
             "Unhandled exception",

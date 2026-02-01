@@ -27,14 +27,16 @@ class TestHealthEndpoints:
 @pytest.mark.skip(reason="Requires database setup - run with integration test config")
 class TestMetadataEndpoints:
     """Integration tests for metadata API endpoints.
-    
+
     These tests require a running database. To run them:
     1. Set DATABASE_URL environment variable
     2. Run: pytest tests/integration/test_api.py::TestMetadataEndpoints -v
     """
 
     def test_create_metadata(self, client):
-        response = client.post("/api/v1/metadata", json={"key": "test-key", "value": {"foo": "bar"}})
+        response = client.post(
+            "/api/v1/metadata", json={"key": "test-key", "value": {"foo": "bar"}}
+        )
         assert response.status_code == 201
         data = response.json()
         assert data["key"] == "test-key"

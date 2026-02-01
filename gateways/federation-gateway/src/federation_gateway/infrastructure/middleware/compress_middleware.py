@@ -5,10 +5,11 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 logger = logging.getLogger(__name__)
 
+
 def setup_compress_middleware(app: FastAPI):
     """
     Setup GZip middleware for FastAPI application.
-    
+
     Args:
         app: FastAPI application instance
     """

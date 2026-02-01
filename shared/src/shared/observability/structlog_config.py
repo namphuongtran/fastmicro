@@ -10,12 +10,12 @@ It supports:
 
 Usage:
     from shared.observability import configure_structlog, get_structlog_logger, LoggingConfig
-    
+
     configure_structlog(LoggingConfig(
         service_name="my-service",
         environment="production",
     ))
-    
+
     logger = get_structlog_logger(__name__)
     logger.info("Application started", port=8000)
 
@@ -52,7 +52,7 @@ _service_name_ctx: ContextVar[str | None] = ContextVar("service_name", default=N
 
 def set_correlation_id(correlation_id: str) -> None:
     """Set the correlation ID for the current context.
-    
+
     Args:
         correlation_id: The correlation ID to set.
     """
@@ -61,7 +61,7 @@ def set_correlation_id(correlation_id: str) -> None:
 
 def get_correlation_id() -> str | None:
     """Get the correlation ID for the current context.
-    
+
     Returns:
         The current correlation ID or None if not set.
     """
@@ -70,7 +70,7 @@ def get_correlation_id() -> str | None:
 
 def generate_correlation_id() -> str:
     """Generate a new correlation ID.
-    
+
     Returns:
         A new UUID-based correlation ID.
     """
@@ -86,8 +86,10 @@ def clear_correlation_id() -> None:
 # Configuration
 # =============================================================================
 
+
 class Environment(str, Enum):
     """Application environment."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -97,7 +99,7 @@ class Environment(str, Enum):
 @dataclass
 class LoggingConfig:
     """Configuration for structured logging.
-    
+
     Attributes:
         service_name: Name of the service (added to all log entries).
         environment: Environment name (development, staging, production, testing).
@@ -108,6 +110,7 @@ class LoggingConfig:
         utc_timestamps: Use UTC for timestamps (recommended for distributed systems).
         extra_processors: Additional custom processors to include.
     """
+
     service_name: str
     environment: str = "development"
     log_level: str = "INFO"
@@ -145,13 +148,14 @@ class LoggingConfig:
 # Custom Processors
 # =============================================================================
 
+
 def add_service_context(
     logger: WrappedLogger,
     method_name: str,
     event_dict: EventDict,
 ) -> EventDict:
     """Add service context to log events.
-    
+
     Adds:
         - service: Service name from context
         - correlation_id: Correlation ID from context (if set)
@@ -175,7 +179,7 @@ def add_opentelemetry_context(
     event_dict: EventDict,
 ) -> EventDict:
     """Add OpenTelemetry trace context to log events.
-    
+
     Adds trace_id and span_id if OpenTelemetry is configured and
     there's an active span.
     """
@@ -205,7 +209,7 @@ def drop_color_message_key(
     event_dict: EventDict,
 ) -> EventDict:
     """Drop the color_message key from event dict.
-    
+
     This key is added by uvicorn/starlette and is not needed in JSON output.
     """
     event_dict.pop("color_message", None)
@@ -221,12 +225,12 @@ _configured: bool = False
 
 def configure_structlog(config: LoggingConfig) -> None:
     """Configure structlog for the application.
-    
+
     This should be called once at application startup, before any logging.
-    
+
     Args:
         config: Logging configuration.
-        
+
     Example:
         configure_structlog(LoggingConfig(
             service_name="my-service",
@@ -253,9 +257,7 @@ def configure_structlog(config: LoggingConfig) -> None:
 
     # Add timestamp
     if config.add_timestamp:
-        processors.append(
-            structlog.processors.TimeStamper(fmt="iso", utc=config.utc_timestamps)
-        )
+        processors.append(structlog.processors.TimeStamper(fmt="iso", utc=config.utc_timestamps))
 
     # Add caller info (file, function, line)
     if config.add_caller_info and not config.is_production:
@@ -283,9 +285,8 @@ def configure_structlog(config: LoggingConfig) -> None:
         # Production: JSON output
         try:
             import orjson
-            processors.append(
-                structlog.processors.JSONRenderer(serializer=orjson.dumps)
-            )
+
+            processors.append(structlog.processors.JSONRenderer(serializer=orjson.dumps))
             logger_factory = structlog.BytesLoggerFactory()
         except ImportError:
             processors.append(structlog.processors.JSONRenderer())
@@ -319,7 +320,7 @@ def configure_structlog(config: LoggingConfig) -> None:
 
 def _configure_stdlib_logging(config: LoggingConfig) -> None:
     """Configure Python stdlib logging to work with structlog.
-    
+
     This ensures logs from third-party libraries using stdlib logging
     are formatted consistently.
     """
@@ -367,9 +368,9 @@ def _configure_stdlib_logging(config: LoggingConfig) -> None:
 
 def configure_structlog_for_testing() -> None:
     """Configure structlog for testing.
-    
+
     Uses ReturnLoggerFactory to allow capturing logs in tests.
-    
+
     Example:
         def test_something(caplog):
             configure_structlog_for_testing()
@@ -394,7 +395,7 @@ def configure_structlog_for_testing() -> None:
 
 def reset_structlog_configuration() -> None:
     """Reset structlog configuration.
-    
+
     Useful for tests that need to reconfigure logging.
     """
     global _configured
@@ -406,23 +407,24 @@ def reset_structlog_configuration() -> None:
 # Logger Factory
 # =============================================================================
 
+
 def get_structlog_logger(
     name: str | None = None,
     **initial_context: Any,
 ) -> structlog.BoundLogger:
     """Get a structlog logger with optional initial context.
-    
+
     Args:
         name: Logger name (typically __name__).
         **initial_context: Initial context to bind to the logger.
-        
+
     Returns:
         A bound structlog logger.
-        
+
     Example:
         logger = get_structlog_logger(__name__)
         logger.info("Starting up")
-        
+
         # With initial context
         logger = get_structlog_logger(__name__, component="auth")
         logger.info("Processing request")  # Includes component="auth"
@@ -437,12 +439,12 @@ def get_structlog_logger(
 
 def bind_contextvars(**context: Any) -> None:
     """Bind context variables that will be included in all subsequent logs.
-    
+
     This is useful in middleware to add request-scoped context.
-    
+
     Args:
         **context: Key-value pairs to bind to context.
-        
+
     Example:
         # In middleware
         bind_contextvars(
@@ -456,7 +458,7 @@ def bind_contextvars(**context: Any) -> None:
 
 def clear_contextvars() -> None:
     """Clear all bound context variables.
-    
+
     Call this at the end of request handling to clean up.
     """
     structlog.contextvars.clear_contextvars()
@@ -464,7 +466,7 @@ def clear_contextvars() -> None:
 
 def unbind_contextvars(*keys: str) -> None:
     """Remove specific context variables.
-    
+
     Args:
         *keys: Keys to remove from context.
     """

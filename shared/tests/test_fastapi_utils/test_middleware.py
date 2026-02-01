@@ -80,9 +80,7 @@ class TestRequestContextMiddleware:
 
         return app
 
-    def test_middleware_creates_request_context(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_creates_request_context(self, app_with_middleware: FastAPI) -> None:
         """Should create request context for each request."""
         client = TestClient(app_with_middleware)
         response = client.get("/test")
@@ -92,9 +90,7 @@ class TestRequestContextMiddleware:
         assert data["request_id"] is not None
         assert data["correlation_id"] is not None
 
-    def test_middleware_uses_provided_correlation_id(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_uses_provided_correlation_id(self, app_with_middleware: FastAPI) -> None:
         """Should use correlation ID from header if provided."""
         client = TestClient(app_with_middleware)
         response = client.get(
@@ -106,9 +102,7 @@ class TestRequestContextMiddleware:
         data = response.json()
         assert data["correlation_id"] == "custom-corr-id"
 
-    def test_middleware_generates_unique_request_ids(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_generates_unique_request_ids(self, app_with_middleware: FastAPI) -> None:
         """Should generate unique request IDs for each request."""
         client = TestClient(app_with_middleware)
 
@@ -120,9 +114,7 @@ class TestRequestContextMiddleware:
 
         assert id1 != id2
 
-    def test_middleware_adds_correlation_id_to_response(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_adds_correlation_id_to_response(self, app_with_middleware: FastAPI) -> None:
         """Should add correlation ID to response headers."""
         client = TestClient(app_with_middleware)
         response = client.get("/test")
@@ -185,9 +177,7 @@ class TestCorrelationIdConsolidation:
 
         return app
 
-    def test_correlation_id_is_same_in_both_modules(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_correlation_id_is_same_in_both_modules(self, app_with_middleware: FastAPI) -> None:
         """Correlation ID from fastapi_utils should match observability."""
         client = TestClient(app_with_middleware)
         response = client.get("/check-correlation")

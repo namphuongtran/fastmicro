@@ -95,9 +95,7 @@ class Environment(Enum):
             return default
 
         valid_values = [e.value for e in cls]
-        raise ValueError(
-            f"Unknown environment: '{value}'. Valid values: {valid_values}"
-        )
+        raise ValueError(f"Unknown environment: '{value}'. Valid values: {valid_values}")
 
     @classmethod
     def current(cls) -> Self:

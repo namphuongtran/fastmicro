@@ -21,10 +21,14 @@ app_config = settings_manager.app
 
 app_name = app_config.name
 app_version = app_config.version
-description = app_config.description or """
-This service acts as a central authentication gateway using standard OIDC (OpenID Connect) flows. 
-It allows seamless integration with external identity providers (IdPs) such as Keycloak, Auth0, Entra ID, and others. 
+description = (
+    app_config.description
+    or """
+This service acts as a central authentication gateway using standard OIDC (OpenID Connect) flows.
+It allows seamless integration with external identity providers (IdPs) such as Keycloak, Auth0, Entra ID, and others.
 The gateway handles user authentication, token exchange, and session management, making it easy to plug in different IdPs without changing your core application logic."""
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,6 +50,7 @@ async def lifespan(app: FastAPI):
     # Cleanup on shutdown
     logger.info("Shutting down application...")
 
+
 # Create the main FastAPI application
 app = FastAPI(title=app_name, version=app_version, description=description, lifespan=lifespan)
 
@@ -53,6 +58,7 @@ app = FastAPI(title=app_name, version=app_version, description=description, life
 setup_cors_middleware(app, settings_manager)
 setup_compress_middleware(app)
 setup_session_middleware(app, settings_manager)
+
 
 @app.get("/", include_in_schema=False)
 async def root():
@@ -63,17 +69,24 @@ async def root():
     """
     return JSONResponse({"service": app_name, "version": app_version})
 
+
 # Include routers
 app.include_router(auth_router, prefix="/v1")
 
+
 def run_server(host="127.0.0.1", port=44381, workers=4, loop="asyncio", reload=False):
     """Start to run the server"""
-    uvicorn.run("src.federation_gateway.main:app", host=host, port=port, workers=workers, loop=loop, reload=reload)
+    uvicorn.run(
+        "src.federation_gateway.main:app",
+        host=host,
+        port=port,
+        workers=workers,
+        loop=loop,
+        reload=reload,
+    )
 
 
 if __name__ == "__main__":
     freeze_support()  # Needed for pyinstaller for multiprocessing on WindowsOS
     num_workers = int(cpu_count() * 0.75)
     run_server(workers=num_workers)
-
-

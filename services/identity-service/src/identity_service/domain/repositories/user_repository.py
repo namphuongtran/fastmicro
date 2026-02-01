@@ -51,9 +51,7 @@ class UserRepository(ABC):
         """
 
     @abstractmethod
-    async def get_by_external_id(
-        self, external_id: str, provider: str
-    ) -> User | None:
+    async def get_by_external_id(self, external_id: str, provider: str) -> User | None:
         """Get user by external identity provider ID.
 
         Args:
@@ -126,9 +124,7 @@ class UserRepository(ABC):
         """
 
     @abstractmethod
-    async def find_by_role(
-        self, role_name: str, skip: int = 0, limit: int = 100
-    ) -> list[User]:
+    async def find_by_role(self, role_name: str, skip: int = 0, limit: int = 100) -> list[User]:
         """Find users with a specific role.
 
         Args:

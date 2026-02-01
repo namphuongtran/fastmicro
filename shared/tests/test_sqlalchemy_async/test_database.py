@@ -19,11 +19,13 @@ from shared.sqlalchemy_async.database import (
 
 class Base(DeclarativeBase):
     """Test base class."""
+
     pass
 
 
 class SampleModel(Base):
     """Sample model for database tests."""
+
     __tablename__ = "sample_model"
 
     id = Column(Integer, primary_key=True)
@@ -94,9 +96,7 @@ class TestAsyncDatabaseManager:
 
         assert engine is not None
 
-    def test_session_factory_property(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    def test_session_factory_property(self, db_manager: AsyncDatabaseManager) -> None:
         """Should provide session factory."""
         factory = db_manager.session_factory
 
@@ -109,9 +109,7 @@ class TestAsyncDatabaseManager:
             assert isinstance(session, AsyncSession)
 
     @pytest.mark.asyncio
-    async def test_session_commits_on_success(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_session_commits_on_success(self, db_manager: AsyncDatabaseManager) -> None:
         """Should commit session on successful exit."""
         # Create tables first
         async with db_manager.engine.begin() as conn:
@@ -130,9 +128,7 @@ class TestAsyncDatabaseManager:
             assert row is not None
 
     @pytest.mark.asyncio
-    async def test_session_rollback_on_exception(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_session_rollback_on_exception(self, db_manager: AsyncDatabaseManager) -> None:
         """Should rollback session on exception."""
         # Create tables first
         async with db_manager.engine.begin() as conn:
@@ -155,9 +151,7 @@ class TestAsyncDatabaseManager:
             assert row is None
 
     @pytest.mark.asyncio
-    async def test_create_all_tables(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_create_all_tables(self, db_manager: AsyncDatabaseManager) -> None:
         """Should create all tables."""
         await db_manager.create_all(Base)
 
@@ -170,9 +164,7 @@ class TestAsyncDatabaseManager:
             assert row is not None
 
     @pytest.mark.asyncio
-    async def test_drop_all_tables(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_drop_all_tables(self, db_manager: AsyncDatabaseManager) -> None:
         """Should drop all tables."""
         await db_manager.create_all(Base)
         await db_manager.drop_all(Base)
@@ -186,18 +178,14 @@ class TestAsyncDatabaseManager:
             assert row is None
 
     @pytest.mark.asyncio
-    async def test_dispose_engine(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_dispose_engine(self, db_manager: AsyncDatabaseManager) -> None:
         """Should dispose engine connections."""
         await db_manager.dispose()
         # Should be able to call multiple times
         await db_manager.dispose()
 
     @pytest.mark.asyncio
-    async def test_health_check(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_health_check(self, db_manager: AsyncDatabaseManager) -> None:
         """Should check database health."""
         is_healthy = await db_manager.health_check()
 
@@ -214,9 +202,7 @@ class TestGetAsyncSession:
         return AsyncDatabaseManager(config)
 
     @pytest.mark.asyncio
-    async def test_get_async_session_dependency(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_get_async_session_dependency(self, db_manager: AsyncDatabaseManager) -> None:
         """Should provide session via dependency."""
         dependency = get_async_session(db_manager)
 

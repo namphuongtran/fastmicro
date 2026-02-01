@@ -31,7 +31,7 @@ class ConnectionError(CacheError):
 @dataclass
 class RedisConfig:
     """Configuration for Redis connection.
-    
+
     Attributes:
         host: Redis host.
         port: Redis port.
@@ -52,7 +52,7 @@ class RedisConfig:
 
     def build_url(self) -> str:
         """Build Redis connection URL.
-        
+
         Returns:
             Redis connection URL string.
         """
@@ -63,9 +63,9 @@ class RedisConfig:
 
 class AsyncRedisClient:
     """Async Redis client for caching operations.
-    
+
     Provides high-level caching operations with JSON serialization.
-    
+
     Example:
         >>> config = RedisConfig(host="localhost", port=6379)
         >>> client = AsyncRedisClient(config)
@@ -76,7 +76,7 @@ class AsyncRedisClient:
 
     def __init__(self, config: RedisConfig) -> None:
         """Initialize Redis client.
-        
+
         Args:
             config: Redis configuration.
         """
@@ -118,10 +118,10 @@ class AsyncRedisClient:
 
     def _ensure_connected(self) -> redis.Redis:
         """Ensure Redis is connected.
-        
+
         Returns:
             Redis client instance.
-            
+
         Raises:
             ConnectionError: If not connected.
         """
@@ -131,10 +131,10 @@ class AsyncRedisClient:
 
     def _serialize(self, value: Any) -> str:
         """Serialize value to JSON.
-        
+
         Args:
             value: Value to serialize.
-            
+
         Returns:
             JSON string.
         """
@@ -142,10 +142,10 @@ class AsyncRedisClient:
 
     def _deserialize(self, value: bytes | str | None) -> Any:
         """Deserialize JSON value.
-        
+
         Args:
             value: JSON bytes/string to deserialize.
-            
+
         Returns:
             Deserialized Python object.
         """
@@ -159,10 +159,10 @@ class AsyncRedisClient:
 
     async def get(self, key: str) -> Any:
         """Get value by key.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             Cached value or None if not found.
         """
@@ -178,12 +178,12 @@ class AsyncRedisClient:
         ttl: int | None = None,
     ) -> bool:
         """Set value with optional TTL.
-        
+
         Args:
             key: Cache key.
             value: Value to cache.
             ttl: Time to live in seconds.
-            
+
         Returns:
             True if set successfully.
         """
@@ -194,10 +194,10 @@ class AsyncRedisClient:
 
     async def delete(self, key: str) -> bool:
         """Delete value by key.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             True if key was deleted.
         """
@@ -207,10 +207,10 @@ class AsyncRedisClient:
 
     async def exists(self, key: str) -> bool:
         """Check if key exists.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             True if key exists.
         """
@@ -220,11 +220,11 @@ class AsyncRedisClient:
 
     async def expire(self, key: str, seconds: int) -> bool:
         """Set expiration on key.
-        
+
         Args:
             key: Cache key.
             seconds: Time to live in seconds.
-            
+
         Returns:
             True if expiration was set.
         """
@@ -234,10 +234,10 @@ class AsyncRedisClient:
 
     async def ttl(self, key: str) -> int:
         """Get time to live for key.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             TTL in seconds, -1 if no expiry, -2 if key doesn't exist.
         """
@@ -248,11 +248,11 @@ class AsyncRedisClient:
 
     async def increment(self, key: str, amount: int = 1) -> int:
         """Increment value by amount.
-        
+
         Args:
             key: Cache key.
             amount: Amount to increment.
-            
+
         Returns:
             New value after increment.
         """
@@ -261,11 +261,11 @@ class AsyncRedisClient:
 
     async def decrement(self, key: str, amount: int = 1) -> int:
         """Decrement value by amount.
-        
+
         Args:
             key: Cache key.
             amount: Amount to decrement.
-            
+
         Returns:
             New value after decrement.
         """
@@ -276,12 +276,12 @@ class AsyncRedisClient:
 
     async def hset(self, name: str, key: str, value: Any) -> int:
         """Set hash field value.
-        
+
         Args:
             name: Hash name.
             key: Field key.
             value: Field value.
-            
+
         Returns:
             1 if field is new, 0 if updated.
         """
@@ -291,11 +291,11 @@ class AsyncRedisClient:
 
     async def hget(self, name: str, key: str) -> Any:
         """Get hash field value.
-        
+
         Args:
             name: Hash name.
             key: Field key.
-            
+
         Returns:
             Field value or None.
         """
@@ -305,10 +305,10 @@ class AsyncRedisClient:
 
     async def hgetall(self, name: str) -> dict[str, Any]:
         """Get all hash fields.
-        
+
         Args:
             name: Hash name.
-            
+
         Returns:
             Dictionary of field values.
         """
@@ -321,11 +321,11 @@ class AsyncRedisClient:
 
     async def hdel(self, name: str, key: str) -> int:
         """Delete hash field.
-        
+
         Args:
             name: Hash name.
             key: Field key.
-            
+
         Returns:
             Number of fields deleted.
         """
@@ -336,7 +336,7 @@ class AsyncRedisClient:
 
     async def health_check(self) -> bool:
         """Check Redis connectivity.
-        
+
         Returns:
             True if Redis is reachable.
         """

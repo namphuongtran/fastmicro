@@ -136,9 +136,7 @@ class RefreshTokenRepository(ABC):
         """
 
     @abstractmethod
-    async def revoke_all_for_user_and_client(
-        self, user_id: uuid.UUID, client_id: str
-    ) -> int:
+    async def revoke_all_for_user_and_client(self, user_id: uuid.UUID, client_id: str) -> int:
         """Revoke all refresh tokens for a user-client combination.
 
         Args:

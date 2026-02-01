@@ -234,9 +234,7 @@ class ConfigurationService:
             return
 
         for ref in config.secret_refs:
-            secret_value = await self._secret_service.get_secret(
-                ref.vault_path, ref.vault_key
-            )
+            secret_value = await self._secret_service.get_secret(ref.vault_path, ref.vault_key)
             if secret_value:
                 config.values[ref.key] = secret_value
 

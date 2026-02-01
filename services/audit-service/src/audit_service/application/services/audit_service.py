@@ -23,10 +23,12 @@ try:
     from shared.observability import get_logger
 except ImportError:
     import structlog
+
     get_logger = structlog.get_logger
 
     class NotFoundError(Exception):
         """Resource not found error."""
+
         pass
 
 
@@ -44,14 +46,14 @@ class PaginatedResult:
 class AuditAppService:
     """
     Application service for audit event operations.
-    
+
     Coordinates business logic between API controllers and domain/infrastructure.
     """
 
     def __init__(self, repository: IAuditRepository) -> None:
         """
         Initialize the audit application service.
-        
+
         Args:
             repository: Audit event repository implementation.
         """
@@ -61,10 +63,10 @@ class AuditAppService:
     async def create_event(self, request: CreateAuditEventRequest) -> AuditEventResponse:
         """
         Create a new audit event.
-        
+
         Args:
             request: Audit event creation request.
-        
+
         Returns:
             AuditEventResponse: Created audit event.
         """
@@ -106,13 +108,13 @@ class AuditAppService:
     async def get_event(self, event_id: UUID) -> AuditEventResponse:
         """
         Get an audit event by ID.
-        
+
         Args:
             event_id: Audit event UUID.
-        
+
         Returns:
             AuditEventResponse: Audit event details.
-        
+
         Raises:
             NotFoundError: If event not found.
         """
@@ -132,22 +134,19 @@ class AuditAppService:
     ) -> PaginatedResult:
         """
         List audit events with pagination and filtering.
-        
+
         Args:
             page: Page number (1-indexed).
             page_size: Number of items per page.
             filters: Optional filter criteria.
-        
+
         Returns:
             PaginatedResult: Paginated list of audit events.
         """
         # Convert filters to dict if provided
         filter_dict: dict[str, Any] | None = None
         if filters is not None:
-            filter_dict = {
-                k: v for k, v in filters.model_dump().items()
-                if v is not None
-            }
+            filter_dict = {k: v for k, v in filters.model_dump().items() if v is not None}
 
         events, total = await self._repository.list(
             page=page,
@@ -170,13 +169,13 @@ class AuditAppService:
     ) -> PaginatedResult:
         """
         Search audit events using full-text search.
-        
+
         Args:
             query: Search query string.
             page: Page number (1-indexed).
             page_size: Number of items per page.
             filters: Optional additional filters.
-        
+
         Returns:
             PaginatedResult: Search results.
         """
@@ -203,10 +202,10 @@ class AuditAppService:
     async def delete_event(self, event_id: UUID) -> bool:
         """
         Delete an audit event.
-        
+
         Args:
             event_id: Audit event UUID.
-        
+
         Returns:
             bool: True if deleted, False if not found.
         """
@@ -220,10 +219,10 @@ class AuditAppService:
     async def apply_retention_policy(self, retention_days: int) -> int:
         """
         Apply data retention policy by deleting old events.
-        
+
         Args:
             retention_days: Number of days to retain events.
-        
+
         Returns:
             int: Number of deleted events.
         """
@@ -267,9 +266,9 @@ _audit_service: AuditAppService | None = None
 def get_audit_service() -> AuditAppService:
     """
     Get the audit application service instance.
-    
+
     Uses a simple singleton pattern. In production, use proper DI container.
-    
+
     Returns:
         AuditAppService: Audit application service instance.
     """

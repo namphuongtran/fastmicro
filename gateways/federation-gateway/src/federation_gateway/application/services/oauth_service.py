@@ -15,6 +15,7 @@ from ...domain.entities.user_info import UserInfo
 
 logger = logging.getLogger(__name__)
 
+
 class OAuthService:
     """OIDC Service for single provider configuration"""
 
@@ -29,12 +30,12 @@ class OAuthService:
         """Check if running in local development environment"""
         issuer_url = self.settings.auth.oidc.issuer_url.lower()
         local_indicators = [
-            'localhost',
-            '127.0.0.1',
-            '.local',
-            ':44381',
-            ':8443',
-            'auth.local.ags.com'  # Your specific local domain
+            "localhost",
+            "127.0.0.1",
+            ".local",
+            ":44381",
+            ":8443",
+            "auth.local.ags.com",  # Your specific local domain
         ]
         return any(indicator in issuer_url for indicator in local_indicators)
 
@@ -50,7 +51,7 @@ class OAuthService:
         self.client = AsyncOAuth2Client(
             client_id=self.settings.auth.oidc.client_id,
             client_secret=self.settings.auth.oidc.client_secret,
-            scope=self.settings.auth.oidc.scopes
+            scope=self.settings.auth.oidc.scopes,
         )
         logger.info("OIDC client configured")
 
@@ -91,20 +92,15 @@ class OAuthService:
 
         state = secrets.token_urlsafe(32)
 
-        self.sessions[state] = {
-            "redirect_uri": redirect_uri,
-            "timestamp": time.time()
-        }
+        self.sessions[state] = {"redirect_uri": redirect_uri, "timestamp": time.time()}
 
         # Use the authorization_endpoint from discovered metadata
-        auth_endpoint = self.server_metadata.get('authorization_endpoint')
+        auth_endpoint = self.server_metadata.get("authorization_endpoint")
         if not auth_endpoint:
             raise Exception("Authorization endpoint not found in provider metadata")
 
         auth_url, _ = self.client.create_authorization_url(
-            auth_endpoint,
-            redirect_uri=redirect_uri,
-            state=state
+            auth_endpoint, redirect_uri=redirect_uri, state=state
         )
 
         logger.info("Authorization URL generated")
@@ -126,24 +122,22 @@ class OAuthService:
             raise Exception("Session expired")
 
         try:
-            token_endpoint = self.server_metadata.get('token_endpoint')
+            token_endpoint = self.server_metadata.get("token_endpoint")
             if not token_endpoint:
                 raise Exception("Token endpoint not found in provider metadata")
 
             token = await self.client.fetch_token(
-                token_endpoint,
-                code=code,
-                redirect_uri=session["redirect_uri"]
+                token_endpoint, code=code, redirect_uri=session["redirect_uri"]
             )
 
             del self.sessions[state]
 
             logger.info("Tokens exchanged successfully")
             return TokenResponse(
-                access_token=token['access_token'],
-                id_token=token.get('id_token'),
-                refresh_token=token.get('refresh_token'),
-                expires_in=token.get('expires_in', 3600)
+                access_token=token["access_token"],
+                id_token=token.get("id_token"),
+                refresh_token=token.get("refresh_token"),
+                expires_in=token.get("expires_in", 3600),
             )
 
         except OAuthError as e:
@@ -155,7 +149,7 @@ class OAuthService:
         if not self.server_metadata:
             raise Exception("OIDC service not initialized")
 
-        userinfo_endpoint = self.server_metadata.get('userinfo_endpoint')
+        userinfo_endpoint = self.server_metadata.get("userinfo_endpoint")
 
         if not userinfo_endpoint:
             raise Exception("Userinfo endpoint not available")
@@ -163,19 +157,18 @@ class OAuthService:
         try:
             async with httpx.AsyncClient() as http_client:
                 response = await http_client.get(
-                    userinfo_endpoint,
-                    headers={"Authorization": f"Bearer {access_token}"}
+                    userinfo_endpoint, headers={"Authorization": f"Bearer {access_token}"}
                 )
                 response.raise_for_status()
                 data = response.json()
 
             logger.info("User info retrieved successfully")
             return UserInfo(
-                sub=data.get('sub'),
-                name=data.get('name'),
-                email=data.get('email'),
-                preferred_username=data.get('preferred_username'),
-                roles=data.get('roles', [])
+                sub=data.get("sub"),
+                name=data.get("name"),
+                email=data.get("email"),
+                preferred_username=data.get("preferred_username"),
+                roles=data.get("roles", []),
             )
 
         except httpx.HTTPStatusError as e:
@@ -190,21 +183,18 @@ class OAuthService:
             raise Exception("OIDC service not initialized")
 
         try:
-            token_endpoint = self.server_metadata.get('token_endpoint')
+            token_endpoint = self.server_metadata.get("token_endpoint")
             if not token_endpoint:
                 raise Exception("Token endpoint not found in provider metadata")
 
-            token = await self.client.refresh_token(
-                token_endpoint,
-                refresh_token=refresh_token
-            )
+            token = await self.client.refresh_token(token_endpoint, refresh_token=refresh_token)
 
             logger.info("Token refreshed successfully")
             return TokenResponse(
-                access_token=token['access_token'],
-                id_token=token.get('id_token'),
-                refresh_token=token.get('refresh_token', refresh_token),
-                expires_in=token.get('expires_in', 3600)
+                access_token=token["access_token"],
+                id_token=token.get("id_token"),
+                refresh_token=token.get("refresh_token", refresh_token),
+                expires_in=token.get("expires_in", 3600),
             )
 
         except OAuthError as e:

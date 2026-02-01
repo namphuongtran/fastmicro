@@ -24,17 +24,17 @@ T = TypeVar("T", bound="DomainEvent")
 @dataclass
 class DomainEvent:
     """Base class for domain events.
-    
+
     Domain events capture something that happened in the domain.
     They are immutable records of past occurrences.
-    
+
     Attributes:
         event_id: Unique event identifier
         occurred_at: When the event occurred
         aggregate_id: ID of the aggregate that raised the event
         aggregate_type: Type name of the aggregate
         metadata: Additional event metadata
-    
+
     Example:
         >>> @dataclass
         ... class OrderPlaced(DomainEvent):
@@ -56,7 +56,7 @@ class DomainEvent:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary.
-        
+
         Returns:
             Dictionary representation of the event.
         """
@@ -72,25 +72,24 @@ class DomainEvent:
 
     def _get_event_data(self) -> dict[str, Any]:
         """Get event-specific data.
-        
+
         Override in subclasses to include custom data.
-        
+
         Returns:
             Dictionary with event data.
         """
         # Get all fields except base DomainEvent fields
         base_fields = {"event_id", "occurred_at", "aggregate_id", "aggregate_type", "metadata"}
         return {
-            k: v for k, v in self.__dict__.items()
-            if k not in base_fields and not k.startswith("_")
+            k: v for k, v in self.__dict__.items() if k not in base_fields and not k.startswith("_")
         }
 
 
 class DomainEventHandler(ABC, Generic[T]):
     """Abstract handler for domain events.
-    
+
     Implement this interface to handle specific event types.
-    
+
     Example:
         >>> class OrderPlacedHandler(DomainEventHandler[OrderPlaced]):
         ...     async def handle(self, event: OrderPlaced) -> None:
@@ -101,7 +100,7 @@ class DomainEventHandler(ABC, Generic[T]):
     @abstractmethod
     async def handle(self, event: T) -> None:
         """Handle the domain event.
-        
+
         Args:
             event: The domain event to handle.
         """
@@ -114,21 +113,21 @@ EventHandlerFn = Callable[[DomainEvent], Coroutine[Any, Any, None]]
 
 class EventDispatcher:
     """In-memory domain event dispatcher.
-    
+
     Dispatches events to registered handlers. Supports both
     class-based handlers and function handlers.
-    
+
     Example:
         >>> dispatcher = EventDispatcher()
-        
+
         >>> # Register function handler
         >>> @dispatcher.subscribe(OrderPlaced)
         ... async def on_order_placed(event: OrderPlaced):
         ...     print(f"Order {event.order_id} placed!")
-        
+
         >>> # Register class handler
         >>> dispatcher.register(OrderPlaced, order_placed_handler)
-        
+
         >>> # Dispatch event
         >>> await dispatcher.dispatch(OrderPlaced(order_id="123", ...))
     """
@@ -144,7 +143,7 @@ class EventDispatcher:
         handler: DomainEventHandler[T] | EventHandlerFn,
     ) -> None:
         """Register a handler for an event type.
-        
+
         Args:
             event_type: The event type to handle.
             handler: Handler instance or async function.
@@ -158,30 +157,30 @@ class EventDispatcher:
                 self._handlers[event_type] = []
             self._handlers[event_type].append(handler)
 
-    def subscribe(
-        self, event_type: type[T]
-    ) -> Callable[[EventHandlerFn], EventHandlerFn]:
+    def subscribe(self, event_type: type[T]) -> Callable[[EventHandlerFn], EventHandlerFn]:
         """Decorator to subscribe a function to an event type.
-        
+
         Args:
             event_type: The event type to subscribe to.
-            
+
         Returns:
             Decorator function.
-            
+
         Example:
             >>> @dispatcher.subscribe(OrderPlaced)
             ... async def handle_order(event: OrderPlaced):
             ...     ...
         """
+
         def decorator(func: EventHandlerFn) -> EventHandlerFn:
             self.register(event_type, func)
             return func
+
         return decorator
 
     async def dispatch(self, event: DomainEvent) -> None:
         """Dispatch an event to all registered handlers.
-        
+
         Args:
             event: The event to dispatch.
         """
@@ -197,7 +196,7 @@ class EventDispatcher:
 
     async def dispatch_all(self, events: list[DomainEvent]) -> None:
         """Dispatch multiple events.
-        
+
         Args:
             events: List of events to dispatch.
         """
@@ -211,17 +210,14 @@ class EventDispatcher:
 
     def has_handlers(self, event_type: type[DomainEvent]) -> bool:
         """Check if event type has registered handlers.
-        
+
         Args:
             event_type: Event type to check.
-            
+
         Returns:
             True if handlers are registered.
         """
-        return (
-            event_type in self._handlers or
-            event_type in self._class_handlers
-        )
+        return event_type in self._handlers or event_type in self._class_handlers
 
 
 # Global event dispatcher (optional singleton)
@@ -230,7 +226,7 @@ _global_dispatcher: EventDispatcher | None = None
 
 def get_event_dispatcher() -> EventDispatcher:
     """Get or create the global event dispatcher.
-    
+
     Returns:
         Global EventDispatcher instance.
     """

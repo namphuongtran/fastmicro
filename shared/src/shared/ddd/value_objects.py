@@ -22,13 +22,13 @@ T = TypeVar("T")
 
 class ValueObject(ABC):
     """Base class for value objects.
-    
+
     Value objects are immutable and compared by their attributes.
     Subclasses should:
     - Be dataclasses with frozen=True
     - Implement validate() for business rules
     - Not have an identity field
-    
+
     Example:
         >>> @dataclass(frozen=True)
         ... class Price(ValueObject):
@@ -49,7 +49,7 @@ class ValueObject(ABC):
     @abstractmethod
     def validate(self) -> None:
         """Validate the value object.
-        
+
         Raises:
             ValueError: If validation fails.
         """
@@ -59,7 +59,7 @@ class ValueObject(ABC):
 @dataclass(frozen=True)
 class NonEmptyString(ValueObject):
     """A non-empty string value object.
-    
+
     Example:
         >>> name = NonEmptyString("John")
         >>> name.value
@@ -85,7 +85,7 @@ class NonEmptyString(ValueObject):
 @dataclass(frozen=True)
 class Email(ValueObject):
     """Email address value object with validation.
-    
+
     Example:
         >>> email = Email("user@example.com")
         >>> email.local_part
@@ -97,9 +97,7 @@ class Email(ValueObject):
     value: str
 
     # RFC 5322 simplified pattern
-    _EMAIL_PATTERN = re.compile(
-        r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    )
+    _EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
     def validate(self) -> None:
         if not self.value:
@@ -126,9 +124,9 @@ class Email(ValueObject):
 @dataclass(frozen=True)
 class PhoneNumber(ValueObject):
     """Phone number value object with validation.
-    
+
     Stores phone in E.164 format (e.g., +14155552671).
-    
+
     Example:
         >>> phone = PhoneNumber("+14155552671")
         >>> phone.country_code
@@ -164,9 +162,9 @@ class PhoneNumber(ValueObject):
 @dataclass(frozen=True)
 class Money(ValueObject):
     """Monetary value with currency.
-    
+
     Uses Decimal for precision. Supports basic arithmetic.
-    
+
     Example:
         >>> price = Money(Decimal("99.99"), "USD")
         >>> discount = Money(Decimal("10.00"), "USD")
@@ -190,14 +188,18 @@ class Money(ValueObject):
         if not isinstance(other, Money):
             raise TypeError(f"Cannot add Money and {type(other)}")
         if self.currency != other.currency:
-            raise ValueError(f"Cannot add different currencies: {self.currency} and {other.currency}")
+            raise ValueError(
+                f"Cannot add different currencies: {self.currency} and {other.currency}"
+            )
         return Money(self.amount + other.amount, self.currency)
 
     def __sub__(self, other: Money) -> Money:
         if not isinstance(other, Money):
             raise TypeError(f"Cannot subtract {type(other)} from Money")
         if self.currency != other.currency:
-            raise ValueError(f"Cannot subtract different currencies: {self.currency} and {other.currency}")
+            raise ValueError(
+                f"Cannot subtract different currencies: {self.currency} and {other.currency}"
+            )
         return Money(self.amount - other.amount, self.currency)
 
     def __mul__(self, factor: int | float | Decimal) -> Money:
@@ -227,7 +229,9 @@ class Money(ValueObject):
 
     def _ensure_same_currency(self, other: Money) -> None:
         if self.currency != other.currency:
-            raise ValueError(f"Cannot compare different currencies: {self.currency} and {other.currency}")
+            raise ValueError(
+                f"Cannot compare different currencies: {self.currency} and {other.currency}"
+            )
 
     @property
     def is_positive(self) -> bool:
@@ -257,9 +261,9 @@ class Money(ValueObject):
 @dataclass(frozen=True)
 class Percentage(ValueObject):
     """Percentage value object (0-100 or 0-1 scale).
-    
+
     Internally stores as decimal (0-1), displays as percentage (0-100).
-    
+
     Example:
         >>> rate = Percentage(0.15)  # 15%
         >>> rate.as_percentage
@@ -287,10 +291,10 @@ class Percentage(ValueObject):
 
     def apply_to(self, amount: Decimal) -> Decimal:
         """Apply percentage to an amount.
-        
+
         Args:
             amount: Amount to apply percentage to.
-            
+
         Returns:
             Resulting amount.
         """
@@ -308,7 +312,7 @@ class Percentage(ValueObject):
 @dataclass(frozen=True)
 class PositiveInt(ValueObject):
     """Positive integer value object.
-    
+
     Example:
         >>> quantity = PositiveInt(5)
         >>> quantity.value
@@ -333,7 +337,7 @@ class PositiveInt(ValueObject):
 @dataclass(frozen=True)
 class PositiveDecimal(ValueObject):
     """Positive decimal value object.
-    
+
     Example:
         >>> weight = PositiveDecimal(Decimal("2.5"))
         >>> weight.value
@@ -356,9 +360,9 @@ class PositiveDecimal(ValueObject):
 @dataclass(frozen=True)
 class DateRange(ValueObject):
     """Date range value object.
-    
+
     Represents a period between two dates (inclusive).
-    
+
     Example:
         >>> period = DateRange(date(2024, 1, 1), date(2024, 12, 31))
         >>> period.days
@@ -372,7 +376,9 @@ class DateRange(ValueObject):
 
     def validate(self) -> None:
         if self.start > self.end:
-            raise ValueError(f"Start date {self.start} must be before or equal to end date {self.end}")
+            raise ValueError(
+                f"Start date {self.start} must be before or equal to end date {self.end}"
+            )
 
     @property
     def days(self) -> int:
@@ -397,7 +403,7 @@ class DateRange(ValueObject):
 @dataclass(frozen=True)
 class Address(ValueObject):
     """Physical address value object.
-    
+
     Example:
         >>> addr = Address(
         ...     street="123 Main St",

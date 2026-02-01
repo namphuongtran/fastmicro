@@ -33,13 +33,9 @@ __all__ = [
 
 
 # Pre-compiled regex patterns for performance
-_EMAIL_PATTERN = re.compile(
-    r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-)
+_EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
-_URL_PATTERN = re.compile(
-    r"^https?://[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+.*$"
-)
+_URL_PATTERN = re.compile(r"^https?://[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+.*$")
 
 _HTML_DANGEROUS_PATTERNS = [
     re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL),
@@ -292,14 +288,10 @@ def validate_range(
         True
     """
     if min_value is not None and value < min_value:
-        return ValidationResult.invalid(
-            f"{field_name} must be at least {min_value} (got {value})"
-        )
+        return ValidationResult.invalid(f"{field_name} must be at least {min_value} (got {value})")
 
     if max_value is not None and value > max_value:
-        return ValidationResult.invalid(
-            f"{field_name} must be at most {max_value} (got {value})"
-        )
+        return ValidationResult.invalid(f"{field_name} must be at most {max_value} (got {value})")
 
     return ValidationResult.valid()
 

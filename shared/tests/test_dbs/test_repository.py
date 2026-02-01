@@ -25,6 +25,7 @@ from shared.dbs.repository import (
 @dataclass
 class SampleEntity:
     """Sample entity for repository tests."""
+
     id: str
     name: str
     age: int = 0
@@ -233,9 +234,7 @@ class TestInMemoryRepository:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_delete_nonexistent(
-        self, repo: InMemoryRepository[SampleEntity]
-    ) -> None:
+    async def test_delete_nonexistent(self, repo: InMemoryRepository[SampleEntity]) -> None:
         """Should return False when deleting nonexistent."""
         deleted = await repo.delete("nonexistent")
         assert deleted is False
@@ -345,9 +344,7 @@ class TestInMemoryRepository:
         assert result.age == 30
 
     @pytest.mark.asyncio
-    async def test_find_one_returns_none(
-        self, repo: InMemoryRepository[SampleEntity]
-    ) -> None:
+    async def test_find_one_returns_none(self, repo: InMemoryRepository[SampleEntity]) -> None:
         """Should return None when no match found."""
         await repo.add(SampleEntity(id="1", name="Alice", age=30))
 

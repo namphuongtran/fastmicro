@@ -568,9 +568,7 @@ class PostgresConfigurationSchemaRepository(IConfigurationSchemaRepository):
 
     async def get_by_id(self, schema_id: UUID) -> ConfigurationSchema | None:
         """Get a schema by ID."""
-        query = select(ConfigurationSchemaModel).where(
-            ConfigurationSchemaModel.id == schema_id
-        )
+        query = select(ConfigurationSchemaModel).where(ConfigurationSchemaModel.id == schema_id)
         result = await self._session.execute(query)
         model = result.scalar_one_or_none()
 
@@ -675,9 +673,7 @@ class PostgresConfigurationSchemaRepository(IConfigurationSchemaRepository):
 
     async def delete(self, schema_id: UUID) -> bool:
         """Delete a schema by ID."""
-        stmt = delete(ConfigurationSchemaModel).where(
-            ConfigurationSchemaModel.id == schema_id
-        )
+        stmt = delete(ConfigurationSchemaModel).where(ConfigurationSchemaModel.id == schema_id)
         result = await self._session.execute(stmt)
         await self._session.flush()
 

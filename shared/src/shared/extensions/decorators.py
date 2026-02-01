@@ -300,9 +300,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                 try:
                     return future.result(timeout=seconds)
                 except concurrent.futures.TimeoutError:
-                    raise TimeoutError(
-                        f"Operation timed out after {seconds} seconds"
-                    ) from None
+                    raise TimeoutError(f"Operation timed out after {seconds} seconds") from None
 
         @functools.wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -312,9 +310,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                     timeout=seconds,
                 )
             except builtins.TimeoutError:
-                raise TimeoutError(
-                    f"Operation timed out after {seconds} seconds"
-                ) from None
+                raise TimeoutError(f"Operation timed out after {seconds} seconds") from None
 
         if asyncio.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
@@ -457,9 +453,7 @@ def validate_args(
                 if arg_name in bound_args:
                     value = bound_args[arg_name]
                     if not validator(value):
-                        raise ValueError(
-                            f"Validation failed for argument '{arg_name}'"
-                        )
+                        raise ValueError(f"Validation failed for argument '{arg_name}'")
 
             return func(*args, **kwargs)
 

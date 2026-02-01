@@ -9,7 +9,7 @@ This module provides comprehensive observability features including:
 
 Recommended Usage (structlog):
     from shared.observability import configure_structlog, get_structlog_logger, LoggingConfig
-    
+
     configure_structlog(LoggingConfig(
         service_name="my-service",
         environment="production",
@@ -19,7 +19,7 @@ Recommended Usage (structlog):
 
 Legacy Usage (stdlib logging):
     from shared.observability import configure_logging, get_logger
-    
+
     configure_logging(level="INFO", json_format=True)
     logger = get_logger(__name__)
     logger.info("Application started")

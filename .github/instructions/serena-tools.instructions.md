@@ -1,36 +1,62 @@
 ---
-description: 'Guidelines for effectively using Serena MCP tools for code exploration, symbol management, and memory tracking in this repository'
+description: 'MANDATORY: Use Serena MCP tools FIRST for all Python code exploration, symbol management, and memory tracking. These tools are more efficient than standard file operations.'
 applyTo: '**/*.py'
 ---
 
-# Serena Tools Usage Guidelines
+# Serena Tools Usage Guidelines - MANDATORY
 
-Instructions for effectively using Serena's semantic coding tools to explore, understand, and modify Python code in this repository.
+## ⚠️ CRITICAL INSTRUCTION
 
-## Overview
+**ALWAYS use Serena tools BEFORE using standard file operations for Python files.**
 
-Serena provides intelligent, token-efficient code exploration through symbolic tools. Instead of reading entire files, use Serena's tools to navigate code semantically.
+Serena provides semantic, token-efficient code exploration. Using `read_file` to read entire Python files is wasteful and should be avoided.
 
-## Core Principles
+## Decision Tree: Which Tool to Use?
 
-### 1. Symbolic Navigation Over Full File Reads
-
-```markdown
-# WRONG: Reading entire files
-read_file("module.py", 1, 1000)
-
-# CORRECT: Use symbolic tools
-1. get_symbols_overview(file) → Get all symbols in file
-2. find_symbol(name_path, include_body=False) → Get symbol metadata
-3. find_symbol(name_path, include_body=True) → Read specific symbol body
+```
+Need to understand Python code structure?
+├── YES → Use `get_symbols_overview` or `find_symbol`
+│         NOT `read_file`
+│
+├── Need to find where a symbol is used?
+│   └── Use `find_referencing_symbols`
+│       NOT `grep_search`
+│
+├── Need to edit Python code?
+│   └── Use `replace_symbol_body`, `insert_before_symbol`, `insert_after_symbol`
+│       NOT `replace_string_in_file`
+│
+├── Need to search for patterns?
+│   └── Use `search_for_pattern` with relative_path filter
+│       NOT `grep_search` without filters
+│
+└── About to make changes?
+    └── FIRST call `think_about_task_adherence`
 ```
 
-### 2. Progressive Information Gathering
+## Mandatory Checkpoints
 
-1. **Start broad**: `get_symbols_overview` for file structure
-2. **Narrow down**: `find_symbol` with `depth=1` for class members
-3. **Deep dive**: `find_symbol` with `include_body=True` for implementation
-4. **Find usages**: `find_referencing_symbols` for impact analysis
+### Before Starting Any Python Task
+
+1. **Activate Serena tools** if not already active:
+   - `activate_file_search_tools`
+   - `activate_symbol_management_tools`
+   - `activate_memory_management_tools`
+
+2. **Read relevant memories** to understand prior context:
+   - Call `list_memories` to see available context
+   - Read memories related to current task
+
+### Before Making Code Changes
+
+1. **Call `think_about_task_adherence`** - MANDATORY
+2. Gather context using symbolic tools
+3. Call `think_about_collected_information` to validate understanding
+
+### After Completing Work
+
+1. **Call `think_about_whether_you_are_done`** - MANDATORY
+2. **Write memory** if decisions or progress should be preserved
 
 ## Tool Usage Patterns
 
@@ -224,3 +250,67 @@ Use when you believe task is complete:
 2. Use Serena to find where patterns apply in codebase
 3. Use Serena editing tools to implement patterns
 ```
+
+## Quick Reference Card
+
+### Tool Activation (Run First!)
+
+| Category | Activation Command |
+|----------|-------------------|
+| File Search | `activate_file_search_tools` |
+| Symbol Management | `activate_symbol_management_tools` |
+| Code Insertion | `activate_code_insertion_tools` |
+| Memory | `activate_memory_management_tools` |
+| Task Adherence | `activate_task_adherence_tools` |
+
+### Serena vs Standard Tools
+
+| Task | ❌ Don't Use | ✅ Use Instead |
+|------|-------------|----------------|
+| Read Python code | `read_file` | `find_symbol(include_body=True)` |
+| Find usages | `grep_search` | `find_referencing_symbols` |
+| Edit function | `replace_string_in_file` | `replace_symbol_body` |
+| Add new code | `create_file` / manual | `insert_after_symbol` |
+| Search patterns | `grep_search` | `search_for_pattern` |
+
+### Mandatory Workflow
+
+```
+┌─────────────────────────────────────────────────┐
+│ 1. ACTIVATE TOOLS (if not active)               │
+│    → activate_symbol_management_tools           │
+│    → activate_memory_management_tools           │
+├─────────────────────────────────────────────────┤
+│ 2. READ MEMORIES (understand context)           │
+│    → list_memories → read relevant ones         │
+├─────────────────────────────────────────────────┤
+│ 3. EXPLORE CODE (symbolic navigation)           │
+│    → get_symbols_overview                       │
+│    → find_symbol (include_body=False first)     │
+│    → find_referencing_symbols                   │
+├─────────────────────────────────────────────────┤
+│ 4. VALIDATE UNDERSTANDING                       │
+│    → think_about_collected_information          │
+├─────────────────────────────────────────────────┤
+│ 5. BEFORE CHANGES                               │
+│    → think_about_task_adherence ⚠️ MANDATORY    │
+├─────────────────────────────────────────────────┤
+│ 6. MAKE CHANGES (symbolic editing)              │
+│    → replace_symbol_body                        │
+│    → insert_before/after_symbol                 │
+├─────────────────────────────────────────────────┤
+│ 7. VERIFY COMPLETION                            │
+│    → think_about_whether_you_are_done           │
+├─────────────────────────────────────────────────┤
+│ 8. SAVE PROGRESS                                │
+│    → write_memory (if important)                │
+└─────────────────────────────────────────────────┘
+```
+
+## Why Serena?
+
+1. **Token Efficiency**: Reading symbols is cheaper than reading entire files
+2. **Semantic Understanding**: Tools understand code structure, not just text
+3. **Safe Editing**: Symbol-based edits are more precise than string replacement
+4. **Context Preservation**: Memories persist across sessions
+5. **Quality Checkpoints**: Thinking tools catch errors before they happen

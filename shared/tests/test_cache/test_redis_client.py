@@ -115,9 +115,7 @@ class TestAsyncRedisClient:
         return mock
 
     @pytest.fixture
-    def client(
-        self, config: RedisConfig, mock_redis: MagicMock
-    ) -> AsyncRedisClient:
+    def client(self, config: RedisConfig, mock_redis: MagicMock) -> AsyncRedisClient:
         """Create test client with mock Redis."""
         client = AsyncRedisClient(config)
         client._redis = mock_redis
@@ -129,9 +127,7 @@ class TestAsyncRedisClient:
         assert client is not None
 
     @pytest.mark.asyncio
-    async def test_get_value(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_get_value(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should get value from Redis."""
         mock_redis.get.return_value = b'"test_value"'
 
@@ -141,9 +137,7 @@ class TestAsyncRedisClient:
         mock_redis.get.assert_called_once_with("test_key")
 
     @pytest.mark.asyncio
-    async def test_get_missing_value(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_get_missing_value(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should return None for missing key."""
         mock_redis.get.return_value = None
 
@@ -152,9 +146,7 @@ class TestAsyncRedisClient:
         assert value is None
 
     @pytest.mark.asyncio
-    async def test_set_value(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_set_value(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should set value in Redis."""
         await client.set("test_key", "test_value")
 
@@ -163,9 +155,7 @@ class TestAsyncRedisClient:
         assert call_args[0][0] == "test_key"
 
     @pytest.mark.asyncio
-    async def test_set_with_ttl(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_set_with_ttl(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should set value with TTL."""
         await client.set("test_key", "test_value", ttl=300)
 
@@ -173,9 +163,7 @@ class TestAsyncRedisClient:
         assert call_kwargs.get("ex") == 300
 
     @pytest.mark.asyncio
-    async def test_delete_value(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_delete_value(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should delete value from Redis."""
         mock_redis.delete.return_value = 1
 
@@ -196,9 +184,7 @@ class TestAsyncRedisClient:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_exists(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_exists(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should check if key exists."""
         mock_redis.exists.return_value = 1
 
@@ -207,9 +193,7 @@ class TestAsyncRedisClient:
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_not_exists(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_not_exists(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should return False for missing key."""
         mock_redis.exists.return_value = 0
 
@@ -218,18 +202,14 @@ class TestAsyncRedisClient:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_set_expire(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_set_expire(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should set expiration on key."""
         await client.expire("test_key", 300)
 
         mock_redis.expire.assert_called_once_with("test_key", 300)
 
     @pytest.mark.asyncio
-    async def test_get_ttl(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_get_ttl(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should get TTL for key."""
         mock_redis.ttl.return_value = 100
 
@@ -238,9 +218,7 @@ class TestAsyncRedisClient:
         assert ttl == 100
 
     @pytest.mark.asyncio
-    async def test_health_check(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_health_check(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should check Redis health."""
         mock_redis.ping.return_value = True
 
@@ -249,9 +227,7 @@ class TestAsyncRedisClient:
         assert is_healthy is True
 
     @pytest.mark.asyncio
-    async def test_increment(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_increment(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should increment value."""
         mock_redis.incr.return_value = 5
 
@@ -260,9 +236,7 @@ class TestAsyncRedisClient:
         assert result == 5
 
     @pytest.mark.asyncio
-    async def test_decrement(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_decrement(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should decrement value."""
         mock_redis.decr.return_value = 3
 
@@ -271,9 +245,7 @@ class TestAsyncRedisClient:
         assert result == 3
 
     @pytest.mark.asyncio
-    async def test_close(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_close(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should close connection."""
         await client.close()
 
@@ -302,18 +274,14 @@ class TestAsyncRedisClientHash:
         return client
 
     @pytest.mark.asyncio
-    async def test_hset(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_hset(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should set hash field."""
         await client.hset("myhash", "field1", "value1")
 
         mock_redis.hset.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_hget(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_hget(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should get hash field."""
         mock_redis.hget.return_value = b'"value1"'
 
@@ -322,9 +290,7 @@ class TestAsyncRedisClientHash:
         assert value == "value1"
 
     @pytest.mark.asyncio
-    async def test_hgetall(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_hgetall(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should get all hash fields."""
         mock_redis.hgetall.return_value = {
             b"field1": b'"value1"',
@@ -337,9 +303,7 @@ class TestAsyncRedisClientHash:
         assert values["field2"] == "value2"
 
     @pytest.mark.asyncio
-    async def test_hdel(
-        self, client: AsyncRedisClient, mock_redis: MagicMock
-    ) -> None:
+    async def test_hdel(self, client: AsyncRedisClient, mock_redis: MagicMock) -> None:
         """Should delete hash field."""
         await client.hdel("myhash", "field1")
 

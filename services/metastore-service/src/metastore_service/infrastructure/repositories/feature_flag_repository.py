@@ -151,10 +151,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
         if tags:
             conditions.append(FeatureFlagModel.tags.overlap(tags))
 
-        query = (
-            select(FeatureFlagModel)
-            .options(selectinload(FeatureFlagModel.targeting_rules))
-        )
+        query = select(FeatureFlagModel).options(selectinload(FeatureFlagModel.targeting_rules))
 
         if conditions:
             query = query.where(and_(*conditions))
@@ -366,9 +363,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
         """Check if a feature flag exists."""
         name_str = name.value if isinstance(name, FeatureName) else name
 
-        query = select(func.count(FeatureFlagModel.id)).where(
-            FeatureFlagModel.name == name_str
-        )
+        query = select(func.count(FeatureFlagModel.id)).where(FeatureFlagModel.name == name_str)
         result = await self._session.execute(query)
         count = result.scalar_one()
 

@@ -44,11 +44,11 @@ class ReadinessResponse(BaseModel):
 async def health_check() -> HealthResponse:
     """
     Perform a basic health check.
-    
+
     This endpoint is used by container orchestration systems (Kubernetes, Docker)
     to determine if the service is alive. It should be lightweight and always
     return quickly.
-    
+
     Returns:
         HealthResponse: Current health status.
     """
@@ -70,10 +70,10 @@ async def health_check() -> HealthResponse:
 async def readiness_check() -> ReadinessResponse:
     """
     Perform a comprehensive readiness check.
-    
+
     This endpoint checks all service dependencies (database, cache, message queue)
     to determine if the service is ready to accept traffic.
-    
+
     Returns:
         ReadinessResponse: Readiness status with individual component checks.
     """
@@ -121,7 +121,7 @@ async def readiness_check() -> ReadinessResponse:
 async def metrics() -> Response:
     """
     Export Prometheus metrics.
-    
+
     Returns:
         Response: Prometheus-formatted metrics.
     """

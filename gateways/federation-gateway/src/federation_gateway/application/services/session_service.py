@@ -5,12 +5,13 @@ from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
 
+
 class SessionService:
     """Service for handling user sessions"""
 
     async def get_user(self, request: Request) -> dict[str, Any] | None:
         """Get user information from session"""
-        return request.session.get('user')
+        return request.session.get("user")
 
     async def get_session_data(self, request: Request) -> dict[str, Any] | None:
         """Get full session data"""
@@ -18,19 +19,19 @@ class SessionService:
 
     async def create_session(self, request: Request, user_info: dict[str, Any]) -> None:
         """Create user session with user information"""
-        request.session['user'] = user_info
+        request.session["user"] = user_info
         # You can also store additional session data like tokens, preferences, etc.
         logger.info(f"Session created for user: {user_info.get('email', 'unknown')}")
 
     async def update_session(self, request: Request, token_data: dict[str, Any]) -> None:
         """Update session with new token data"""
-        if 'user' in request.session:
+        if "user" in request.session:
             # Update token information while preserving user data
             request.session.update(token_data)
             logger.info("Session updated with new token data")
 
     async def clear_session(self, request: Request) -> None:
         """Clear user session"""
-        user_email = request.session.get('user', {}).get('email', 'unknown')
+        user_email = request.session.get("user", {}).get("email", "unknown")
         request.session.clear()
         logger.info(f"Session cleared for user: {user_email}")

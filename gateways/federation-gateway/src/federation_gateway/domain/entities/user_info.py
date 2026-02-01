@@ -2,7 +2,6 @@
 Domain entities for authentication
 """
 
-
 from pydantic import BaseModel
 
 

@@ -28,10 +28,10 @@ F = TypeVar("F", bound=AsyncHandler)
 
 class LifespanManager:
     """Manages application startup and shutdown handlers.
-    
+
     This class provides a clean way to register and manage
     lifecycle handlers for FastAPI applications.
-    
+
     Example:
         >>> manager = LifespanManager()
         >>> manager.add_startup_handler(init_database)
@@ -55,7 +55,7 @@ class LifespanManager:
 
     def add_startup_handler(self, handler: AsyncHandler) -> None:
         """Add a startup handler.
-        
+
         Args:
             handler: Async function to call on startup.
         """
@@ -63,7 +63,7 @@ class LifespanManager:
 
     def add_shutdown_handler(self, handler: AsyncHandler) -> None:
         """Add a shutdown handler.
-        
+
         Args:
             handler: Async function to call on shutdown.
         """
@@ -71,13 +71,13 @@ class LifespanManager:
 
     def on_startup(self, func: F) -> F:
         """Decorator to register a startup handler.
-        
+
         Args:
             func: Async function to register.
-            
+
         Returns:
             The original function.
-            
+
         Example:
             >>> @manager.on_startup
             ... async def init_db():
@@ -88,13 +88,13 @@ class LifespanManager:
 
     def on_shutdown(self, func: F) -> F:
         """Decorator to register a shutdown handler.
-        
+
         Args:
             func: Async function to register.
-            
+
         Returns:
             The original function.
-            
+
         Example:
             >>> @manager.on_shutdown
             ... async def close_db():
@@ -116,17 +116,18 @@ class LifespanManager:
 
 def create_lifespan(manager: LifespanManager):
     """Create a lifespan context manager for FastAPI.
-    
+
     Args:
         manager: The LifespanManager with registered handlers.
-        
+
     Returns:
         An async context manager for FastAPI's lifespan parameter.
-        
+
     Example:
         >>> manager = LifespanManager()
         >>> app = FastAPI(lifespan=create_lifespan(manager))
     """
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Startup
@@ -140,41 +141,45 @@ def create_lifespan(manager: LifespanManager):
 
 def register_startup_handler(app: FastAPI) -> Callable[[F], F]:
     """Decorator to register a startup handler with FastAPI app.
-    
+
     Args:
         app: The FastAPI application.
-        
+
     Returns:
         A decorator function.
-        
+
     Example:
         >>> @register_startup_handler(app)
         ... async def init_db():
         ...     await database.connect()
     """
+
     def decorator(func: F) -> F:
         app.router.on_startup.append(func)
         return func
+
     return decorator
 
 
 def register_shutdown_handler(app: FastAPI) -> Callable[[F], F]:
     """Decorator to register a shutdown handler with FastAPI app.
-    
+
     Args:
         app: The FastAPI application.
-        
+
     Returns:
         A decorator function.
-        
+
     Example:
         >>> @register_shutdown_handler(app)
         ... async def close_db():
         ...     await database.disconnect()
     """
+
     def decorator(func: F) -> F:
         app.router.on_shutdown.append(func)
         return func
+
     return decorator
 
 

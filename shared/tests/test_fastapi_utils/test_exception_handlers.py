@@ -121,9 +121,7 @@ class TestExceptionHandlers:
         data = response.json()
         assert "error" in data
 
-    def test_service_unavailable_handler(
-        self, app_with_handlers: FastAPI
-    ) -> None:
+    def test_service_unavailable_handler(self, app_with_handlers: FastAPI) -> None:
         """Should return 503 for ServiceUnavailableError."""
         client = TestClient(app_with_handlers)
         response = client.get("/service-unavailable")
@@ -159,9 +157,7 @@ class TestUnhandledExceptions:
 
         return app
 
-    def test_generic_exception_handler(
-        self, app_with_handlers: FastAPI
-    ) -> None:
+    def test_generic_exception_handler(self, app_with_handlers: FastAPI) -> None:
         """Should return 500 for unhandled exceptions."""
         client = TestClient(app_with_handlers, raise_server_exceptions=False)
         response = client.get("/generic-error")

@@ -23,7 +23,7 @@ T = TypeVar("T")
 
 class CircuitState(str, Enum):
     """Circuit breaker states.
-    
+
     CLOSED: Normal operation, requests pass through.
     OPEN: Failures exceeded threshold, requests are rejected.
     HALF_OPEN: Testing recovery, limited requests allowed.
@@ -36,7 +36,7 @@ class CircuitState(str, Enum):
 
 class CircuitOpenError(Exception):
     """Error raised when circuit is open.
-    
+
     Attributes:
         service_name: Name of the service.
         retry_after: Suggested retry time in seconds.
@@ -48,7 +48,7 @@ class CircuitOpenError(Exception):
         retry_after: float | None = None,
     ) -> None:
         """Initialize circuit open error.
-        
+
         Args:
             service_name: Name of the service.
             retry_after: Suggested retry time in seconds.
@@ -64,7 +64,7 @@ class CircuitOpenError(Exception):
 @dataclass
 class CircuitBreakerConfig:
     """Configuration for circuit breaker.
-    
+
     Attributes:
         failure_threshold: Number of failures before opening circuit.
         recovery_timeout: Seconds to wait before trying recovery.
@@ -82,13 +82,13 @@ class CircuitBreakerConfig:
 
 class CircuitBreaker:
     """Circuit breaker for resilient service calls.
-    
+
     Implements the circuit breaker pattern to prevent cascading failures:
-    
+
     1. CLOSED state: Normal operation, failures are counted
     2. OPEN state: After threshold failures, requests are rejected
     3. HALF_OPEN state: After recovery timeout, limited requests are allowed
-    
+
     Example:
         >>> breaker = CircuitBreaker("user-service", CircuitBreakerConfig())
         >>> async def fetch_user():
@@ -107,7 +107,7 @@ class CircuitBreaker:
         config: CircuitBreakerConfig | None = None,
     ) -> None:
         """Initialize circuit breaker.
-        
+
         Args:
             name: Service name for identification.
             config: Circuit breaker configuration.
@@ -141,13 +141,13 @@ class CircuitBreaker:
         func: Callable[[], Awaitable[T]],
     ) -> T:
         """Execute function through circuit breaker.
-        
+
         Args:
             func: Async function to execute.
-            
+
         Returns:
             Result of the function.
-            
+
         Raises:
             CircuitOpenError: If circuit is open.
             Exception: Original exception from the function.
@@ -231,7 +231,7 @@ class CircuitBreaker:
 
     def get_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics.
-        
+
         Returns:
             Dictionary with current stats.
         """

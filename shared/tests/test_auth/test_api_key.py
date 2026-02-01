@@ -94,9 +94,7 @@ class TestAPIKeyService:
         assert hashed != key
         assert isinstance(hashed, str)
 
-    def test_hash_produces_consistent_hash(
-        self, api_key_service: APIKeyService
-    ) -> None:
+    def test_hash_produces_consistent_hash(self, api_key_service: APIKeyService) -> None:
         """Should produce same hash for same key."""
         key = api_key_service.generate_key()
         hash1 = api_key_service.hash_key(key)
@@ -128,23 +126,17 @@ class TestAPIKeyService:
         assert isinstance(key_id, str)
         assert len(key_id) > 0
 
-    def test_validate_key_format_valid(
-        self, api_key_service: APIKeyService
-    ) -> None:
+    def test_validate_key_format_valid(self, api_key_service: APIKeyService) -> None:
         """Should validate correct key format."""
         key = api_key_service.generate_key()
 
         assert api_key_service.validate_key_format(key) is True
 
-    def test_validate_key_format_invalid_prefix(
-        self, api_key_service: APIKeyService
-    ) -> None:
+    def test_validate_key_format_invalid_prefix(self, api_key_service: APIKeyService) -> None:
         """Should reject key with wrong prefix."""
         assert api_key_service.validate_key_format("wrong_prefix_abc123") is False
 
-    def test_validate_key_format_too_short(
-        self, api_key_service: APIKeyService
-    ) -> None:
+    def test_validate_key_format_too_short(self, api_key_service: APIKeyService) -> None:
         """Should reject key that is too short."""
         assert api_key_service.validate_key_format("sk_test_x") is False
 

@@ -40,13 +40,13 @@ def _create_error_response(
     details: dict[str, Any] | None = None,
 ) -> JSONResponse:
     """Create standardized error response.
-    
+
     Args:
         status_code: HTTP status code.
         code: Error code string.
         message: Human-readable error message.
         details: Additional error details.
-        
+
     Returns:
         JSONResponse with error body.
     """
@@ -67,11 +67,11 @@ async def http_exception_handler(
     exc: BaseServiceException,
 ) -> JSONResponse:
     """Handle HTTP exceptions from shared.exceptions.
-    
+
     Args:
         request: The incoming request.
         exc: The exception that was raised.
-        
+
     Returns:
         JSONResponse with error details.
     """
@@ -113,11 +113,11 @@ async def validation_exception_handler(
     exc: ValidationException,
 ) -> JSONResponse:
     """Handle validation exceptions.
-    
+
     Args:
         request: The incoming request.
         exc: The validation exception.
-        
+
     Returns:
         JSONResponse with validation error details.
     """
@@ -139,11 +139,11 @@ async def generic_exception_handler(
     exc: Exception,
 ) -> JSONResponse:
     """Handle unhandled exceptions.
-    
+
     Args:
         request: The incoming request.
         exc: The exception that was raised.
-        
+
     Returns:
         JSONResponse with generic error.
     """
@@ -163,7 +163,7 @@ async def generic_exception_handler(
 
 def register_exception_handlers(app: FastAPI) -> None:
     """Register all exception handlers with the FastAPI app.
-    
+
     This function registers handlers for:
     - NotFoundException (404)
     - ValidationException (422)
@@ -173,10 +173,10 @@ def register_exception_handlers(app: FastAPI) -> None:
     - DatabaseException (503)
     - ServiceUnavailableException (503)
     - Generic Exception (500)
-    
+
     Args:
         app: The FastAPI application.
-        
+
     Example:
         >>> app = FastAPI()
         >>> register_exception_handlers(app)

@@ -7,10 +7,11 @@ from federation_gateway.configs.settings import FederationGatewaySettings
 
 logger = logging.getLogger(__name__)
 
+
 def setup_cors_middleware(app: FastAPI, settings: FederationGatewaySettings):
     """
     Setup CORS middleware using security settings.
-    
+
     Args:
         app: FastAPI application instance
         settings: Gateway settings with CORS configuration

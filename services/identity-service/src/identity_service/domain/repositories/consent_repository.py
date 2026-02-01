@@ -25,9 +25,7 @@ class ConsentRepository(ABC):
         """
 
     @abstractmethod
-    async def get_by_user_and_client(
-        self, user_id: uuid.UUID, client_id: str
-    ) -> Consent | None:
+    async def get_by_user_and_client(self, user_id: uuid.UUID, client_id: str) -> Consent | None:
         """Get consent for a specific user-client pair.
 
         Args:

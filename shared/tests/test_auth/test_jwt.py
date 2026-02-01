@@ -143,9 +143,7 @@ class TestJWTService:
         assert "read" in data.scopes
         assert "write" in data.scopes
 
-    def test_create_access_token_with_custom_claims(
-        self, jwt_service: JWTService
-    ) -> None:
+    def test_create_access_token_with_custom_claims(self, jwt_service: JWTService) -> None:
         """Should create access token with custom claims."""
         token = jwt_service.create_access_token(
             subject="user123",

@@ -154,6 +154,7 @@ class TestTracedDecorator:
 
     def test_decorates_sync_function(self) -> None:
         """Should decorate synchronous functions."""
+
         @traced("my-operation")
         def my_function() -> str:
             return "result"
@@ -163,16 +164,19 @@ class TestTracedDecorator:
 
     def test_decorates_async_function(self) -> None:
         """Should decorate async functions."""
+
         @traced("async-operation")
         async def my_async_function() -> str:
             return "async result"
 
         import asyncio
+
         result = asyncio.run(my_async_function())
         assert result == "async result"
 
     def test_preserves_function_metadata(self) -> None:
         """Should preserve function name and docstring."""
+
         @traced("operation")
         def documented_function() -> None:
             """This is the docstring."""
@@ -183,6 +187,7 @@ class TestTracedDecorator:
 
     def test_passes_arguments(self) -> None:
         """Should pass arguments to decorated function."""
+
         @traced("add-operation")
         def add(a: int, b: int) -> int:
             return a + b
@@ -192,6 +197,7 @@ class TestTracedDecorator:
 
     def test_handles_exceptions(self) -> None:
         """Should propagate exceptions from decorated function."""
+
         @traced("failing")
         def failing_function() -> None:
             raise RuntimeError("Intentional error")
@@ -201,6 +207,7 @@ class TestTracedDecorator:
 
     def test_with_attributes(self) -> None:
         """Should support custom attributes."""
+
         @traced("operation", attributes={"custom": "attr"})
         def attributed_function() -> str:
             return "done"

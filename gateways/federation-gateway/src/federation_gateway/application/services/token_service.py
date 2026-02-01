@@ -25,11 +25,7 @@ class TokenService:
         else:
             expire = datetime.now(UTC) + timedelta(minutes=self.settings.token_expire_minutes)
 
-        to_encode.update({
-            "exp": expire,
-            "iat": datetime.now(UTC),
-            "iss": "federation-gateway"
-        })
+        to_encode.update({"exp": expire, "iat": datetime.now(UTC), "iss": "federation-gateway"})
 
         secret_key = self.settings.jwt_secret.get_secret_value()
         encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=self.settings.jwt_algorithm)
@@ -39,11 +35,7 @@ class TokenService:
         """Decode and validate JWT token."""
         try:
             secret_key = self.settings.jwt_secret.get_secret_value()
-            payload = jwt.decode(
-                token,
-                secret_key,
-                algorithms=[self.settings.jwt_algorithm]
-            )
+            payload = jwt.decode(token, secret_key, algorithms=[self.settings.jwt_algorithm])
             return payload
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token expired")

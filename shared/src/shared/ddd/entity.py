@@ -23,9 +23,9 @@ T = TypeVar("T")
 @dataclass(frozen=True)
 class EntityId(Generic[T]):
     """Typed entity identifier.
-    
+
     Wraps raw IDs to provide type safety and domain meaning.
-    
+
     Example:
         >>> UserId = EntityId[str]
         >>> user_id = UserId("user-123")
@@ -49,7 +49,7 @@ class EntityId(Generic[T]):
     @classmethod
     def generate(cls) -> EntityId[str]:
         """Generate a new UUID-based entity ID.
-        
+
         Returns:
             New EntityId with UUID value.
         """
@@ -58,16 +58,16 @@ class EntityId(Generic[T]):
 
 class Entity(ABC):
     """Base class for domain entities.
-    
+
     An entity is an object defined primarily by its identity,
     rather than its attributes. Two entities with the same ID
     are considered the same entity.
-    
+
     Attributes:
         _id: The entity's unique identifier
         _created_at: When the entity was created
         _updated_at: When the entity was last updated
-    
+
     Example:
         >>> class User(Entity):
         ...     def __init__(self, id: str, name: str):
@@ -89,7 +89,7 @@ class Entity(ABC):
         updated_at: datetime | None = None,
     ) -> None:
         """Initialize entity.
-        
+
         Args:
             id: Entity identifier. Generated if not provided.
             created_at: Creation timestamp. Defaults to now.
@@ -134,15 +134,15 @@ class Entity(ABC):
 
 class AggregateRoot(Entity):
     """Base class for aggregate roots.
-    
+
     An aggregate root is an entity that serves as the entry point
     to an aggregate - a cluster of domain objects treated as a single unit.
-    
+
     Aggregate roots:
     - Own domain events that occur within the aggregate
     - Enforce invariants across the aggregate
     - Are the only entities directly loadable from repositories
-    
+
     Example:
         >>> class Order(AggregateRoot):
         ...     def __init__(self, id: str, customer_id: str):
@@ -167,7 +167,7 @@ class AggregateRoot(Entity):
         updated_at: datetime | None = None,
     ) -> None:
         """Initialize aggregate root.
-        
+
         Args:
             id: Entity identifier.
             version: Optimistic concurrency version.
@@ -194,7 +194,7 @@ class AggregateRoot(Entity):
 
     def add_event(self, event: DomainEvent) -> None:
         """Add a domain event.
-        
+
         Args:
             event: Domain event to add.
         """
@@ -202,7 +202,7 @@ class AggregateRoot(Entity):
 
     def clear_events(self) -> list[DomainEvent]:
         """Clear and return pending domain events.
-        
+
         Returns:
             List of cleared events.
         """
@@ -212,7 +212,7 @@ class AggregateRoot(Entity):
 
     def has_pending_events(self) -> bool:
         """Check if there are pending domain events.
-        
+
         Returns:
             True if there are pending events.
         """
@@ -222,9 +222,9 @@ class AggregateRoot(Entity):
 @dataclass
 class Specification(ABC, Generic[T]):
     """Specification pattern for business rules.
-    
+
     Encapsulates business logic for filtering or validating entities.
-    
+
     Example:
         >>> @dataclass
         ... class ActiveUserSpec(Specification[User]):
@@ -235,10 +235,10 @@ class Specification(ABC, Generic[T]):
     @abstractmethod
     def is_satisfied_by(self, entity: T) -> bool:
         """Check if entity satisfies the specification.
-        
+
         Args:
             entity: Entity to check.
-            
+
         Returns:
             True if specification is satisfied.
         """

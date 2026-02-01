@@ -162,9 +162,7 @@ class TargetingRuleModel(Base):
     """SQLAlchemy model for feature flag targeting rules."""
 
     __tablename__ = "targeting_rules"
-    __table_args__ = (
-        Index("ix_targeting_rule_flag_id", "feature_flag_id"),
-    )
+    __table_args__ = (Index("ix_targeting_rule_flag_id", "feature_flag_id"),)
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     feature_flag_id: Mapped[UUID] = mapped_column(
@@ -195,7 +193,10 @@ class ConfigurationModel(Base):
     __tablename__ = "configurations"
     __table_args__ = (
         UniqueConstraint(
-            "service_id", "name", "environment", "tenant_id",
+            "service_id",
+            "name",
+            "environment",
+            "tenant_id",
             name="uq_config_service_name_env_tenant",
         ),
         Index("ix_config_service_id", "service_id"),
@@ -286,9 +287,7 @@ class ConfigurationSchemaModel(Base):
     """SQLAlchemy model for configuration schemas."""
 
     __tablename__ = "configuration_schemas"
-    __table_args__ = (
-        UniqueConstraint("name", "version", name="uq_schema_name_version"),
-    )
+    __table_args__ = (UniqueConstraint("name", "version", name="uq_schema_name_version"),)
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)

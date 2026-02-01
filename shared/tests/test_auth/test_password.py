@@ -30,48 +30,36 @@ class TestPasswordService:
         assert hashed != "mypassword123"
         assert hashed.startswith("$argon2")
 
-    def test_hash_produces_different_hashes(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_hash_produces_different_hashes(self, password_service: PasswordService) -> None:
         """Should produce different hashes for same password (salting)."""
         hash1 = password_service.hash("mypassword123")
         hash2 = password_service.hash("mypassword123")
 
         assert hash1 != hash2
 
-    def test_verify_correct_password(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_correct_password(self, password_service: PasswordService) -> None:
         """Should verify correct password."""
         hashed = password_service.hash("mypassword123")
 
         assert password_service.verify("mypassword123", hashed) is True
 
-    def test_verify_incorrect_password(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_incorrect_password(self, password_service: PasswordService) -> None:
         """Should reject incorrect password."""
         hashed = password_service.hash("mypassword123")
 
         assert password_service.verify("wrongpassword", hashed) is False
 
-    def test_verify_empty_password(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_empty_password(self, password_service: PasswordService) -> None:
         """Should reject empty password."""
         hashed = password_service.hash("mypassword123")
 
         assert password_service.verify("", hashed) is False
 
-    def test_verify_invalid_hash(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_invalid_hash(self, password_service: PasswordService) -> None:
         """Should return False for invalid hash format."""
         assert password_service.verify("password", "invalid-hash") is False
 
-    def test_needs_rehash_false(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_needs_rehash_false(self, password_service: PasswordService) -> None:
         """Should not need rehash for fresh hash."""
         hashed = password_service.hash("mypassword123")
 

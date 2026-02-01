@@ -88,7 +88,7 @@ async def token_endpoint(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"error": "invalid_client", "error_description": "Invalid credentials"},
-            )
+            ) from None
 
     # Process token request based on grant type
     if grant_type == "authorization_code":
@@ -110,7 +110,10 @@ async def token_endpoint(
         if not auth_client_id or not auth_client_secret:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"error": "invalid_client", "error_description": "Client authentication required"},
+                detail={
+                    "error": "invalid_client",
+                    "error_description": "Client authentication required",
+                },
             )
 
         result = await oauth2_service.client_credentials(
@@ -123,7 +126,10 @@ async def token_endpoint(
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"error": "invalid_request", "error_description": "Missing refresh_token parameter"},
+                detail={
+                    "error": "invalid_request",
+                    "error_description": "Missing refresh_token parameter",
+                },
             )
 
         result = await oauth2_service.refresh_token(
@@ -136,7 +142,10 @@ async def token_endpoint(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error": "unsupported_grant_type", "error_description": f"Grant type '{grant_type}' not supported"},
+            detail={
+                "error": "unsupported_grant_type",
+                "error_description": f"Grant type '{grant_type}' not supported",
+            },
         )
 
     if result.is_error:

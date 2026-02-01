@@ -29,11 +29,12 @@ from jwt.exceptions import InvalidTokenError as JWTInvalidToken
 
 class TokenType(str, Enum):
     """Token types for JWT authentication.
-    
+
     Attributes:
         ACCESS: Short-lived token for API access.
         REFRESH: Long-lived token for obtaining new access tokens.
     """
+
     ACCESS = "access"
     REFRESH = "refresh"
 
@@ -41,7 +42,7 @@ class TokenType(str, Enum):
 @dataclass
 class TokenData:
     """Data contained in a JWT token.
-    
+
     Attributes:
         sub: The subject identifier (usually user ID).
         exp: When the token expires.
@@ -52,6 +53,7 @@ class TokenData:
         iss: Token issuer (optional).
         aud: Token audience (optional).
     """
+
     sub: str
     exp: datetime
     iat: datetime
@@ -63,10 +65,10 @@ class TokenData:
 
     def has_scope(self, scope: str) -> bool:
         """Check if token has a specific scope.
-        
+
         Args:
             scope: The scope to check.
-            
+
         Returns:
             True if the token has the scope.
         """
@@ -75,7 +77,7 @@ class TokenData:
     @property
     def is_expired(self) -> bool:
         """Check if the token is expired.
-        
+
         Returns:
             True if the token is expired.
         """
@@ -84,32 +86,34 @@ class TokenData:
 
 class InvalidTokenError(Exception):
     """Raised when a token is invalid or malformed.
-    
+
     This exception is raised when token verification fails
     due to invalid signature, malformed payload, or other issues.
     """
+
     pass
 
 
 class ExpiredTokenError(InvalidTokenError):
     """Raised when a token has expired.
-    
+
     This exception is specifically for expired tokens, allowing
     different handling than other token validation errors.
     Inherits from InvalidTokenError for easier catching.
     """
+
     pass
 
 
 class JWTService:
     """Service for creating and verifying JWT tokens.
-    
+
     This service handles JWT token operations following security best practices:
     - Uses strong algorithms (HS256 by default, supports RS256)
     - Includes standard claims (iat, exp, sub)
     - Supports custom claims and scopes
     - Validates token expiration and signature
-    
+
     Attributes:
         secret_key: Secret key for signing tokens.
         algorithm: JWT algorithm (default: HS256).
@@ -117,7 +121,7 @@ class JWTService:
         refresh_token_expire_days: Refresh token expiry in days.
         issuer: Token issuer claim.
         audience: Token audience claim.
-    
+
     Example:
         >>> service = JWTService(secret_key="secret")
         >>> token = service.create_access_token("user_123")
@@ -134,7 +138,7 @@ class JWTService:
         audience: str | None = None,
     ) -> None:
         """Initialize JWT service.
-        
+
         Args:
             secret_key: Secret key for signing tokens.
             algorithm: JWT algorithm (HS256, RS256, etc.).
@@ -158,16 +162,16 @@ class JWTService:
         expires_delta: timedelta | None = None,
     ) -> str:
         """Create an access token.
-        
+
         Args:
             subject: The subject identifier (usually user ID).
             scopes: List of permission scopes.
             custom_claims: Additional claims to include.
             expires_delta: Custom expiration delta.
-            
+
         Returns:
             Encoded JWT access token string.
-            
+
         Example:
             >>> token = service.create_access_token(
             ...     subject="user_123",
@@ -192,15 +196,15 @@ class JWTService:
         expires_delta: timedelta | None = None,
     ) -> str:
         """Create a refresh token.
-        
+
         Args:
             subject: The subject identifier (usually user ID).
             custom_claims: Additional claims to include.
             expires_delta: Custom expiration delta.
-            
+
         Returns:
             Encoded JWT refresh token string.
-            
+
         Example:
             >>> refresh_token = service.create_refresh_token("user_123")
         """
@@ -221,18 +225,18 @@ class JWTService:
         expected_type: TokenType | None = None,
     ) -> TokenData:
         """Verify and decode a JWT token.
-        
+
         Args:
             token: The JWT token string.
             expected_type: Expected token type (optional).
-            
+
         Returns:
             TokenData containing the decoded token information.
-            
+
         Raises:
             InvalidTokenError: If the token is invalid or malformed.
             ExpiredTokenError: If the token has expired.
-            
+
         Example:
             >>> token_data = service.verify_token(token)
             >>> print(token_data.sub)
@@ -269,14 +273,10 @@ class JWTService:
             exp = payload.get("exp")
 
             issued_at = (
-                datetime.fromtimestamp(iat, tz=UTC)
-                if iat is not None
-                else datetime.now(UTC)
+                datetime.fromtimestamp(iat, tz=UTC) if iat is not None else datetime.now(UTC)
             )
             expires_at = (
-                datetime.fromtimestamp(exp, tz=UTC)
-                if exp is not None
-                else datetime.now(UTC)
+                datetime.fromtimestamp(exp, tz=UTC) if exp is not None else datetime.now(UTC)
             )
 
             # Extract scopes and custom claims
@@ -284,9 +284,7 @@ class JWTService:
 
             # Standard claims to exclude from custom_claims
             standard_claims = {"sub", "iat", "exp", "type", "scopes", "iss", "aud"}
-            custom_claims = {
-                k: v for k, v in payload.items() if k not in standard_claims
-            }
+            custom_claims = {k: v for k, v in payload.items() if k not in standard_claims}
 
             return TokenData(
                 sub=payload["sub"],
@@ -308,14 +306,14 @@ class JWTService:
 
     def decode_token(self, token: str, verify: bool = True) -> TokenData:
         """Decode a token with optional verification.
-        
+
         Args:
             token: The JWT token string.
             verify: Whether to verify the signature (default: True).
-            
+
         Returns:
             TokenData containing the decoded token information.
-            
+
         Raises:
             InvalidTokenError: If the token cannot be decoded.
         """
@@ -333,14 +331,10 @@ class JWTService:
             exp = payload.get("exp")
 
             issued_at = (
-                datetime.fromtimestamp(iat, tz=UTC)
-                if iat is not None
-                else datetime.now(UTC)
+                datetime.fromtimestamp(iat, tz=UTC) if iat is not None else datetime.now(UTC)
             )
             expires_at = (
-                datetime.fromtimestamp(exp, tz=UTC)
-                if exp is not None
-                else datetime.now(UTC)
+                datetime.fromtimestamp(exp, tz=UTC) if exp is not None else datetime.now(UTC)
             )
 
             # Extract token type
@@ -350,9 +344,7 @@ class JWTService:
             # Extract scopes and custom claims
             scopes = payload.get("scopes", [])
             standard_claims = {"sub", "iat", "exp", "type", "scopes", "iss", "aud"}
-            custom_claims = {
-                k: v for k, v in payload.items() if k not in standard_claims
-            }
+            custom_claims = {k: v for k, v in payload.items() if k not in standard_claims}
 
             return TokenData(
                 sub=payload["sub"],
@@ -378,14 +370,14 @@ class JWTService:
         expires_delta: timedelta,
     ) -> str:
         """Create a JWT token with the given parameters.
-        
+
         Args:
             subject: The subject identifier.
             token_type: Type of token (access/refresh).
             scopes: List of permission scopes.
             custom_claims: Additional claims.
             expires_delta: Expiration delta from now.
-            
+
         Returns:
             Encoded JWT token string.
         """

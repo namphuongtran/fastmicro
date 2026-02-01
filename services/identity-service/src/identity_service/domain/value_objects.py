@@ -162,7 +162,9 @@ class ClientId:
         if not self.value or len(self.value) < 8:
             raise ValueError("Client ID must be at least 8 characters")
         if not re.match(r"^[a-zA-Z0-9_-]+$", self.value):
-            raise ValueError("Client ID must contain only alphanumeric characters, underscores, and hyphens")
+            raise ValueError(
+                "Client ID must contain only alphanumeric characters, underscores, and hyphens"
+            )
 
     def __str__(self) -> str:
         return self.value
@@ -197,6 +199,11 @@ class CodeChallenge:
         if self.method == "plain":
             # plain method not recommended
             import warnings
-            warnings.warn("Plain code challenge method is not recommended", UserWarning)
+
+            warnings.warn(
+                "Plain code challenge method is not recommended",
+                UserWarning,
+                stacklevel=2,
+            )
         if len(self.value) < 43 or len(self.value) > 128:
             raise ValueError("Code challenge must be between 43 and 128 characters")

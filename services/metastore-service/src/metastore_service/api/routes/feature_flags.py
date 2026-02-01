@@ -170,6 +170,7 @@ async def delete_feature_flag(
 
 # Evaluation endpoints
 
+
 @router.post(
     "/evaluate",
     response_model=dict[str, Any],
@@ -211,6 +212,7 @@ async def bulk_evaluate_feature_flags(
 
 
 # Enable/Disable endpoints
+
 
 @router.post(
     "/{flag_id}/enable",
@@ -256,6 +258,7 @@ async def disable_feature_flag(
 
 # Rollout percentage endpoint
 
+
 @router.post(
     "/{flag_id}/rollout",
     response_model=FeatureFlagDTO,
@@ -279,6 +282,7 @@ async def set_rollout_percentage(
 
 
 # Targeting rules endpoints
+
 
 @router.get(
     "/{flag_id}/rules",

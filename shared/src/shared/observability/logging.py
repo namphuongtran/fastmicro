@@ -20,14 +20,14 @@ from typing import Any
 _correlation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "correlation_id", default=None
 )
-_log_context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
-    "log_context", default={}
+_log_context: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "log_context", default=None
 )
 
 
 def set_correlation_id(correlation_id: str) -> None:
     """Set the correlation ID for the current context.
-    
+
     Args:
         correlation_id: The correlation ID to set.
     """
@@ -36,7 +36,7 @@ def set_correlation_id(correlation_id: str) -> None:
 
 def get_correlation_id() -> str | None:
     """Get the correlation ID for the current context.
-    
+
     Returns:
         The current correlation ID or None if not set.
     """
@@ -45,7 +45,7 @@ def get_correlation_id() -> str | None:
 
 def generate_correlation_id() -> str:
     """Generate a new correlation ID.
-    
+
     Returns:
         A new UUID-based correlation ID.
     """
@@ -54,7 +54,7 @@ def generate_correlation_id() -> str:
 
 class JSONFormatter(logging.Formatter):
     """JSON formatter for structured logging.
-    
+
     Outputs log records as JSON objects with consistent fields
     for easy parsing by log aggregation systems.
     """
@@ -67,7 +67,7 @@ class JSONFormatter(logging.Formatter):
         extra_fields: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the JSON formatter.
-        
+
         Args:
             include_timestamp: Whether to include timestamp in output.
             timestamp_format: Custom timestamp format (ISO 8601 by default).
@@ -80,10 +80,10 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Format a log record as JSON.
-        
+
         Args:
             record: The log record to format.
-            
+
         Returns:
             JSON-formatted log string.
         """
@@ -97,13 +97,11 @@ class JSONFormatter(logging.Formatter):
         # Add timestamp
         if self.include_timestamp:
             if self.timestamp_format:
-                log_entry["timestamp"] = datetime.fromtimestamp(
-                    record.created, tz=UTC
-                ).strftime(self.timestamp_format)
+                log_entry["timestamp"] = datetime.fromtimestamp(record.created, tz=UTC).strftime(
+                    self.timestamp_format
+                )
             else:
-                log_entry["timestamp"] = datetime.fromtimestamp(
-                    record.created, tz=UTC
-                ).isoformat()
+                log_entry["timestamp"] = datetime.fromtimestamp(record.created, tz=UTC).isoformat()
 
         # Add correlation ID if present
         correlation_id = get_correlation_id()
@@ -125,11 +123,28 @@ class JSONFormatter(logging.Formatter):
         # Add extra fields from record
         for key, value in record.__dict__.items():
             if key not in (
-                "name", "msg", "args", "created", "filename", "funcName",
-                "levelname", "levelno", "lineno", "module", "msecs",
-                "pathname", "process", "processName", "relativeCreated",
-                "stack_info", "exc_info", "exc_text", "thread", "threadName",
-                "message", "taskName",
+                "name",
+                "msg",
+                "args",
+                "created",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "stack_info",
+                "exc_info",
+                "exc_text",
+                "thread",
+                "threadName",
+                "message",
+                "taskName",
             ):
                 log_entry[key] = value
 
@@ -138,14 +153,14 @@ class JSONFormatter(logging.Formatter):
 
 class CorrelationIdFilter(logging.Filter):
     """Logging filter that adds correlation ID to log records.
-    
+
     This filter ensures every log record has a correlation_id attribute,
     generating one if not already present in the context.
     """
 
     def __init__(self, *, auto_generate: bool = True) -> None:
         """Initialize the filter.
-        
+
         Args:
             auto_generate: Whether to auto-generate correlation ID if missing.
         """
@@ -154,10 +169,10 @@ class CorrelationIdFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Add correlation ID to the log record.
-        
+
         Args:
             record: The log record to filter.
-            
+
         Returns:
             Always True (we're adding data, not filtering).
         """
@@ -174,18 +189,18 @@ class CorrelationIdFilter(logging.Filter):
 @contextmanager
 def with_context(**kwargs: Any) -> Generator[None, None, None]:
     """Context manager to add fields to log context.
-    
+
     Args:
         **kwargs: Key-value pairs to add to log context.
-        
+
     Yields:
         None
-        
+
     Example:
         with with_context(user_id="123", request_id="abc"):
             logger.info("Processing request")  # Includes user_id and request_id
     """
-    current_context = _log_context.get().copy()
+    current_context = (_log_context.get() or {}).copy()
     new_context = {**current_context, **kwargs}
     token = _log_context.set(new_context)
     try:
@@ -200,10 +215,10 @@ _loggers: dict[str, logging.Logger] = {}
 
 def get_logger(name: str | None = None) -> logging.Logger:
     """Get a logger instance with caching.
-    
+
     Args:
         name: Logger name. If None, returns root logger.
-        
+
     Returns:
         Configured logger instance.
     """
@@ -225,7 +240,7 @@ def configure_logging(
     stream: Any = None,
 ) -> None:
     """Configure logging for the application.
-    
+
     Args:
         level: Logging level (e.g., "INFO", "DEBUG", logging.INFO).
         json_format: Whether to use JSON formatting.
@@ -253,9 +268,7 @@ def configure_logging(
     if json_format:
         formatter = JSONFormatter(extra_fields=extra_fields)
     else:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     handler.setFormatter(formatter)
 

@@ -36,21 +36,21 @@ def build_cache_key(
     skip_self: bool = True,
 ) -> str:
     """Build cache key from function and arguments.
-    
+
     Creates a deterministic cache key based on:
     - Function module and qualified name
     - Positional and keyword arguments (JSON-serialized)
-    
+
     Args:
         func: The function being cached.
         args: Positional arguments.
         kwargs: Keyword arguments.
         prefix: Optional key prefix.
         skip_self: Skip first argument if it's 'self' or 'cls'.
-        
+
     Returns:
         Cache key string (hashed if > 200 chars).
-        
+
     Example:
         >>> def get_user(user_id: int) -> dict:
         ...     pass
@@ -109,27 +109,27 @@ def cached(
     skip_self: bool = True,
 ) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """Decorator for caching async function results.
-    
+
     Implements cache-aside pattern:
     1. Check cache for existing value
     2. If found, return cached value
     3. If not found, call function
     4. Cache result and return
-    
+
     Args:
         cache: Any CacheBackend implementation (memory, redis, tiered).
         ttl: Cache TTL in seconds (uses backend default if None).
         prefix: Key prefix for namespacing.
         key_builder: Custom function to build cache key.
         skip_self: Skip 'self'/'cls' argument in key building.
-        
+
     Returns:
         Decorated function.
-        
+
     Example:
         >>> from shared.cache import TieredCacheManager, CacheConfig
         >>> cache = TieredCacheManager(CacheConfig())
-        >>> 
+        >>>
         >>> @cached(cache, ttl=300, prefix="users")
         ... async def get_user(user_id: int) -> dict:
         ...     return await db.fetch_user(user_id)
@@ -139,9 +139,8 @@ def cached(
         ... async def get_user_v2(user_id: int) -> dict:
         ...     return await db.fetch_user(user_id)
     """
-    def decorator(
-        func: Callable[P, Awaitable[T]]
-    ) -> Callable[P, Awaitable[T]]:
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @functools.wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             # Build cache key
@@ -151,7 +150,9 @@ def cached(
                     cache_key = f"{prefix}:{cache_key}"
             else:
                 cache_key = build_cache_key(
-                    func, args, kwargs,
+                    func,
+                    args,
+                    kwargs,
                     prefix=prefix,
                     skip_self=skip_self,
                 )
@@ -173,7 +174,8 @@ def cached(
         # Add utility methods to wrapper
         wrapper.cache = cache  # type: ignore
         wrapper.build_key = lambda *a, **kw: (  # type: ignore
-            key_builder(*a, **kw) if key_builder
+            key_builder(*a, **kw)
+            if key_builder
             else build_cache_key(func, a, kw, prefix=prefix, skip_self=skip_self)
         )
 
@@ -191,24 +193,24 @@ def cache_aside(
     skip_self: bool = True,
 ) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """Decorator implementing cache-aside pattern.
-    
+
     Alias for @cached - explicitly named for pattern clarity.
-    
+
     The cache-aside pattern (also known as lazy loading):
     - Application checks cache before calling data source
     - Application populates cache on cache miss
     - Application is responsible for cache management
-    
+
     Args:
         cache: Any CacheBackend implementation.
         ttl: Cache TTL in seconds.
         prefix: Key prefix for namespacing.
         key_builder: Custom function to build cache key.
         skip_self: Skip 'self'/'cls' argument in key building.
-        
+
     Returns:
         Decorated function.
-        
+
     Example:
         >>> @cache_aside(cache, ttl=600, prefix="products")
         ... async def get_product(product_id: str) -> dict:
@@ -232,20 +234,20 @@ def invalidate_cache(
     before: bool = False,
 ) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """Decorator for invalidating cache on data mutation.
-    
+
     Automatically invalidates cache entries when data changes.
     Useful for write operations (create, update, delete).
-    
+
     Args:
         cache: Any CacheBackend implementation.
         keys: Static list of keys to invalidate.
         prefix: Key prefix to add to built keys.
         key_builder: Function to build key from arguments.
         before: If True, invalidate before function execution.
-        
+
     Returns:
         Decorated function.
-        
+
     Example:
         >>> @invalidate_cache(cache, key_builder=lambda id, data: f"user:{id}")
         ... async def update_user(user_id: int, data: dict) -> dict:
@@ -261,9 +263,8 @@ def invalidate_cache(
         ... async def delete_user(user_id: int) -> bool:
         ...     return await db.delete_user(user_id)
     """
-    def decorator(
-        func: Callable[P, Awaitable[T]]
-    ) -> Callable[P, Awaitable[T]]:
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @functools.wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             async def do_invalidate() -> None:
@@ -305,29 +306,28 @@ def cached_method(
     include_instance_id: bool = True,
 ) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """Decorator for caching instance method results.
-    
+
     Similar to @cached but designed for class instance methods.
     Can optionally include instance identity in cache key.
-    
+
     Args:
         cache: Any CacheBackend implementation.
         ttl: Cache TTL in seconds.
         prefix: Key prefix for namespacing.
         key_builder: Custom function to build cache key.
         include_instance_id: Include id(self) in cache key.
-        
+
     Returns:
         Decorated method.
-        
+
     Example:
         >>> class UserService:
         ...     @cached_method(cache, ttl=300, prefix="user_service")
         ...     async def get_user(self, user_id: int) -> dict:
         ...         return await self.db.fetch_user(user_id)
     """
-    def decorator(
-        func: Callable[P, Awaitable[T]]
-    ) -> Callable[P, Awaitable[T]]:
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @functools.wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             # Build cache key
@@ -337,14 +337,18 @@ def cached_method(
                 # Include instance id for per-instance caching
                 instance_id = id(args[0])
                 base_key = build_cache_key(
-                    func, args[1:], kwargs,
+                    func,
+                    args[1:],
+                    kwargs,
                     prefix=None,
                     skip_self=False,
                 )
                 cache_key = f"{instance_id}:{base_key}"
             else:
                 cache_key = build_cache_key(
-                    func, args, kwargs,
+                    func,
+                    args,
+                    kwargs,
                     prefix=None,
                     skip_self=True,
                 )

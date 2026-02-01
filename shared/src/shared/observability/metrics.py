@@ -30,7 +30,7 @@ class LabeledMetric:
 
 class Counter:
     """A counter metric that can only increase.
-    
+
     Counters are used for counting events like requests, errors, etc.
     """
 
@@ -41,7 +41,7 @@ class Counter:
         labels: list[str] | None = None,
     ) -> None:
         """Initialize a counter.
-        
+
         Args:
             name: Metric name.
             description: Metric description.
@@ -61,10 +61,10 @@ class Counter:
 
     def inc(self, amount: float = 1.0) -> None:
         """Increment the counter.
-        
+
         Args:
             amount: Amount to increment (must be positive).
-            
+
         Raises:
             ValueError: If amount is negative.
         """
@@ -77,10 +77,10 @@ class Counter:
 
     def labels(self, **label_values: str) -> _CounterChild:
         """Get a child counter with specific label values.
-        
+
         Args:
             **label_values: Label values.
-            
+
         Returns:
             Child counter instance.
         """
@@ -106,7 +106,7 @@ class _CounterChild:
 
 class Gauge:
     """A gauge metric that can increase or decrease.
-    
+
     Gauges are used for values that go up and down like
     temperature, memory usage, active connections, etc.
     """
@@ -118,7 +118,7 @@ class Gauge:
         labels: list[str] | None = None,
     ) -> None:
         """Initialize a gauge.
-        
+
         Args:
             name: Metric name.
             description: Metric description.
@@ -138,7 +138,7 @@ class Gauge:
 
     def set(self, value: float) -> None:
         """Set the gauge value.
-        
+
         Args:
             value: The value to set.
         """
@@ -148,7 +148,7 @@ class Gauge:
 
     def inc(self, amount: float = 1.0) -> None:
         """Increment the gauge.
-        
+
         Args:
             amount: Amount to increment.
         """
@@ -158,7 +158,7 @@ class Gauge:
 
     def dec(self, amount: float = 1.0) -> None:
         """Decrement the gauge.
-        
+
         Args:
             amount: Amount to decrement.
         """
@@ -168,10 +168,10 @@ class Gauge:
 
     def labels(self, **label_values: str) -> _GaugeChild:
         """Get a child gauge with specific label values.
-        
+
         Args:
             **label_values: Label values.
-            
+
         Returns:
             Child gauge instance.
         """
@@ -180,9 +180,9 @@ class Gauge:
     @contextmanager
     def track_inprogress(self) -> Generator[None, None, None]:
         """Context manager to track in-progress operations.
-        
+
         Increments gauge on entry, decrements on exit.
-        
+
         Yields:
             None
         """
@@ -220,14 +220,12 @@ class _GaugeChild:
 
 
 # Default histogram buckets
-DEFAULT_BUCKETS = (
-    0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0
-)
+DEFAULT_BUCKETS = (0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0)
 
 
 class Histogram:
     """A histogram metric for measuring distributions.
-    
+
     Histograms are used for measuring things like request
     durations or response sizes.
     """
@@ -240,7 +238,7 @@ class Histogram:
         buckets: tuple[float, ...] | None = None,
     ) -> None:
         """Initialize a histogram.
-        
+
         Args:
             name: Metric name.
             description: Metric description.
@@ -262,7 +260,7 @@ class Histogram:
 
     def observe(self, value: float) -> None:
         """Observe a value.
-        
+
         Args:
             value: The value to observe.
         """
@@ -274,10 +272,10 @@ class Histogram:
 
     def labels(self, **label_values: str) -> _HistogramChild:
         """Get a child histogram with specific label values.
-        
+
         Args:
             **label_values: Label values.
-            
+
         Returns:
             Child histogram instance.
         """
@@ -286,7 +284,7 @@ class Histogram:
     @contextmanager
     def time(self) -> Generator[None, None, None]:
         """Context manager to time an operation.
-        
+
         Yields:
             None
         """
@@ -331,12 +329,12 @@ class MetricsRegistry:
         labels: list[str] | None = None,
     ) -> Counter:
         """Create or get a counter.
-        
+
         Args:
             name: Metric name.
             description: Metric description.
             labels: Label names.
-            
+
         Returns:
             Counter instance.
         """
@@ -357,12 +355,12 @@ class MetricsRegistry:
         labels: list[str] | None = None,
     ) -> Gauge:
         """Create or get a gauge.
-        
+
         Args:
             name: Metric name.
             description: Metric description.
             labels: Label names.
-            
+
         Returns:
             Gauge instance.
         """
@@ -384,13 +382,13 @@ class MetricsRegistry:
         buckets: tuple[float, ...] | None = None,
     ) -> Histogram:
         """Create or get a histogram.
-        
+
         Args:
             name: Metric name.
             description: Metric description.
             labels: Label names.
             buckets: Histogram buckets.
-            
+
         Returns:
             Histogram instance.
         """
@@ -406,7 +404,7 @@ class MetricsRegistry:
 
     def list_metrics(self) -> list[str]:
         """List all registered metric names.
-        
+
         Returns:
             List of metric names.
         """
@@ -421,7 +419,7 @@ _registry_lock = Lock()
 
 def get_metrics_registry() -> MetricsRegistry:
     """Get the global metrics registry.
-    
+
     Returns:
         The global metrics registry instance.
     """
@@ -439,7 +437,7 @@ def configure_metrics(
     enabled: bool = True,
 ) -> None:
     """Configure metrics globally.
-    
+
     Args:
         namespace: Prefix for all metric names.
         enabled: Whether metrics are enabled.
@@ -459,19 +457,20 @@ def timed(
     labels: dict[str, str] | None = None,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Decorator to time function execution.
-    
+
     Args:
         name: Metric name for the histogram.
         labels: Additional labels.
-        
+
     Returns:
         Decorated function.
-        
+
     Example:
         @timed("request_duration")
         def handle_request():
             ...
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         registry = get_metrics_registry()
         histogram = registry.histogram(
@@ -480,6 +479,7 @@ def timed(
         )
 
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
                 start = time.perf_counter()
@@ -488,8 +488,10 @@ def timed(
                 finally:
                     duration = time.perf_counter() - start
                     histogram.observe(duration)
+
             return async_wrapper  # type: ignore[return-value]
         else:
+
             @functools.wraps(func)
             def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
                 start = time.perf_counter()
@@ -498,6 +500,7 @@ def timed(
                 finally:
                     duration = time.perf_counter() - start
                     histogram.observe(duration)
+
             return sync_wrapper  # type: ignore[return-value]
 
     return decorator

@@ -23,7 +23,7 @@ from tenacity import (
 
 class HTTPClientError(Exception):
     """Base exception for HTTP client errors.
-    
+
     Attributes:
         message: Error description.
         status_code: HTTP status code (if applicable).
@@ -37,7 +37,7 @@ class HTTPClientError(Exception):
         response_data: dict[str, Any] | None = None,
     ) -> None:
         """Initialize HTTP client error.
-        
+
         Args:
             message: Error description.
             status_code: HTTP status code.
@@ -53,7 +53,7 @@ class ServiceUnavailableError(HTTPClientError):
 
     def __init__(self, message: str = "Service unavailable") -> None:
         """Initialize service unavailable error.
-        
+
         Args:
             message: Error description.
         """
@@ -63,7 +63,7 @@ class ServiceUnavailableError(HTTPClientError):
 @dataclass
 class ServiceClientConfig:
     """Configuration for service client.
-    
+
     Attributes:
         base_url: Base URL for the service.
         timeout: Request timeout in seconds.
@@ -88,7 +88,7 @@ class ServiceClientConfig:
 @dataclass
 class ServiceResponse:
     """Standardized service response wrapper.
-    
+
     Attributes:
         status_code: HTTP status code.
         data: Response data (parsed JSON or raw).
@@ -117,13 +117,13 @@ class ServiceResponse:
 
 class ServiceClient:
     """Async HTTP client for microservice communication.
-    
+
     Features:
     - Automatic retries with exponential backoff
     - Correlation ID propagation
     - Configurable timeouts
     - Response normalization
-    
+
     Example:
         >>> config = ServiceClientConfig(base_url="https://api.example.com")
         >>> async with ServiceClient(config) as client:
@@ -134,7 +134,7 @@ class ServiceClient:
 
     def __init__(self, config: ServiceClientConfig) -> None:
         """Initialize service client.
-        
+
         Args:
             config: Client configuration.
         """
@@ -171,13 +171,13 @@ class ServiceClient:
         correlation_id: str | None = None,
     ) -> ServiceResponse:
         """Make GET request.
-        
+
         Args:
             path: Request path.
             params: Query parameters.
             headers: Additional headers.
             correlation_id: Correlation ID for tracing.
-            
+
         Returns:
             ServiceResponse with status, data, and headers.
         """
@@ -200,7 +200,7 @@ class ServiceClient:
         correlation_id: str | None = None,
     ) -> ServiceResponse:
         """Make POST request.
-        
+
         Args:
             path: Request path.
             json: JSON body data.
@@ -208,7 +208,7 @@ class ServiceClient:
             params: Query parameters.
             headers: Additional headers.
             correlation_id: Correlation ID for tracing.
-            
+
         Returns:
             ServiceResponse with status, data, and headers.
         """
@@ -233,7 +233,7 @@ class ServiceClient:
         correlation_id: str | None = None,
     ) -> ServiceResponse:
         """Make PUT request.
-        
+
         Args:
             path: Request path.
             json: JSON body data.
@@ -241,7 +241,7 @@ class ServiceClient:
             params: Query parameters.
             headers: Additional headers.
             correlation_id: Correlation ID for tracing.
-            
+
         Returns:
             ServiceResponse with status, data, and headers.
         """
@@ -266,7 +266,7 @@ class ServiceClient:
         correlation_id: str | None = None,
     ) -> ServiceResponse:
         """Make PATCH request.
-        
+
         Args:
             path: Request path.
             json: JSON body data.
@@ -274,7 +274,7 @@ class ServiceClient:
             params: Query parameters.
             headers: Additional headers.
             correlation_id: Correlation ID for tracing.
-            
+
         Returns:
             ServiceResponse with status, data, and headers.
         """
@@ -297,13 +297,13 @@ class ServiceClient:
         correlation_id: str | None = None,
     ) -> ServiceResponse:
         """Make DELETE request.
-        
+
         Args:
             path: Request path.
             params: Query parameters.
             headers: Additional headers.
             correlation_id: Correlation ID for tracing.
-            
+
         Returns:
             ServiceResponse with status, data, and headers.
         """
@@ -327,7 +327,7 @@ class ServiceClient:
         correlation_id: str | None = None,
     ) -> ServiceResponse:
         """Make HTTP request with retry logic.
-        
+
         Args:
             method: HTTP method.
             path: Request path.
@@ -336,10 +336,10 @@ class ServiceClient:
             params: Query parameters.
             headers: Additional headers.
             correlation_id: Correlation ID for tracing.
-            
+
         Returns:
             ServiceResponse with status, data, and headers.
-            
+
         Raises:
             ServiceUnavailableError: When max retries exceeded.
         """
@@ -379,20 +379,20 @@ class ServiceClient:
                     multiplier=self._config.retry_backoff,
                     max=self._config.retry_backoff_max,
                 ),
-                retry=retry_if_exception_type((
-                    httpx.TimeoutException,
-                    httpx.ConnectError,
-                    httpx.HTTPStatusError,
-                )),
+                retry=retry_if_exception_type(
+                    (
+                        httpx.TimeoutException,
+                        httpx.ConnectError,
+                        httpx.HTTPStatusError,
+                    )
+                ),
                 reraise=True,
             ):
                 with attempt:
                     response = await make_request()
                     return self._parse_response(response)
         except (httpx.TimeoutException, httpx.ConnectError) as e:
-            raise ServiceUnavailableError(
-                f"Max retries exceeded for {method} {path}: {e}"
-            ) from e
+            raise ServiceUnavailableError(f"Max retries exceeded for {method} {path}: {e}") from e
         except httpx.HTTPStatusError as e:
             # Return the error response instead of raising
             return self._parse_response(e.response)
@@ -402,10 +402,10 @@ class ServiceClient:
 
     def _parse_response(self, response: httpx.Response) -> ServiceResponse:
         """Parse HTTP response into ServiceResponse.
-        
+
         Args:
             response: httpx response object.
-            
+
         Returns:
             Standardized ServiceResponse.
         """

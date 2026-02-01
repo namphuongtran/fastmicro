@@ -66,12 +66,15 @@ async def introspect_token(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"error": "invalid_client"},
-            )
+            ) from None
 
     if not auth_client_id or not auth_client_secret:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"error": "invalid_client", "error_description": "Client authentication required"},
+            detail={
+                "error": "invalid_client",
+                "error_description": "Client authentication required",
+            },
         )
 
     # Verify client credentials
@@ -133,12 +136,15 @@ async def revoke_token(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"error": "invalid_client"},
-            )
+            ) from None
 
     if not auth_client_id or not auth_client_secret:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"error": "invalid_client", "error_description": "Client authentication required"},
+            detail={
+                "error": "invalid_client",
+                "error_description": "Client authentication required",
+            },
         )
 
     # Verify client credentials

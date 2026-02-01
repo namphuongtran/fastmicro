@@ -28,13 +28,13 @@ V = TypeVar("V")
 
 class RedisConfig(BaseModel):
     """Redis connection configuration.
-    
+
     Supports both URL-based and parameter-based configuration.
-    
+
     Example:
         >>> # URL-based
         >>> config = RedisConfig(url="redis://localhost:6379/0")
-        >>> 
+        >>>
         >>> # Parameter-based
         >>> config = RedisConfig(host="localhost", port=6379, db=0)
     """
@@ -53,7 +53,7 @@ class RedisConfig(BaseModel):
 
     def build_url(self) -> str:
         """Build Redis URL from parameters.
-        
+
         Returns:
             Redis connection URL.
         """
@@ -72,17 +72,17 @@ class RedisConfig(BaseModel):
 
 class RedisCache(AbstractCacheBackend[V]):
     """Redis cache backend for distributed caching.
-    
+
     Provides cluster-wide shared caching with optional persistence.
     Uses JSON serialization by default for debuggability.
-    
+
     Features:
         - Distributed/shared state
         - TTL-based expiration
         - Atomic operations (increment, etc.)
         - Connection pooling
         - ~1-5ms access time
-    
+
     Example:
         >>> config = RedisConfig(host="localhost", port=6379)
         >>> cache = RedisCache(config, namespace="myapp")
@@ -91,7 +91,7 @@ class RedisCache(AbstractCacheBackend[V]):
         >>> await cache.get("user:123")
         {'name': 'John'}
         >>> await cache.close()
-    
+
     Note:
         Call connect() before use, or use as async context manager.
     """
@@ -105,7 +105,7 @@ class RedisCache(AbstractCacheBackend[V]):
         serializer: Serializer[Any] | None = None,
     ) -> None:
         """Initialize Redis cache.
-        
+
         Args:
             config: Redis connection configuration.
             namespace: Key namespace prefix.
@@ -133,7 +133,7 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def connect(self) -> None:
         """Connect to Redis.
-        
+
         Raises:
             CacheConnectionError: If connection fails.
         """
@@ -173,11 +173,11 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def get(self, key: str, default: V | None = None) -> V | None:
         """Get a value from Redis.
-        
+
         Args:
             key: Cache key.
             default: Default value if key not found.
-            
+
         Returns:
             Cached value or default.
         """
@@ -200,12 +200,12 @@ class RedisCache(AbstractCacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set a value in Redis.
-        
+
         Args:
             key: Cache key.
             value: Value to cache.
             ttl: Time-to-live in seconds.
-            
+
         Returns:
             True if successful.
         """
@@ -228,10 +228,10 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def delete(self, key: str) -> bool:
         """Delete a key from Redis.
-        
+
         Args:
             key: Cache key to delete.
-            
+
         Returns:
             True if key was deleted, False if not found.
         """
@@ -249,10 +249,10 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def exists(self, key: str) -> bool:
         """Check if a key exists in Redis.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             True if key exists.
         """
@@ -266,11 +266,11 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def clear(self, namespace: str | None = None) -> int:
         """Clear cache entries.
-        
+
         Args:
             namespace: Namespace prefix to clear.
                       If None, clears current namespace.
-            
+
         Returns:
             Number of keys cleared.
         """
@@ -303,11 +303,11 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def increment(self, key: str, delta: int = 1) -> int:
         """Increment a numeric value atomically.
-        
+
         Args:
             key: Cache key.
             delta: Amount to increment (can be negative).
-            
+
         Returns:
             New value after increment.
         """
@@ -327,11 +327,11 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def expire(self, key: str, ttl: int) -> bool:
         """Set TTL on an existing key.
-        
+
         Args:
             key: Cache key.
             ttl: Time-to-live in seconds.
-            
+
         Returns:
             True if TTL was set, False if key doesn't exist.
         """
@@ -348,10 +348,10 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def ttl(self, key: str) -> int:
         """Get TTL of a key.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             TTL in seconds, -1 if no TTL, -2 if key doesn't exist.
         """
@@ -365,10 +365,10 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def get_many(self, keys: list[str]) -> dict[str, V | None]:
         """Get multiple values at once using MGET.
-        
+
         Args:
             keys: List of cache keys.
-            
+
         Returns:
             Dictionary mapping keys to values (None if not found).
         """
@@ -383,7 +383,7 @@ class RedisCache(AbstractCacheBackend[V]):
             values = await self._client.mget(full_keys)
             result: dict[str, V | None] = {}
 
-            for key, value in zip(keys, values):
+            for key, value in zip(keys, values, strict=True):
                 if value is None:
                     result[key] = None
                 else:
@@ -402,11 +402,11 @@ class RedisCache(AbstractCacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set multiple values at once using pipeline.
-        
+
         Args:
             mapping: Dictionary of key-value pairs.
             ttl: Time-to-live in seconds.
-            
+
         Returns:
             True if all successful.
         """
@@ -439,10 +439,10 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def delete_many(self, keys: list[str]) -> int:
         """Delete multiple keys at once.
-        
+
         Args:
             keys: List of cache keys to delete.
-            
+
         Returns:
             Number of keys deleted.
         """
@@ -463,7 +463,7 @@ class RedisCache(AbstractCacheBackend[V]):
 
     async def health_check(self) -> bool:
         """Check Redis connection health.
-        
+
         Returns:
             True if healthy.
         """
@@ -476,7 +476,7 @@ class RedisCache(AbstractCacheBackend[V]):
 
     def stats(self) -> dict[str, Any]:
         """Get cache statistics.
-        
+
         Returns:
             Dictionary with cache stats.
         """

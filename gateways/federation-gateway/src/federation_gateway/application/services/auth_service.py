@@ -32,7 +32,7 @@ class AuthService:
             "preferred_username": user_info.get("preferred_username"),
             "given_name": user_info.get("given_name"),
             "family_name": user_info.get("family_name"),
-            "picture": user_info.get("picture")
+            "picture": user_info.get("picture"),
         }
 
     async def handle_successful_auth(self, token: dict[str, Any]) -> AuthenticationResult:
@@ -45,7 +45,7 @@ class AuthService:
                 return AuthenticationResult(
                     success=False,
                     error="server_error",
-                    error_description="Failed to get user information"
+                    error_description="Failed to get user information",
                 )
 
             # Normalize user info
@@ -54,23 +54,19 @@ class AuthService:
             # Create access token
             access_token_expires = timedelta(minutes=self.settings.token_expire_minutes)
             access_token = self.token_service.create_access_token(
-                data=normalized_user_info,
-                expires_delta=access_token_expires
+                data=normalized_user_info, expires_delta=access_token_expires
             )
 
             logger.info(f"Successfully authenticated user: {normalized_user_info.get('sub')}")
 
-            return AuthenticationResult(
-                success=True,
-                access_token=access_token
-            )
+            return AuthenticationResult(success=True, access_token=access_token)
 
         except Exception as e:
             logger.error(f"Error handling successful authentication: {str(e)}")
             return AuthenticationResult(
                 success=False,
                 error="server_error",
-                error_description="Authentication processing failed"
+                error_description="Authentication processing failed",
             )
 
     def validate_token_and_get_user_info(self, auth_header: str | None) -> dict[str, Any]:

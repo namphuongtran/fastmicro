@@ -13,7 +13,7 @@ Example:
     >>> from fastapi import FastAPI
     >>> from shared.fastapi_utils.middleware import RequestContextMiddleware
     >>> from shared.observability import RequestLoggingMiddleware
-    >>> 
+    >>>
     >>> app = FastAPI()
     >>> # Add RequestLoggingMiddleware first for correlation ID and logging
     >>> app.add_middleware(
@@ -48,21 +48,20 @@ from shared.observability.structlog_config import (
 )
 
 # Context variable for request-scoped data (user context, NOT correlation ID)
-_request_context: ContextVar[RequestContext | None] = ContextVar(
-    "request_context", default=None
-)
+_request_context: ContextVar[RequestContext | None] = ContextVar("request_context", default=None)
 
 
 @dataclass
 class RequestContext:
     """Context data for the current request.
-    
+
     Attributes:
         request_id: Unique identifier for this request.
         correlation_id: ID for tracking requests across services.
         user_id: Authenticated user ID (if available).
         metadata: Additional context metadata.
     """
+
     request_id: str
     correlation_id: str
     user_id: str | None = None
@@ -71,10 +70,10 @@ class RequestContext:
 
 def get_request_context() -> RequestContext | None:
     """Get the current request context.
-    
+
     Returns:
         The current RequestContext or None if not in a request.
-        
+
     Example:
         >>> ctx = get_request_context()
         >>> if ctx:
@@ -85,13 +84,13 @@ def get_request_context() -> RequestContext | None:
 
 def get_correlation_id() -> str | None:
     """Get the current correlation ID.
-    
+
     This function delegates to shared.observability.structlog_config which
     is the single source of truth for correlation ID management.
-    
+
     Returns:
         The current correlation ID or None if not in a request.
-        
+
     Example:
         >>> corr_id = get_correlation_id()
         >>> logger.info("Processing request", correlation_id=corr_id)
@@ -101,13 +100,13 @@ def get_correlation_id() -> str | None:
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     """Middleware that creates and manages request context.
-    
+
     This middleware:
     - Generates a unique request ID for each request
     - Extracts or generates a correlation ID
     - Makes context available via get_request_context()
     - Adds correlation ID to response headers
-    
+
     Example:
         >>> app = FastAPI()
         >>> app.add_middleware(RequestContextMiddleware)
@@ -120,7 +119,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         request_id_header: str = "X-Request-ID",
     ) -> None:
         """Initialize middleware.
-        
+
         Args:
             app: The ASGI application.
             correlation_header: Header name for correlation ID.
@@ -136,11 +135,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         call_next: RequestResponseEndpoint,
     ) -> Response:
         """Process the request and manage context.
-        
+
         Args:
             request: The incoming request.
             call_next: The next handler in the chain.
-            
+
         Returns:
             The response with added headers.
         """

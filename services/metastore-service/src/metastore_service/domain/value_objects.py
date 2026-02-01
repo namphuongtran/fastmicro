@@ -282,7 +282,7 @@ class Version:
         try:
             return cls(int(parts[0]), int(parts[1]), int(parts[2]))
         except ValueError:
-            raise ValueError("Version numbers must be integers")
+            raise ValueError("Version numbers must be integers") from None
 
     @classmethod
     def initial(cls) -> Version:

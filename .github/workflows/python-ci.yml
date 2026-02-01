@@ -35,6 +35,7 @@ on:
 env:
   PYTHON_VERSION: '3.12'
   UV_VERSION: '0.5.14'
+  UV_LINK_MODE: copy  # Use copy mode for CI runners (no reflink support)
 
 jobs:
   # ---------------------------------------------------------------------------

@@ -25,9 +25,7 @@ class TestCachedDecorator:
         return mock
 
     @pytest.mark.asyncio
-    async def test_caches_result(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_caches_result(self, mock_redis_client: MagicMock) -> None:
         """Should cache function result."""
         call_count = 0
 
@@ -45,9 +43,7 @@ class TestCachedDecorator:
         mock_redis_client.set.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_returns_cached_result(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_returns_cached_result(self, mock_redis_client: MagicMock) -> None:
         """Should return cached result on hit."""
         mock_redis_client.get.return_value = {"id": 1, "name": "cached"}
         call_count = 0
@@ -64,10 +60,9 @@ class TestCachedDecorator:
         assert call_count == 0  # Function not called
 
     @pytest.mark.asyncio
-    async def test_custom_key_builder(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_custom_key_builder(self, mock_redis_client: MagicMock) -> None:
         """Should use custom key builder."""
+
         @cached(
             mock_redis_client,
             key_builder=lambda *args, **kwargs: f"custom:{args[0]}",
@@ -81,10 +76,9 @@ class TestCachedDecorator:
         assert call_args[0][0] == "custom:42"
 
     @pytest.mark.asyncio
-    async def test_prefix(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_prefix(self, mock_redis_client: MagicMock) -> None:
         """Should add prefix to cache key."""
+
         @cached(mock_redis_client, prefix="myservice")
         async def get_data(item_id: int) -> dict:
             return {"id": item_id}
@@ -108,10 +102,9 @@ class TestCacheAsideDecorator:
         return mock
 
     @pytest.mark.asyncio
-    async def test_cache_aside_miss(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_cache_aside_miss(self, mock_redis_client: MagicMock) -> None:
         """Should fetch and cache on miss."""
+
         @cache_aside(mock_redis_client)
         async def get_user(user_id: int) -> dict:
             return {"id": user_id, "name": "John"}
@@ -122,9 +115,7 @@ class TestCacheAsideDecorator:
         mock_redis_client.set.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_cache_aside_hit(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_cache_aside_hit(self, mock_redis_client: MagicMock) -> None:
         """Should return cached value on hit."""
         mock_redis_client.get.return_value = {"id": 1, "name": "Cached"}
 
@@ -149,10 +140,9 @@ class TestInvalidateCacheDecorator:
         return mock
 
     @pytest.mark.asyncio
-    async def test_invalidates_after_call(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_invalidates_after_call(self, mock_redis_client: MagicMock) -> None:
         """Should invalidate cache after function call."""
+
         @invalidate_cache(
             mock_redis_client,
             key_builder=lambda user_id, name: f"user:{user_id}",
@@ -166,10 +156,9 @@ class TestInvalidateCacheDecorator:
         mock_redis_client.delete.assert_called_once_with("user:1")
 
     @pytest.mark.asyncio
-    async def test_invalidates_multiple_keys(
-        self, mock_redis_client: MagicMock
-    ) -> None:
+    async def test_invalidates_multiple_keys(self, mock_redis_client: MagicMock) -> None:
         """Should invalidate multiple cache keys."""
+
         @invalidate_cache(
             mock_redis_client,
             keys=["user:1", "users:list"],

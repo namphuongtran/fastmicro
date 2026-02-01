@@ -212,6 +212,7 @@ class TestTimedDecorator:
 
     def test_times_sync_function(self) -> None:
         """Should time synchronous functions."""
+
         @timed("sync_operation")
         def my_function() -> str:
             return "result"
@@ -221,16 +222,19 @@ class TestTimedDecorator:
 
     def test_times_async_function(self) -> None:
         """Should time async functions."""
+
         @timed("async_operation")
         async def my_async_function() -> str:
             return "async result"
 
         import asyncio
+
         result = asyncio.run(my_async_function())
         assert result == "async result"
 
     def test_preserves_function_metadata(self) -> None:
         """Should preserve function name."""
+
         @timed("operation")
         def named_function() -> None:
             """Docstring."""
@@ -240,6 +244,7 @@ class TestTimedDecorator:
 
     def test_handles_exceptions(self) -> None:
         """Should record time even on exceptions."""
+
         @timed("failing_operation")
         def failing_function() -> None:
             raise RuntimeError("Error")
@@ -249,6 +254,7 @@ class TestTimedDecorator:
 
     def test_with_labels(self) -> None:
         """Should support labels."""
+
         @timed("labeled_operation", labels={"type": "background"})
         def background_task() -> str:
             return "done"

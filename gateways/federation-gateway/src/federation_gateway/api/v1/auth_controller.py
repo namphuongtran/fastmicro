@@ -127,32 +127,30 @@ from ...infrastructure.middleware.auth_middleware import AuthMiddleware
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+
 def get_oauth_service(request: StarletteRequest) -> OAuthService:
     """Dependency to get OAuth service instance from app state"""
-    oauth_service = getattr(request.app.state, 'oauth_service', None)
+    oauth_service = getattr(request.app.state, "oauth_service", None)
 
     if oauth_service is None:
-        raise HTTPException(
-            status_code=500,
-            detail="OAuth service not initialized"
-        )
+        raise HTTPException(status_code=500, detail="OAuth service not initialized")
     return oauth_service
 
-def get_auth_middleware(
-    oauth_service: OAuthService = Depends(get_oauth_service)
-) -> AuthMiddleware:
+
+def get_auth_middleware(oauth_service: OAuthService = Depends(get_oauth_service)) -> AuthMiddleware:
     """Dependency to get AuthMiddleware instance"""
     return AuthMiddleware(oidc_service=oauth_service)
+
 
 @router.get("/login")
 async def login(
     request: Request,
     redirect_uri: str | None = Query(None, description="Where to redirect after successful login"),
-    oauth_service: OAuthService = Depends(get_oauth_service)
+    oauth_service: OAuthService = Depends(get_oauth_service),
 ):
     """
     Federation Gateway Login Endpoint
-    
+
     Flow:
     1. Client calls /auth/login?redirect_uri=https://myapp.com/dashboard
     2. Gateway generates authorization URL for Keycloak
@@ -178,25 +176,23 @@ async def login(
         logger.info(f"Redirecting user to Keycloak: {auth_response.authorization_url}")
 
         # REDIRECT user to Keycloak login page
-        return RedirectResponse(
-            url=auth_response.authorization_url,
-            status_code=302
-        )
+        return RedirectResponse(url=auth_response.authorization_url, status_code=302)
 
     except Exception as e:
         logger.error(f"Login error: {e}")
         raise HTTPException(status_code=500, detail=f"Authentication service error: {str(e)}")
+
 
 @router.get("/callback")
 async def callback(
     code: str,
     state: str,
     final_redirect: str | None = Query(None, description="Final destination after auth"),
-    oauth_service: OAuthService = Depends(get_oauth_service)
+    oauth_service: OAuthService = Depends(get_oauth_service),
 ):
     """
     OIDC Callback Handler
-    
+
     Flow:
     1. Keycloak redirects here with authorization code
     2. Exchange code for tokens
@@ -218,7 +214,7 @@ async def callback(
         if final_redirect:
             # Redirect to the original application with tokens
             # Option 1: Pass tokens as URL fragments (for SPA)
-            redirect_url = f"{final_redirect}#access_token={tokens.access_token}&id_token={tokens.id_token or ''}"
+            _redirect_url = f"{final_redirect}#access_token={tokens.access_token}&id_token={tokens.id_token or ''}"  # noqa: F841 - example URL pattern
 
             # Option 2: Pass tokens as query parameters (less secure, for testing)
             # redirect_url = f"{final_redirect}?access_token={tokens.access_token}"
@@ -233,7 +229,7 @@ async def callback(
                 httponly=True,
                 secure=True,
                 samesite="lax",
-                max_age=tokens.expires_in
+                max_age=tokens.expires_in,
             )
 
             if tokens.id_token:
@@ -243,7 +239,7 @@ async def callback(
                     httponly=True,
                     secure=True,
                     samesite="lax",
-                    max_age=tokens.expires_in
+                    max_age=tokens.expires_in,
                 )
 
             if tokens.refresh_token:
@@ -253,22 +249,24 @@ async def callback(
                     httponly=True,
                     secure=True,
                     samesite="lax",
-                    max_age=86400 * 30  # 30 days
+                    max_age=86400 * 30,  # 30 days
                 )
 
             logger.info(f"Redirecting authenticated user to: {final_redirect}")
             return response
         else:
             # No final redirect specified, return success page or default redirect
-            return JSONResponse({
-                "success": True,
-                "message": "Authentication successful",
-                "user": {
-                    "sub": user_info.sub,
-                    "email": user_info.email,
-                    "name": user_info.name
+            return JSONResponse(
+                {
+                    "success": True,
+                    "message": "Authentication successful",
+                    "user": {
+                        "sub": user_info.sub,
+                        "email": user_info.email,
+                        "name": user_info.name,
+                    },
                 }
-            })
+            )
 
     except Exception as e:
         logger.error(f"Callback error: {e}")
@@ -280,22 +278,20 @@ async def callback(
 
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/logout")
 async def logout(
     redirect_uri: str | None = Query(None, description="Where to redirect after logout"),
-    oauth_service: OAuthService = Depends(get_oauth_service)
+    oauth_service: OAuthService = Depends(get_oauth_service),
 ):
     """
     Federation Gateway Logout
-    
+
     Clears local session and optionally redirects to Keycloak logout
     """
     try:
         # Clear cookies
-        response = RedirectResponse(
-            url=redirect_uri or "/",
-            status_code=302
-        )
+        response = RedirectResponse(url=redirect_uri or "/", status_code=302)
 
         # Clear authentication cookies
         response.delete_cookie("access_token")
@@ -303,8 +299,8 @@ async def logout(
         response.delete_cookie("refresh_token")
 
         # Optional: Redirect to Keycloak logout for complete SSO logout
-        if hasattr(oauth_service, 'server_metadata') and oauth_service.server_metadata:
-            end_session_endpoint = oauth_service.server_metadata.get('end_session_endpoint')
+        if hasattr(oauth_service, "server_metadata") and oauth_service.server_metadata:
+            end_session_endpoint = oauth_service.server_metadata.get("end_session_endpoint")
             if end_session_endpoint and redirect_uri:
                 logout_url = f"{end_session_endpoint}?post_logout_redirect_uri={redirect_uri}"
                 response = RedirectResponse(url=logout_url, status_code=302)
@@ -316,10 +312,10 @@ async def logout(
         logger.error(f"Error during logout: {str(e)}")
         raise HTTPException(status_code=500, detail="Logout failed")
 
+
 @router.post("/refresh")
 async def refresh_access_token(
-    refresh_token: str,
-    oauth_service: OAuthService = Depends(get_oauth_service)
+    refresh_token: str, oauth_service: OAuthService = Depends(get_oauth_service)
 ):
     """Refresh access token (API endpoint)"""
     try:
@@ -330,10 +326,9 @@ async def refresh_access_token(
         logger.error(f"Token refresh error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/user")
-async def get_current_user(
-    user=Depends(get_auth_middleware)
-):
+async def get_current_user(user=Depends(get_auth_middleware)):
     """Get current authenticated user (API endpoint)"""
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -346,10 +341,9 @@ async def get_current_user(
         logger.error(f"Error getting current user: {e}")
         raise HTTPException(status_code=401, detail="Authentication required")
 
+
 @router.get("/health")
-async def auth_health(
-    oauth_service: OAuthService = Depends(get_oauth_service)
-):
+async def auth_health(oauth_service: OAuthService = Depends(get_oauth_service)):
     """Check OAuth service health"""
     try:
         health = await oauth_service.health_check()
@@ -357,17 +351,13 @@ async def auth_health(
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
 
+
 # Middleware to protect routes (optional)
 @router.get("/protected")
-async def protected_route(
-    user=Depends(get_auth_middleware)
-):
+async def protected_route(user=Depends(get_auth_middleware)):
     """Example protected route"""
     try:
         current_user = user.require_auth()
-        return {
-            "message": "Access granted to protected resource",
-            "user": current_user
-        }
+        return {"message": "Access granted to protected resource", "user": current_user}
     except Exception:
         raise HTTPException(status_code=401, detail="Authentication required")

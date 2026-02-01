@@ -70,7 +70,7 @@ class PageRequest:
     @property
     def offset(self) -> int:
         """Calculate offset for database query.
-        
+
         Returns:
             The offset value.
         """
@@ -89,7 +89,7 @@ class PageResponse(Generic[T]):
     @property
     def total_pages(self) -> int:
         """Calculate total number of pages.
-        
+
         Returns:
             Total pages.
         """
@@ -98,7 +98,7 @@ class PageResponse(Generic[T]):
     @property
     def has_next(self) -> bool:
         """Check if there is a next page.
-        
+
         Returns:
             True if next page exists.
         """
@@ -107,7 +107,7 @@ class PageResponse(Generic[T]):
     @property
     def has_previous(self) -> bool:
         """Check if there is a previous page.
-        
+
         Returns:
             True if previous page exists.
         """
@@ -116,7 +116,7 @@ class PageResponse(Generic[T]):
 
 class AbstractRepository(ABC, Generic[T]):
     """Abstract repository interface.
-    
+
     Defines the standard CRUD operations and query methods
     that all repositories must implement.
     """
@@ -124,10 +124,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def add(self, entity: T) -> T:
         """Add a new entity.
-        
+
         Args:
             entity: The entity to add.
-            
+
         Returns:
             The added entity.
         """
@@ -136,10 +136,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def get(self, id: str) -> T | None:
         """Get entity by ID.
-        
+
         Args:
             id: The entity ID.
-            
+
         Returns:
             The entity or None if not found.
         """
@@ -148,7 +148,7 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def get_all(self) -> list[T]:
         """Get all entities.
-        
+
         Returns:
             List of all entities.
         """
@@ -157,10 +157,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def update(self, entity: T) -> T:
         """Update an existing entity.
-        
+
         Args:
             entity: The entity to update.
-            
+
         Returns:
             The updated entity.
         """
@@ -169,10 +169,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def delete(self, id: str) -> bool:
         """Delete entity by ID.
-        
+
         Args:
             id: The entity ID.
-            
+
         Returns:
             True if deleted, False if not found.
         """
@@ -181,10 +181,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def exists(self, id: str) -> bool:
         """Check if entity exists.
-        
+
         Args:
             id: The entity ID.
-            
+
         Returns:
             True if exists.
         """
@@ -193,10 +193,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def count(self, filters: list[Filter] | None = None) -> int:
         """Count entities.
-        
+
         Args:
             filters: Optional filters to apply.
-            
+
         Returns:
             Number of entities.
         """
@@ -205,13 +205,13 @@ class AbstractRepository(ABC, Generic[T]):
 
 class InMemoryRepository(AbstractRepository[T]):
     """In-memory repository implementation.
-    
+
     Useful for testing and prototyping. Stores entities in a dict.
     """
 
     def __init__(self, id_field: str = "id") -> None:
         """Initialize the repository.
-        
+
         Args:
             id_field: Name of the ID field on entities.
         """
@@ -220,10 +220,10 @@ class InMemoryRepository(AbstractRepository[T]):
 
     def _get_id(self, entity: T) -> str:
         """Get ID from entity.
-        
+
         Args:
             entity: The entity.
-            
+
         Returns:
             The entity ID.
         """
@@ -231,11 +231,11 @@ class InMemoryRepository(AbstractRepository[T]):
 
     def _matches_filter(self, entity: T, filter: Filter) -> bool:
         """Check if entity matches a filter.
-        
+
         Args:
             entity: The entity to check.
             filter: The filter to apply.
-            
+
         Returns:
             True if entity matches.
         """
@@ -263,11 +263,11 @@ class InMemoryRepository(AbstractRepository[T]):
 
     def _apply_filters(self, entities: list[T], filters: list[Filter]) -> list[T]:
         """Apply filters to entity list.
-        
+
         Args:
             entities: List of entities.
             filters: Filters to apply.
-            
+
         Returns:
             Filtered list.
         """
@@ -278,11 +278,11 @@ class InMemoryRepository(AbstractRepository[T]):
 
     def _apply_ordering(self, entities: list[T], order_by: list[OrderBy]) -> list[T]:
         """Apply ordering to entity list.
-        
+
         Args:
             entities: List of entities.
             order_by: Ordering specifications.
-            
+
         Returns:
             Ordered list.
         """
@@ -340,11 +340,11 @@ class InMemoryRepository(AbstractRepository[T]):
         order_by: list[OrderBy] | None = None,
     ) -> list[T]:
         """Find entities with filters and ordering.
-        
+
         Args:
             filters: Optional filters.
             order_by: Optional ordering.
-            
+
         Returns:
             List of matching entities.
         """
@@ -363,10 +363,10 @@ class InMemoryRepository(AbstractRepository[T]):
         filters: list[Filter] | None = None,
     ) -> T | None:
         """Find first matching entity.
-        
+
         Args:
             filters: Optional filters.
-            
+
         Returns:
             First matching entity or None.
         """
@@ -380,12 +380,12 @@ class InMemoryRepository(AbstractRepository[T]):
         order_by: list[OrderBy] | None = None,
     ) -> PageResponse[T]:
         """Find entities with pagination.
-        
+
         Args:
             page_request: Pagination parameters.
             filters: Optional filters.
             order_by: Optional ordering.
-            
+
         Returns:
             Paginated response.
         """

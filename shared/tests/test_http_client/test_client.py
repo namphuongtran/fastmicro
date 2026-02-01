@@ -144,9 +144,7 @@ class TestServiceClient:
             headers={"Content-Type": "application/json"},
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             response = await client.get("/api/resource")
@@ -164,9 +162,7 @@ class TestServiceClient:
             headers={"Content-Type": "application/json"},
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             response = await client.post(
@@ -186,9 +182,7 @@ class TestServiceClient:
             headers={"Content-Type": "application/json"},
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             response = await client.put(
@@ -208,9 +202,7 @@ class TestServiceClient:
             headers={"Content-Type": "application/json"},
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             response = await client.patch(
@@ -229,9 +221,7 @@ class TestServiceClient:
             headers={},
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             response = await client.delete("/api/resource/1")
@@ -243,9 +233,7 @@ class TestServiceClient:
         """Should send custom headers."""
         mock_response = httpx.Response(200, json={}, headers={})
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             await client.get(
@@ -261,9 +249,7 @@ class TestServiceClient:
         """Should send query parameters."""
         mock_response = httpx.Response(200, json=[], headers={})
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             await client.get(
@@ -283,9 +269,7 @@ class TestServiceClient:
     @pytest.mark.asyncio
     async def test_close(self, client: ServiceClient) -> None:
         """Should close client properly."""
-        with patch.object(
-            client._client, "aclose", new_callable=AsyncMock
-        ) as mock_close:
+        with patch.object(client._client, "aclose", new_callable=AsyncMock) as mock_close:
             await client.close()
             mock_close.assert_called_once()
 
@@ -313,9 +297,7 @@ class TestServiceClientRetry:
         """Should retry on timeout."""
         success_response = httpx.Response(200, json={"ok": True}, headers={})
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             # Fail twice, then succeed
             mock_request.side_effect = [
                 httpx.TimeoutException("timeout"),
@@ -329,15 +311,11 @@ class TestServiceClientRetry:
             assert mock_request.call_count == 3
 
     @pytest.mark.asyncio
-    async def test_retry_on_connection_error(
-        self, client: ServiceClient
-    ) -> None:
+    async def test_retry_on_connection_error(self, client: ServiceClient) -> None:
         """Should retry on connection error."""
         success_response = httpx.Response(200, json={"ok": True}, headers={})
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = [
                 httpx.ConnectError("connection refused"),
                 success_response,
@@ -366,9 +344,7 @@ class TestServiceClientRetry:
             request=mock_request,
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = [error_response, success_response]
 
             response = await client.get("/api/resource")
@@ -384,9 +360,7 @@ class TestServiceClientRetry:
             headers={},
         )
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = error_response
 
             response = await client.get("/api/resource")
@@ -398,9 +372,7 @@ class TestServiceClientRetry:
     @pytest.mark.asyncio
     async def test_max_retries_exceeded(self, client: ServiceClient) -> None:
         """Should raise error when max retries exceeded."""
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = httpx.TimeoutException("timeout")
 
             with pytest.raises(ServiceUnavailableError) as exc_info:
@@ -425,16 +397,12 @@ class TestServiceClientCorrelationId:
         return ServiceClient(config)
 
     @pytest.mark.asyncio
-    async def test_propagate_correlation_id(
-        self, client: ServiceClient
-    ) -> None:
+    async def test_propagate_correlation_id(self, client: ServiceClient) -> None:
         """Should propagate correlation ID in headers."""
         mock_response = httpx.Response(200, json={}, headers={})
         correlation_id = "test-correlation-123"
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             await client.get(
@@ -447,15 +415,11 @@ class TestServiceClientCorrelationId:
             assert headers.get("X-Correlation-ID") == correlation_id
 
     @pytest.mark.asyncio
-    async def test_auto_generate_correlation_id(
-        self, client: ServiceClient
-    ) -> None:
+    async def test_auto_generate_correlation_id(self, client: ServiceClient) -> None:
         """Should auto-generate correlation ID if not provided."""
         mock_response = httpx.Response(200, json={}, headers={})
 
-        with patch.object(
-            client._client, "request", new_callable=AsyncMock
-        ) as mock_request:
+        with patch.object(client._client, "request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_response
 
             # With auto_correlation_id=True
@@ -466,9 +430,7 @@ class TestServiceClientCorrelationId:
                 )
             )
 
-            with patch.object(
-                client_with_auto._client, "request", new_callable=AsyncMock
-            ) as mock:
+            with patch.object(client_with_auto._client, "request", new_callable=AsyncMock) as mock:
                 mock.return_value = mock_response
                 await client_with_auto.get("/api/resource")
 

@@ -125,7 +125,9 @@ class TestDatabaseSettings:
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
 
-            assert settings.async_url == "postgresql+asyncpg://testuser:testpass@localhost:5432/testdb"
+            assert (
+                settings.async_url == "postgresql+asyncpg://testuser:testpass@localhost:5432/testdb"
+            )
 
     def test_mysql_sync_url(self) -> None:
         """Should generate sync MySQL URL."""

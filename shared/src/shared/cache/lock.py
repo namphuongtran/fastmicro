@@ -31,7 +31,7 @@ class LockReleaseError(Exception):
 @dataclass
 class LockConfig:
     """Configuration for distributed lock.
-    
+
     Attributes:
         name: Lock name/identifier.
         timeout: Lock timeout in seconds.
@@ -49,9 +49,9 @@ class LockConfig:
 
 class DistributedLock:
     """Redis-based distributed lock.
-    
+
     Provides mutual exclusion across distributed processes.
-    
+
     Example:
         >>> config = LockConfig(name="resource-lock", timeout=30)
         >>> lock = DistributedLock(redis_client, config)
@@ -66,7 +66,7 @@ class DistributedLock:
         config: LockConfig,
     ) -> None:
         """Initialize distributed lock.
-        
+
         Args:
             client: Redis client instance.
             config: Lock configuration.
@@ -83,7 +83,7 @@ class DistributedLock:
 
     async def acquire(self) -> bool:
         """Acquire the lock.
-        
+
         Returns:
             True if lock was acquired.
         """
@@ -100,10 +100,10 @@ class DistributedLock:
 
     async def _acquire_non_blocking(self, redis: Any) -> bool:
         """Try to acquire lock without blocking.
-        
+
         Args:
             redis: Redis client.
-            
+
         Returns:
             True if acquired.
         """
@@ -117,10 +117,10 @@ class DistributedLock:
 
     async def _acquire_blocking(self, redis: Any) -> bool:
         """Acquire lock with blocking and retries.
-        
+
         Args:
             redis: Redis client.
-            
+
         Returns:
             True if acquired within timeout.
         """
@@ -142,7 +142,7 @@ class DistributedLock:
 
     async def release(self) -> None:
         """Release the lock.
-        
+
         Raises:
             LockReleaseError: If lock cannot be released.
         """
@@ -156,7 +156,9 @@ class DistributedLock:
         # Only delete if we own the lock
         current_token = await redis.get(self._key)
         if current_token:
-            token_str = current_token.decode() if isinstance(current_token, bytes) else current_token
+            token_str = (
+                current_token.decode() if isinstance(current_token, bytes) else current_token
+            )
             if token_str == self._token:
                 await redis.delete(self._key)
 
@@ -164,10 +166,10 @@ class DistributedLock:
 
     async def extend(self, additional_time: int) -> bool:
         """Extend lock timeout.
-        
+
         Args:
             additional_time: Additional time in seconds.
-            
+
         Returns:
             True if extended successfully.
         """
@@ -181,7 +183,9 @@ class DistributedLock:
         # Verify we own the lock
         current_token = await redis.get(self._key)
         if current_token:
-            token_str = current_token.decode() if isinstance(current_token, bytes) else current_token
+            token_str = (
+                current_token.decode() if isinstance(current_token, bytes) else current_token
+            )
             if token_str == self._token:
                 await redis.expire(self._key, additional_time)
                 return True
@@ -190,7 +194,7 @@ class DistributedLock:
 
     async def is_locked(self) -> bool:
         """Check if resource is locked.
-        
+
         Returns:
             True if resource is locked (by anyone).
         """
@@ -205,9 +209,7 @@ class DistributedLock:
         """Enter async context, acquiring lock."""
         acquired = await self.acquire()
         if not acquired:
-            raise LockAcquisitionError(
-                f"Failed to acquire lock: {self._config.name}"
-            )
+            raise LockAcquisitionError(f"Failed to acquire lock: {self._config.name}")
         return self
 
     async def __aexit__(self, *args: Any) -> None:

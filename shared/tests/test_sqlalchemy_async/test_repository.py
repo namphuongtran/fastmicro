@@ -25,11 +25,13 @@ from shared.sqlalchemy_async.repository import (
 
 class Base(DeclarativeBase):
     """Test base class."""
+
     pass
 
 
 class User(Base):
     """Test user model."""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
@@ -55,9 +57,7 @@ class TestAsyncRepository:
         return AsyncDatabaseManager(config)
 
     @pytest.mark.asyncio
-    async def test_repository_with_session(
-        self, db_manager: AsyncDatabaseManager
-    ) -> None:
+    async def test_repository_with_session(self, db_manager: AsyncDatabaseManager) -> None:
         """Should work with async session."""
         await db_manager.create_all(Base)
 
@@ -83,9 +83,7 @@ class TestAsyncCRUDRepository:
         await db_manager.drop_all(Base)
 
     @pytest.mark.asyncio
-    async def test_create(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_create(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should create entity."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -96,9 +94,7 @@ class TestAsyncCRUDRepository:
             assert user.email == "john@example.com"
 
     @pytest.mark.asyncio
-    async def test_get_by_id(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_get_by_id(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should get entity by ID."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -112,9 +108,7 @@ class TestAsyncCRUDRepository:
             assert user.name == "Jane"
 
     @pytest.mark.asyncio
-    async def test_get_by_id_not_found(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_get_by_id_not_found(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should return None for non-existent ID."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -123,9 +117,7 @@ class TestAsyncCRUDRepository:
             assert user is None
 
     @pytest.mark.asyncio
-    async def test_get_all(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_get_all(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should get all entities."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -139,9 +131,7 @@ class TestAsyncCRUDRepository:
             assert len(users) == 2
 
     @pytest.mark.asyncio
-    async def test_get_all_with_limit(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_get_all_with_limit(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should respect limit parameter."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -155,9 +145,7 @@ class TestAsyncCRUDRepository:
             assert len(users) == 3
 
     @pytest.mark.asyncio
-    async def test_get_all_with_offset(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_get_all_with_offset(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should respect offset parameter."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -171,9 +159,7 @@ class TestAsyncCRUDRepository:
             assert len(users) == 2
 
     @pytest.mark.asyncio
-    async def test_update(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_update(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should update entity."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -189,9 +175,7 @@ class TestAsyncCRUDRepository:
             assert updated.email == "original@example.com"
 
     @pytest.mark.asyncio
-    async def test_update_not_found(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_update_not_found(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should return None when updating non-existent entity."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -200,9 +184,7 @@ class TestAsyncCRUDRepository:
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_delete(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_delete(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should delete entity."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -222,9 +204,7 @@ class TestAsyncCRUDRepository:
             assert user is None
 
     @pytest.mark.asyncio
-    async def test_delete_not_found(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_delete_not_found(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should return False when deleting non-existent entity."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -233,9 +213,7 @@ class TestAsyncCRUDRepository:
             assert result is False
 
     @pytest.mark.asyncio
-    async def test_exists(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_exists(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should check if entity exists."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -249,9 +227,7 @@ class TestAsyncCRUDRepository:
             assert await repo.exists(99999) is False
 
     @pytest.mark.asyncio
-    async def test_count(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_count(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should count entities."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -266,9 +242,7 @@ class TestAsyncCRUDRepository:
             assert count == 3
 
     @pytest.mark.asyncio
-    async def test_find_by(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_find_by(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should find entities by criteria."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -284,9 +258,7 @@ class TestAsyncCRUDRepository:
             assert all(u.name == "John" for u in johns)
 
     @pytest.mark.asyncio
-    async def test_find_one_by(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_find_one_by(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should find single entity by criteria."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -300,9 +272,7 @@ class TestAsyncCRUDRepository:
             assert user.name == "Unique"
 
     @pytest.mark.asyncio
-    async def test_find_one_by_not_found(
-        self, db_manager: AsyncDatabaseManager, setup_db
-    ) -> None:
+    async def test_find_one_by_not_found(self, db_manager: AsyncDatabaseManager, setup_db) -> None:
         """Should return None when no match found."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -340,9 +310,7 @@ class TestFilteringAndPagination:
         yield
 
     @pytest.mark.asyncio
-    async def test_filter_eq(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_eq(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should filter by equality."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -353,9 +321,7 @@ class TestFilteringAndPagination:
             assert users[0].name == "Alice"
 
     @pytest.mark.asyncio
-    async def test_filter_ne(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_ne(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should filter by not equal."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -366,9 +332,7 @@ class TestFilteringAndPagination:
             assert all(u.name != "Alice" for u in users)
 
     @pytest.mark.asyncio
-    async def test_filter_contains(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_contains(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should filter by contains."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -378,9 +342,7 @@ class TestFilteringAndPagination:
             assert len(users) == 5
 
     @pytest.mark.asyncio
-    async def test_filter_starts_with(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_starts_with(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should filter by starts with."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -391,9 +353,7 @@ class TestFilteringAndPagination:
             assert users[0].name == "Alice"
 
     @pytest.mark.asyncio
-    async def test_filter_in(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_in(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should filter by IN list."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -405,9 +365,7 @@ class TestFilteringAndPagination:
             assert names == {"Alice", "Bob"}
 
     @pytest.mark.asyncio
-    async def test_filter_not_in(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_not_in(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should filter by NOT IN list."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -419,9 +377,7 @@ class TestFilteringAndPagination:
             assert names == {"Charlie", "David", "Eve"}
 
     @pytest.mark.asyncio
-    async def test_multiple_filters(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_multiple_filters(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should apply multiple filters (AND)."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -435,9 +391,7 @@ class TestFilteringAndPagination:
             assert users[0].name == "Alice"
 
     @pytest.mark.asyncio
-    async def test_order_by_asc(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_order_by_asc(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should order by ascending."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -448,9 +402,7 @@ class TestFilteringAndPagination:
             assert names == ["Alice", "Bob", "Charlie", "David", "Eve"]
 
     @pytest.mark.asyncio
-    async def test_order_by_desc(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_order_by_desc(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should order by descending."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -461,9 +413,7 @@ class TestFilteringAndPagination:
             assert names == ["Eve", "David", "Charlie", "Bob", "Alice"]
 
     @pytest.mark.asyncio
-    async def test_filter_with_limit(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_with_limit(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should combine filter with limit."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -472,9 +422,7 @@ class TestFilteringAndPagination:
             assert len(users) == 2
 
     @pytest.mark.asyncio
-    async def test_count_with_filters(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_count_with_filters(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should count with filters."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -484,9 +432,7 @@ class TestFilteringAndPagination:
             assert count == 2
 
     @pytest.mark.asyncio
-    async def test_paginate_first_page(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_paginate_first_page(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should paginate first page."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -502,9 +448,7 @@ class TestFilteringAndPagination:
             assert page.has_previous is False
 
     @pytest.mark.asyncio
-    async def test_paginate_middle_page(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_paginate_middle_page(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should paginate middle page."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -516,9 +460,7 @@ class TestFilteringAndPagination:
             assert page.has_previous is True
 
     @pytest.mark.asyncio
-    async def test_paginate_last_page(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_paginate_last_page(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should paginate last page."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -536,7 +478,9 @@ class TestFilteringAndPagination:
         """Should paginate with filters applied."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
-            filters = [Filter(field="name", operator=FilterOperator.IN, value=["Alice", "Bob", "Charlie"])]
+            filters = [
+                Filter(field="name", operator=FilterOperator.IN, value=["Alice", "Bob", "Charlie"])
+            ]
             page = await repo.paginate(PageRequest(page=1, size=2), filters=filters)
 
             assert len(page.items) == 2
@@ -557,9 +501,7 @@ class TestFilteringAndPagination:
             assert names == ["Eve", "David", "Charlie"]
 
     @pytest.mark.asyncio
-    async def test_filter_invalid_field(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_filter_invalid_field(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should ignore filter on invalid field."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)
@@ -570,9 +512,7 @@ class TestFilteringAndPagination:
             assert len(users) == 5
 
     @pytest.mark.asyncio
-    async def test_order_invalid_field(
-        self, db_manager: AsyncDatabaseManager, seed_users
-    ) -> None:
+    async def test_order_invalid_field(self, db_manager: AsyncDatabaseManager, seed_users) -> None:
         """Should ignore order on invalid field."""
         async with db_manager.get_session() as session:
             repo = UserRepository(session)

@@ -1,7 +1,5 @@
 """Tests for domain entities."""
 
-
-
 from metastore_service.domain.entities.configuration import Configuration, ConfigurationSchema
 from metastore_service.domain.entities.feature_flag import FeatureFlag
 from metastore_service.domain.entities.metadata import MetadataEntry

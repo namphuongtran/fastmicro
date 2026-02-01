@@ -80,9 +80,7 @@ class TestAuditEndpoints:
         assert "page" in data
 
     @pytest.mark.asyncio
-    async def test_list_audit_events_with_pagination(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_list_audit_events_with_pagination(self, client: AsyncClient) -> None:
         """Test listing audit events with pagination parameters."""
         response = await client.get(
             "/api/v1/audit/events",

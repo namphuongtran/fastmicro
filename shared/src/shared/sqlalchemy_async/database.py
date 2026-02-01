@@ -26,7 +26,7 @@ from sqlalchemy.orm import DeclarativeBase
 @dataclass
 class DatabaseConfig:
     """Configuration for async database connections.
-    
+
     Attributes:
         url: Async database URL (e.g., postgresql+asyncpg://...).
         pool_size: Connection pool size.
@@ -50,13 +50,13 @@ class DatabaseConfig:
 
 class AsyncDatabaseManager:
     """Manages async SQLAlchemy engine and sessions.
-    
+
     This class provides:
     - Async engine creation and management
     - Session factory with proper transaction handling
     - Table creation/deletion utilities
     - Health check functionality
-    
+
     Example:
         >>> config = DatabaseConfig(url="sqlite+aiosqlite:///:memory:")
         >>> db = AsyncDatabaseManager(config)
@@ -66,7 +66,7 @@ class AsyncDatabaseManager:
 
     def __init__(self, config: DatabaseConfig) -> None:
         """Initialize database manager.
-        
+
         Args:
             config: Database configuration.
         """
@@ -82,7 +82,7 @@ class AsyncDatabaseManager:
     @property
     def engine(self) -> AsyncEngine:
         """Get or create async engine.
-        
+
         Returns:
             AsyncEngine instance.
         """
@@ -95,12 +95,14 @@ class AsyncDatabaseManager:
 
             # SQLite doesn't support pool configuration
             if not self._config.url.startswith("sqlite"):
-                engine_options.update({
-                    "pool_size": self._config.pool_size,
-                    "max_overflow": self._config.max_overflow,
-                    "pool_timeout": self._config.pool_timeout,
-                    "pool_recycle": self._config.pool_recycle,
-                })
+                engine_options.update(
+                    {
+                        "pool_size": self._config.pool_size,
+                        "max_overflow": self._config.max_overflow,
+                        "pool_timeout": self._config.pool_timeout,
+                        "pool_recycle": self._config.pool_recycle,
+                    }
+                )
 
             if self._config.connect_args:
                 engine_options["connect_args"] = self._config.connect_args
@@ -115,7 +117,7 @@ class AsyncDatabaseManager:
     @property
     def session_factory(self) -> async_sessionmaker[AsyncSession]:
         """Get or create session factory.
-        
+
         Returns:
             Async session maker instance.
         """
@@ -132,12 +134,12 @@ class AsyncDatabaseManager:
     @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
         """Get async session with automatic transaction management.
-        
+
         Commits on successful exit, rolls back on exception.
-        
+
         Yields:
             AsyncSession instance.
-            
+
         Example:
             >>> async with db.get_session() as session:
             ...     session.add(model)
@@ -155,7 +157,7 @@ class AsyncDatabaseManager:
 
     async def create_all(self, base: type[DeclarativeBase]) -> None:
         """Create all tables defined in the declarative base.
-        
+
         Args:
             base: SQLAlchemy declarative base class.
         """
@@ -164,7 +166,7 @@ class AsyncDatabaseManager:
 
     async def drop_all(self, base: type[DeclarativeBase]) -> None:
         """Drop all tables defined in the declarative base.
-        
+
         Args:
             base: SQLAlchemy declarative base class.
         """
@@ -178,7 +180,7 @@ class AsyncDatabaseManager:
 
     async def health_check(self) -> bool:
         """Check database connectivity.
-        
+
         Returns:
             True if database is reachable, False otherwise.
         """
@@ -194,19 +196,19 @@ async def get_async_session(
     db_manager: AsyncDatabaseManager,
 ) -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for async database sessions.
-    
+
     Use with FastAPI's Depends for dependency injection:
-    
+
     Example:
         >>> @app.get("/users")
         ... async def get_users(
         ...     session: AsyncSession = Depends(get_async_session(db_manager))
         ... ):
         ...     # Use session
-    
+
     Args:
         db_manager: Database manager instance.
-        
+
     Yields:
         AsyncSession instance.
     """

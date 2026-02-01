@@ -35,7 +35,7 @@ _cache_manager: TieredCacheManager | None = None
 
 def get_database_manager() -> AsyncDatabaseManager:
     """Get the database manager.
-    
+
     Raises:
         RuntimeError: If database manager not initialized.
     """
@@ -65,7 +65,7 @@ def set_cache(cache: TieredCacheManager) -> None:
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for database sessions.
-    
+
     Yields:
         AsyncSession with automatic commit/rollback handling.
     """

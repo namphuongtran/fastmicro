@@ -122,6 +122,7 @@ class TestRetryDecorator:
 
     def test_preserves_function_metadata(self) -> None:
         """Should preserve function name and docstring."""
+
         @retry(max_attempts=3)
         def documented_function() -> None:
             """This is a docstring."""
@@ -185,6 +186,7 @@ class TestCacheDecorator:
 
     def test_max_size(self) -> None:
         """Should respect max cache size."""
+
         @cache(max_size=2)
         def limited(x: int) -> int:
             return x
@@ -217,6 +219,7 @@ class TestRateLimitDecorator:
 
     def test_allows_within_limit(self) -> None:
         """Should allow calls within rate limit."""
+
         @rate_limit(max_calls=5, period=1.0)
         def limited_func() -> str:
             return "ok"
@@ -241,6 +244,7 @@ class TestRateLimitDecorator:
     @pytest.mark.asyncio
     async def test_async_rate_limit(self) -> None:
         """Should work with async functions."""
+
         @rate_limit(max_calls=2, period=1.0)
         async def async_limited() -> str:
             return "async ok"
@@ -254,6 +258,7 @@ class TestTimeoutDecorator:
 
     def test_completes_within_timeout(self) -> None:
         """Should complete if within timeout."""
+
         @timeout(seconds=1.0)
         def fast_func() -> str:
             return "fast"
@@ -275,6 +280,7 @@ class TestTimeoutDecorator:
     @pytest.mark.asyncio
     async def test_async_timeout(self) -> None:
         """Should work with async functions."""
+
         @timeout(seconds=1.0)
         async def async_fast() -> str:
             return "async fast"
@@ -301,6 +307,7 @@ class TestDeprecatedDecorator:
 
     def test_emits_warning(self) -> None:
         """Should emit deprecation warning."""
+
         @deprecated("Use new_function instead")
         def old_function() -> str:
             return "old"
@@ -316,6 +323,7 @@ class TestDeprecatedDecorator:
 
     def test_still_works(self) -> None:
         """Should still execute the function."""
+
         @deprecated("Deprecated")
         def working_function() -> int:
             return 42
@@ -330,6 +338,7 @@ class TestLogCallsDecorator:
 
     def test_logs_function_call(self) -> None:
         """Should log function calls."""
+
         @log_calls()
         def logged_func(x: int) -> int:
             return x * 2
@@ -339,6 +348,7 @@ class TestLogCallsDecorator:
 
     def test_logs_with_custom_logger_name(self) -> None:
         """Should use custom logger name."""
+
         @log_calls(logger_name="custom.logger")
         def with_custom_logger() -> str:
             return "logged"
@@ -349,6 +359,7 @@ class TestLogCallsDecorator:
     @pytest.mark.asyncio
     async def test_async_log_calls(self) -> None:
         """Should work with async functions."""
+
         @log_calls()
         async def async_logged() -> str:
             return "async logged"
@@ -362,6 +373,7 @@ class TestValidateArgsDecorator:
 
     def test_passes_valid_args(self) -> None:
         """Should pass with valid arguments."""
+
         @validate_args(x=lambda v: v > 0)
         def positive_only(x: int) -> int:
             return x
@@ -370,6 +382,7 @@ class TestValidateArgsDecorator:
 
     def test_rejects_invalid_args(self) -> None:
         """Should reject invalid arguments."""
+
         @validate_args(x=lambda v: v > 0)
         def positive_only(x: int) -> int:
             return x
@@ -379,6 +392,7 @@ class TestValidateArgsDecorator:
 
     def test_multiple_validators(self) -> None:
         """Should validate multiple arguments."""
+
         @validate_args(
             x=lambda v: v > 0,
             y=lambda v: isinstance(v, str),
@@ -394,6 +408,7 @@ class TestSingletonDecorator:
 
     def test_returns_same_instance(self) -> None:
         """Should return the same instance."""
+
         @singleton
         class SingletonClass:
             value: int = 0
@@ -408,6 +423,7 @@ class TestSingletonDecorator:
 
     def test_different_classes_different_singletons(self) -> None:
         """Should handle different singleton classes."""
+
         @singleton
         class SingletonA:
             pass

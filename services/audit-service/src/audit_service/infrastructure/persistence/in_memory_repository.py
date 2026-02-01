@@ -16,7 +16,7 @@ from audit_service.domain.repositories.audit_repository import IAuditRepository
 class InMemoryAuditRepository(IAuditRepository):
     """
     In-memory implementation of audit repository.
-    
+
     Stores audit events in memory. Suitable for development and testing only.
     """
 
@@ -81,15 +81,17 @@ class InMemoryAuditRepository(IAuditRepository):
 
         for event in self._events.values():
             # Simple text search across relevant fields
-            searchable = " ".join([
-                event.actor_id,
-                event.actor_name or "",
-                event.resource_type,
-                event.resource_id,
-                event.resource_name or "",
-                event.description or "",
-                event.action.value,
-            ]).lower()
+            searchable = " ".join(
+                [
+                    event.actor_id,
+                    event.actor_name or "",
+                    event.resource_type,
+                    event.resource_id,
+                    event.resource_name or "",
+                    event.description or "",
+                    event.action.value,
+                ]
+            ).lower()
 
             if query_lower in searchable:
                 # Apply date filters
@@ -121,9 +123,7 @@ class InMemoryAuditRepository(IAuditRepository):
     async def delete_before_date(self, cutoff_date: datetime) -> int:
         """Delete audit events older than the specified date."""
         to_delete = [
-            event_id
-            for event_id, event in self._events.items()
-            if event.timestamp < cutoff_date
+            event_id for event_id, event in self._events.items() if event.timestamp < cutoff_date
         ]
 
         for event_id in to_delete:

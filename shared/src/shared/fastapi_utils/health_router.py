@@ -8,7 +8,7 @@ Provides standardized health check endpoints for Kubernetes:
 Example:
     >>> from fastapi import FastAPI
     >>> from shared.fastapi_utils.health_router import create_health_router
-    
+
     >>> app = FastAPI()
     >>> health_router = create_health_router(
     ...     service_name="my-service",
@@ -56,8 +56,7 @@ class ReadinessResponse(BaseModel):
 
     status: str = Field(description="Overall readiness status")
     checks: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Individual health check results"
+        default_factory=list, description="Individual health check results"
     )
 
 
@@ -70,8 +69,7 @@ class DetailedHealthResponse(BaseModel):
     timestamp: datetime = Field(description="Current timestamp")
     uptime_seconds: float | None = Field(default=None, description="Service uptime")
     checks: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Individual health check results"
+        default_factory=list, description="Individual health check results"
     )
 
 
@@ -85,12 +83,12 @@ def create_health_router(
     startup_time: datetime | None = None,
 ) -> APIRouter:
     """Create a health check router with standardized endpoints.
-    
+
     Creates a router with:
     - GET /health - Basic health check
     - GET /health/live - Kubernetes liveness probe
     - GET /health/ready - Kubernetes readiness probe
-    
+
     Args:
         service_name: Name of the service
         version: Service version string
@@ -98,10 +96,10 @@ def create_health_router(
         tags: OpenAPI tags for the router
         include_details: Include check details in /health endpoint
         startup_time: Service startup time for uptime calculation
-        
+
     Returns:
         FastAPI router with health endpoints
-        
+
     Example:
         >>> router = create_health_router(
         ...     service_name="user-service",
@@ -121,7 +119,7 @@ def create_health_router(
     )
     async def health_check() -> HealthResponse | DetailedHealthResponse:
         """Basic health check endpoint.
-        
+
         Returns service health status, name, and version.
         If include_details is True, also returns individual check results.
         """
@@ -158,7 +156,7 @@ def create_health_router(
     )
     async def liveness_probe(response: Response) -> LivenessResponse:
         """Kubernetes liveness probe.
-        
+
         Returns 200 if the service is running.
         Kubernetes will restart the pod if this fails.
         """
@@ -184,7 +182,7 @@ def create_health_router(
     )
     async def readiness_probe(response: Response) -> ReadinessResponse:
         """Kubernetes readiness probe.
-        
+
         Returns 200 if all critical dependencies are available.
         Kubernetes will stop routing traffic if this fails.
         """
@@ -209,18 +207,19 @@ def create_database_health_check(
     timeout_seconds: float = 5.0,
 ) -> None:
     """Create and register a database health check.
-    
+
     Args:
         name: Health check name
         check_fn: Async function that returns True if healthy
         critical: Whether this is critical for readiness
         timeout_seconds: Timeout for the check
-        
+
     Example:
         >>> async def check_db():
         ...     return await db_manager.health_check()
         >>> create_database_health_check(check_fn=check_db)
     """
+
     async def database_check() -> HealthCheckResult:
         if check_fn is None:
             return HealthCheckResult(
@@ -259,18 +258,19 @@ def create_cache_health_check(
     timeout_seconds: float = 3.0,
 ) -> None:
     """Create and register a cache health check.
-    
+
     Args:
         name: Health check name
         check_fn: Async function that returns True if healthy
         critical: Whether this is critical for readiness
         timeout_seconds: Timeout for the check
-        
+
     Example:
         >>> async def check_redis():
         ...     return await cache.health_check()
         >>> create_cache_health_check(check_fn=check_redis)
     """
+
     async def cache_check() -> HealthCheckResult:
         if check_fn is None:
             return HealthCheckResult(
@@ -309,13 +309,13 @@ def create_external_service_health_check(
     timeout_seconds: float = 10.0,
 ) -> None:
     """Create and register an external service health check.
-    
+
     Args:
         name: Health check name
         check_fn: Async function that returns True if healthy
         critical: Whether this is critical for readiness
         timeout_seconds: Timeout for the check
-        
+
     Example:
         >>> async def check_payment_service():
         ...     return await http_client.get("/health").is_ok()
@@ -325,6 +325,7 @@ def create_external_service_health_check(
         ...     critical=True,
         ... )
     """
+
     async def service_check() -> HealthCheckResult:
         try:
             is_healthy = await check_fn()

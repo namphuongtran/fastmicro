@@ -480,6 +480,5 @@ class MetadataService:
         """
         result = await self._repository.bulk_get(keys)
         return {
-            key: MetadataDTO.from_entity(entry) if entry else None
-            for key, entry in result.items()
+            key: MetadataDTO.from_entity(entry) if entry else None for key, entry in result.items()
         }

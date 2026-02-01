@@ -8,10 +8,11 @@ from federation_gateway.configs.settings import FederationGatewaySettings
 
 logger = logging.getLogger(__name__)
 
+
 def setup_session_middleware(app: FastAPI, settings: FederationGatewaySettings):
     """
     Setup session middleware for FastAPI application.
-    
+
     Args:
         app: FastAPI application instance
         settings: Gateway settings with session configuration
@@ -31,9 +32,11 @@ def setup_session_middleware(app: FastAPI, settings: FederationGatewaySettings):
         SessionMiddleware,
         secret_key=secret_key,
         max_age=session_config.max_age,
-        same_site=session_config.cookie.same_site.value if hasattr(session_config, 'cookie') else "lax",
+        same_site=session_config.cookie.same_site.value
+        if hasattr(session_config, "cookie")
+        else "lax",
         session_cookie=session_config.cookie_name,
-        https_only=session_config.cookie.secure if hasattr(session_config, 'cookie') else False,
+        https_only=session_config.cookie.secure if hasattr(session_config, "cookie") else False,
     )
 
     logger.info(f"Session middleware configured with cookie name: {session_config.cookie_name}")

@@ -54,9 +54,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
         self.server.save_authorization_code(auth_code)
         return auth_code
 
-    def query_authorization_code(
-        self, code: str, client: Any
-    ) -> AuthorizationCode | None:
+    def query_authorization_code(self, code: str, client: Any) -> AuthorizationCode | None:
         """Query authorization code from storage.
 
         Args:

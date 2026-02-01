@@ -28,23 +28,23 @@ V = TypeVar("V")
 
 class MemoryCache(AbstractCacheBackend[V]):
     """In-memory cache backend using cachetools TTLCache.
-    
+
     Provides fast local caching with TTL expiration and LRU eviction.
     Thread-safe for use in async contexts.
-    
+
     Features:
         - Configurable max size (items)
         - TTL-based expiration
         - LRU eviction when full
         - Thread-safe via asyncio.Lock
         - ~1μs access time
-    
+
     Example:
         >>> cache = MemoryCache(max_size=1000, default_ttl=300)
         >>> await cache.set("user:123", {"name": "John"})
         >>> await cache.get("user:123")
         {'name': 'John'}
-    
+
     Note:
         This cache is per-process. Each worker process has its own
         independent cache instance. Use Redis for shared state.
@@ -58,7 +58,7 @@ class MemoryCache(AbstractCacheBackend[V]):
         namespace: str = "",
     ) -> None:
         """Initialize memory cache.
-        
+
         Args:
             max_size: Maximum number of items in cache.
             default_ttl: Default TTL in seconds.
@@ -93,11 +93,11 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     async def get(self, key: str, default: V | None = None) -> V | None:
         """Get a value from the cache.
-        
+
         Args:
             key: Cache key.
             default: Default value if key not found.
-            
+
         Returns:
             Cached value or default.
         """
@@ -105,12 +105,11 @@ class MemoryCache(AbstractCacheBackend[V]):
 
         async with self._lock:
             # Check custom TTL expiry
-            if full_key in self._ttls:
-                if time.time() > self._ttls[full_key]:
-                    # Expired - clean up
-                    self._cache.pop(full_key, None)
-                    del self._ttls[full_key]
-                    return default
+            if full_key in self._ttls and time.time() > self._ttls[full_key]:
+                # Expired - clean up
+                self._cache.pop(full_key, None)
+                del self._ttls[full_key]
+                return default
 
             try:
                 return self._cache[full_key]
@@ -124,12 +123,12 @@ class MemoryCache(AbstractCacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set a value in the cache.
-        
+
         Args:
             key: Cache key.
             value: Value to cache.
             ttl: Time-to-live in seconds (None = use default).
-            
+
         Returns:
             True if successful.
         """
@@ -150,10 +149,10 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     async def delete(self, key: str) -> bool:
         """Delete a key from the cache.
-        
+
         Args:
             key: Cache key to delete.
-            
+
         Returns:
             True if key was deleted, False if not found.
         """
@@ -167,10 +166,10 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     async def exists(self, key: str) -> bool:
         """Check if a key exists in the cache.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             True if key exists and not expired.
         """
@@ -178,21 +177,20 @@ class MemoryCache(AbstractCacheBackend[V]):
 
         async with self._lock:
             # Check custom TTL expiry
-            if full_key in self._ttls:
-                if time.time() > self._ttls[full_key]:
-                    self._cache.pop(full_key, None)
-                    del self._ttls[full_key]
-                    return False
+            if full_key in self._ttls and time.time() > self._ttls[full_key]:
+                self._cache.pop(full_key, None)
+                del self._ttls[full_key]
+                return False
 
             return full_key in self._cache
 
     async def clear(self, namespace: str | None = None) -> int:
         """Clear cache entries.
-        
+
         Args:
             namespace: Optional namespace prefix to clear.
                       If None, clears entire cache.
-            
+
         Returns:
             Number of keys cleared.
         """
@@ -215,14 +213,14 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     async def increment(self, key: str, delta: int = 1) -> int:
         """Increment a numeric value.
-        
+
         Args:
             key: Cache key.
             delta: Amount to increment (can be negative).
-            
+
         Returns:
             New value after increment.
-            
+
         Raises:
             CacheError: If value is not numeric.
         """
@@ -243,10 +241,10 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     async def get_many(self, keys: list[str]) -> dict[str, V | None]:
         """Get multiple values at once.
-        
+
         Args:
             keys: List of cache keys.
-            
+
         Returns:
             Dictionary mapping keys to values (None if not found).
         """
@@ -273,11 +271,11 @@ class MemoryCache(AbstractCacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set multiple values at once.
-        
+
         Args:
             mapping: Dictionary of key-value pairs.
             ttl: Time-to-live in seconds.
-            
+
         Returns:
             True if all successful.
         """
@@ -298,10 +296,10 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     async def delete_many(self, keys: list[str]) -> int:
         """Delete multiple keys at once.
-        
+
         Args:
             keys: List of cache keys to delete.
-            
+
         Returns:
             Number of keys deleted.
         """
@@ -319,7 +317,7 @@ class MemoryCache(AbstractCacheBackend[V]):
 
     def stats(self) -> dict[str, Any]:
         """Get cache statistics.
-        
+
         Returns:
             Dictionary with cache stats.
         """

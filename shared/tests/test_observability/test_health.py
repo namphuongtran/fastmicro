@@ -103,6 +103,7 @@ class TestHealthCheck:
 
     def test_create_health_check(self) -> None:
         """Should create a health check."""
+
         async def check_fn() -> HealthCheckResult:
             return HealthCheckResult(name="test", status=HealthStatus.HEALTHY)
 
@@ -111,6 +112,7 @@ class TestHealthCheck:
 
     def test_health_check_with_timeout(self) -> None:
         """Should support timeout configuration."""
+
         async def check_fn() -> HealthCheckResult:
             return HealthCheckResult(name="test", status=HealthStatus.HEALTHY)
 
@@ -119,6 +121,7 @@ class TestHealthCheck:
 
     def test_health_check_critical_flag(self) -> None:
         """Should support critical flag."""
+
         async def check_fn() -> HealthCheckResult:
             return HealthCheckResult(name="test", status=HealthStatus.HEALTHY)
 
@@ -128,6 +131,7 @@ class TestHealthCheck:
     @pytest.mark.asyncio
     async def test_run_health_check(self) -> None:
         """Should run health check."""
+
         async def check_fn() -> HealthCheckResult:
             return HealthCheckResult(name="test", status=HealthStatus.HEALTHY)
 
@@ -139,6 +143,7 @@ class TestHealthCheck:
     @pytest.mark.asyncio
     async def test_handles_check_exception(self) -> None:
         """Should handle exceptions in check function."""
+
         async def failing_check() -> HealthCheckResult:
             raise ConnectionError("Database unavailable")
 
@@ -151,6 +156,7 @@ class TestHealthCheck:
     @pytest.mark.asyncio
     async def test_handles_timeout(self) -> None:
         """Should handle timeout."""
+
         async def slow_check() -> HealthCheckResult:
             await asyncio.sleep(10)  # Simulate slow check
             return HealthCheckResult(name="slow", status=HealthStatus.HEALTHY)
@@ -168,6 +174,7 @@ class TestCreateHealthCheck:
     @pytest.mark.asyncio
     async def test_creates_health_check_from_function(self) -> None:
         """Should create health check from decorated function."""
+
         @create_health_check("my_service")
         async def check_my_service() -> HealthCheckResult:
             return HealthCheckResult(name="my_service", status=HealthStatus.HEALTHY)
@@ -178,6 +185,7 @@ class TestCreateHealthCheck:
     @pytest.mark.asyncio
     async def test_with_timeout(self) -> None:
         """Should accept timeout parameter."""
+
         @create_health_check("service", timeout_seconds=2.0)
         async def check_service() -> HealthCheckResult:
             return HealthCheckResult(name="service", status=HealthStatus.HEALTHY)
@@ -191,6 +199,7 @@ class TestRegisterHealthCheck:
 
     def test_register_check(self) -> None:
         """Should register a health check."""
+
         async def check_fn() -> HealthCheckResult:
             return HealthCheckResult(name="registered", status=HealthStatus.HEALTHY)
 
@@ -199,6 +208,7 @@ class TestRegisterHealthCheck:
 
     def test_register_with_options(self) -> None:
         """Should register with options."""
+
         async def check_fn() -> HealthCheckResult:
             return HealthCheckResult(name="opts", status=HealthStatus.HEALTHY)
 
@@ -224,6 +234,7 @@ class TestGetHealthStatus:
     @pytest.mark.asyncio
     async def test_includes_all_checks(self) -> None:
         """Should include all registered checks."""
+
         # Register some checks first
         async def check_a() -> HealthCheckResult:
             return HealthCheckResult(name="a", status=HealthStatus.HEALTHY)
@@ -267,6 +278,7 @@ class TestCheckReadiness:
     @pytest.mark.asyncio
     async def test_includes_dependency_checks(self) -> None:
         """Should include dependency health checks."""
+
         # Register a critical dependency check
         async def check_db() -> HealthCheckResult:
             return HealthCheckResult(name="database", status=HealthStatus.HEALTHY)
@@ -279,6 +291,7 @@ class TestCheckReadiness:
     @pytest.mark.asyncio
     async def test_unhealthy_when_critical_fails(self) -> None:
         """Should be unhealthy when critical dependency fails."""
+
         async def failing_db() -> HealthCheckResult:
             return HealthCheckResult(
                 name="critical_db",
@@ -298,6 +311,7 @@ class TestHealthCheckIntegration:
     @pytest.mark.asyncio
     async def test_full_health_check_flow(self) -> None:
         """Should support full health check flow."""
+
         # Define checks
         @create_health_check("api", critical=True)
         async def check_api() -> HealthCheckResult:

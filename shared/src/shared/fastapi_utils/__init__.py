@@ -14,19 +14,19 @@ Example:
     ...     LifespanManager,
     ...     create_lifespan,
     ... )
-    
+
     # Create lifespan manager
     >>> manager = LifespanManager()
     >>> @manager.on_startup
     ... async def init_services():
     ...     await database.connect()
-    
+
     # Create app
     >>> app = FastAPI(lifespan=create_lifespan(manager))
-    
+
     # Add middleware
     >>> app.add_middleware(RequestContextMiddleware)
-    
+
     # Register exception handlers
     >>> register_exception_handlers(app)
 """

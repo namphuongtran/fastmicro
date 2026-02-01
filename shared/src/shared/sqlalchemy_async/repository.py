@@ -1,7 +1,7 @@
 """Async SQLAlchemy repository pattern implementation.
 
 This module provides generic async repository classes:
-- AsyncRepository: Base repository interface  
+- AsyncRepository: Base repository interface
 - AsyncCRUDRepository: Full CRUD implementation with filtering/pagination
 
 Integrates with shared.dbs abstract patterns for consistency.
@@ -33,9 +33,9 @@ ID = TypeVar("ID")  # Primary key type
 
 class AsyncRepository(ABC, Generic[T, ID]):
     """Abstract base class for async repositories.
-    
+
     Provides interface for data access operations.
-    
+
     Type Parameters:
         T: Entity/model type (must extend DeclarativeBase).
         ID: Primary key type.
@@ -43,7 +43,7 @@ class AsyncRepository(ABC, Generic[T, ID]):
 
     def __init__(self, session: AsyncSession) -> None:
         """Initialize repository with session.
-        
+
         Args:
             session: SQLAlchemy async session.
         """
@@ -83,10 +83,10 @@ class AsyncRepository(ABC, Generic[T, ID]):
 
 class AsyncCRUDRepository(AsyncRepository[T, ID]):
     """Generic async CRUD repository implementation.
-    
+
     Provides complete CRUD operations for SQLAlchemy models with
     support for filtering and pagination from shared.dbs patterns.
-    
+
     Example:
         >>> class UserRepository(AsyncCRUDRepository[User, int]):
         ...     @property
@@ -107,11 +107,11 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     def _apply_filter(self, stmt: Select, filter: Filter) -> Select:
         """Apply a single filter to a query statement.
-        
+
         Args:
             stmt: SQLAlchemy select statement.
             filter: Filter to apply.
-            
+
         Returns:
             Modified statement with filter applied.
         """
@@ -153,15 +153,13 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
         return stmt
 
-    def _apply_filters(
-        self, stmt: Select, filters: list[Filter] | None
-    ) -> Select:
+    def _apply_filters(self, stmt: Select, filters: list[Filter] | None) -> Select:
         """Apply multiple filters to a query statement.
-        
+
         Args:
             stmt: SQLAlchemy select statement.
             filters: List of filters to apply.
-            
+
         Returns:
             Modified statement with all filters applied.
         """
@@ -173,15 +171,13 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
         return stmt
 
-    def _apply_ordering(
-        self, stmt: Select, order_by: list[OrderBy] | None
-    ) -> Select:
+    def _apply_ordering(self, stmt: Select, order_by: list[OrderBy] | None) -> Select:
         """Apply ordering to a query statement.
-        
+
         Args:
             stmt: SQLAlchemy select statement.
             order_by: List of ordering specifications.
-            
+
         Returns:
             Modified statement with ordering applied.
         """
@@ -200,10 +196,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def get_by_id(self, id: ID) -> T | None:
         """Get entity by primary key.
-        
+
         Args:
             id: Primary key value.
-            
+
         Returns:
             Entity if found, None otherwise.
         """
@@ -216,11 +212,11 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         offset: int | None = None,
     ) -> list[T]:
         """Get all entities with optional pagination.
-        
+
         Args:
             limit: Maximum number of results.
             offset: Number of results to skip.
-            
+
         Returns:
             List of entities.
         """
@@ -236,10 +232,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def create(self, **kwargs: Any) -> T:
         """Create new entity.
-        
+
         Args:
             **kwargs: Entity attributes.
-            
+
         Returns:
             Created entity with generated ID.
         """
@@ -251,11 +247,11 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def update(self, id: ID, **kwargs: Any) -> T | None:
         """Update existing entity.
-        
+
         Args:
             id: Primary key of entity to update.
             **kwargs: Attributes to update.
-            
+
         Returns:
             Updated entity if found, None otherwise.
         """
@@ -273,10 +269,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def delete(self, id: ID) -> bool:
         """Delete entity by ID.
-        
+
         Args:
             id: Primary key of entity to delete.
-            
+
         Returns:
             True if deleted, False if not found.
         """
@@ -290,10 +286,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def exists(self, id: ID) -> bool:
         """Check if entity exists.
-        
+
         Args:
             id: Primary key to check.
-            
+
         Returns:
             True if entity exists.
         """
@@ -302,10 +298,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def count(self, filters: list[Filter] | None = None) -> int:
         """Count entities, optionally with filters.
-        
+
         Args:
             filters: Optional filters to apply.
-            
+
         Returns:
             Number of matching entities.
         """
@@ -323,13 +319,13 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         offset: int | None = None,
     ) -> list[T]:
         """Find entities with filters and ordering.
-        
+
         Args:
             filters: List of filters to apply.
             order_by: List of ordering specifications.
             limit: Maximum number of results.
             offset: Number of results to skip.
-            
+
         Returns:
             List of matching entities.
         """
@@ -352,15 +348,15 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
         order_by: list[OrderBy] | None = None,
     ) -> PageResponse[T]:
         """Get paginated results.
-        
+
         Args:
             page_request: Pagination parameters.
             filters: Optional filters to apply.
             order_by: Optional ordering specifications.
-            
+
         Returns:
             Paginated response with items and metadata.
-            
+
         Example:
             >>> page = await repo.paginate(
             ...     PageRequest(page=1, size=10),
@@ -392,10 +388,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def find_by(self, **kwargs: Any) -> list[T]:
         """Find entities by attribute values.
-        
+
         Args:
             **kwargs: Attribute name-value pairs to filter by.
-            
+
         Returns:
             List of matching entities.
         """
@@ -411,10 +407,10 @@ class AsyncCRUDRepository(AsyncRepository[T, ID]):
 
     async def find_one_by(self, **kwargs: Any) -> T | None:
         """Find single entity by attribute values.
-        
+
         Args:
             **kwargs: Attribute name-value pairs to filter by.
-            
+
         Returns:
             First matching entity or None.
         """

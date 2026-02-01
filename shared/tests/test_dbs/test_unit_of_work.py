@@ -20,6 +20,7 @@ from shared.dbs.unit_of_work import (
 @dataclass
 class User:
     """Test user entity."""
+
     id: str
     name: str
     email: str
@@ -28,6 +29,7 @@ class User:
 @dataclass
 class Order:
     """Test order entity."""
+
     id: str
     user_id: str
     total: float
@@ -148,9 +150,7 @@ class TestUnitOfWorkTransactions:
         assert await users.exists("1")
 
     @pytest.mark.asyncio
-    async def test_changes_visible_within_transaction(
-        self, uow: InMemoryUnitOfWork
-    ) -> None:
+    async def test_changes_visible_within_transaction(self, uow: InMemoryUnitOfWork) -> None:
         """Should see changes within same transaction."""
         users = uow.get_repository("users")
 

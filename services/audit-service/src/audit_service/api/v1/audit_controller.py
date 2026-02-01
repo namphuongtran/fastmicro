@@ -61,14 +61,14 @@ async def create_audit_event(
 ) -> AuditEventResponse:
     """
     Create a new audit event.
-    
+
     This endpoint records a new audit event in the system. Audit events track
     user actions, system events, and compliance-related activities.
-    
+
     Args:
         request: Audit event creation request.
         service: Injected audit service.
-    
+
     Returns:
         AuditEventResponse: Created audit event.
     """
@@ -92,7 +92,7 @@ async def list_audit_events(
 ) -> PaginatedResponse:
     """
     List audit events with optional filtering and pagination.
-    
+
     Args:
         service: Injected audit service.
         page: Page number (1-indexed).
@@ -101,7 +101,7 @@ async def list_audit_events(
         resource_type: Optional filter by resource type.
         action: Optional filter by action type.
         severity: Optional filter by severity level.
-    
+
     Returns:
         PaginatedResponse: Paginated list of audit events.
     """
@@ -139,14 +139,14 @@ async def get_audit_event(
 ) -> AuditEventResponse:
     """
     Get a specific audit event by ID.
-    
+
     Args:
         event_id: Audit event UUID.
         service: Injected audit service.
-    
+
     Returns:
         AuditEventResponse: Audit event details.
-    
+
     Raises:
         HTTPException: If event not found (404).
     """
@@ -169,7 +169,7 @@ async def search_audit_events(
 ) -> PaginatedResponse:
     """
     Search audit events using full-text search.
-    
+
     Args:
         service: Injected audit service.
         q: Search query string.
@@ -177,7 +177,7 @@ async def search_audit_events(
         page_size: Number of items per page.
         start_date: Optional start date filter.
         end_date: Optional end date filter.
-    
+
     Returns:
         PaginatedResponse: Search results with pagination.
     """
