@@ -33,7 +33,7 @@ class InMemoryAuditRepository(IAuditRepository):
         """Get an audit event by ID."""
         return self._events.get(event_id)
 
-    async def list(
+    async def list_events(
         self,
         *,
         page: int = 1,

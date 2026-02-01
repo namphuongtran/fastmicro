@@ -148,7 +148,7 @@ class AuditAppService:
         if filters is not None:
             filter_dict = {k: v for k, v in filters.model_dump().items() if v is not None}
 
-        events, total = await self._repository.list(
+        events, total = await self._repository.list_events(
             page=page,
             page_size=page_size,
             filters=filter_dict,

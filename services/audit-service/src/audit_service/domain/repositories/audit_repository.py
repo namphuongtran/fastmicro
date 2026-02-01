@@ -48,7 +48,7 @@ class IAuditRepository(ABC):
         ...
 
     @abstractmethod
-    async def list(
+    async def list_events(
         self,
         *,
         page: int = 1,
