@@ -132,6 +132,9 @@ dev = [
     "pre-commit>=3.6.0",
     # Include test dependencies for optional features
     "aiosqlite>=0.19.0",
+    # Include ALL optional dependencies for comprehensive testing
+    # These are needed because tests import the full shared module
+    "shared[all]",
 ]
 
 # ============================================================================
