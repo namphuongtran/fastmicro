@@ -146,7 +146,7 @@ class ConfigurationService:
             extra={
                 "config_id": str(created.id),
                 "service_id": dto.service_id,
-                "name": dto.name,
+                "config_name": dto.name,
                 "environment": dto.environment.value,
                 "created_by": created_by,
             },
@@ -337,7 +337,7 @@ class ConfigurationService:
             extra={
                 "config_id": str(config_id),
                 "service_id": config.service_id,
-                "name": config.name,
+                "config_name": config.name,
                 "updated_by": updated_by,
                 "change_reason": dto.change_reason,
             },
@@ -452,7 +452,7 @@ class ConfigurationService:
             extra={
                 "config_id": str(config_id),
                 "service_id": config.service_id,
-                "name": config.name,
+                "config_name": config.name,
             },
         )
 

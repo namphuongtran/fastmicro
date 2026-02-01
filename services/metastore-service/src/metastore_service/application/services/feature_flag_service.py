@@ -113,7 +113,7 @@ class FeatureFlagService:
             "Created feature flag",
             extra={
                 "flag_id": str(created.id),
-                "name": dto.name,
+                "flag_name": dto.name,
                 "enabled": dto.enabled,
                 "created_by": created_by,
             },
@@ -287,7 +287,7 @@ class FeatureFlagService:
             "Updated feature flag",
             extra={
                 "flag_id": str(flag_id),
-                "name": flag.name.value,
+                "flag_name": flag.name.value,
                 "updated_by": updated_by,
             },
         )
@@ -318,7 +318,7 @@ class FeatureFlagService:
 
         logger.info(
             "Deleted feature flag",
-            extra={"flag_id": str(flag_id), "name": flag.name.value},
+            extra={"flag_id": str(flag_id), "flag_name": flag.name.value},
         )
 
         return result
