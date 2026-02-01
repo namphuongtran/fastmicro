@@ -140,11 +140,11 @@ class TestCodeChallenge:
         """Test S256 code challenge."""
         import base64
         import hashlib
-        
+
         verifier = "my_code_verifier_123456789012345678901234567890"
         digest = hashlib.sha256(verifier.encode()).digest()
         challenge_value = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
-        
+
         challenge = CodeChallenge(challenge_value, "S256")
         assert challenge.value == challenge_value
         assert challenge.method == "S256"

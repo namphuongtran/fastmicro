@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -16,7 +16,6 @@ from metastore_service.domain.repositories.feature_flag_repository import IFeatu
 from metastore_service.domain.value_objects import (
     Environment,
     FeatureName,
-    Operator,
     Percentage,
     TenantId,
 )
@@ -152,10 +151,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
         if tags:
             conditions.append(FeatureFlagModel.tags.overlap(tags))
 
-        query = (
-            select(FeatureFlagModel)
-            .options(selectinload(FeatureFlagModel.targeting_rules))
-        )
+        query = select(FeatureFlagModel).options(selectinload(FeatureFlagModel.targeting_rules))
 
         if conditions:
             query = query.where(and_(*conditions))
@@ -169,7 +165,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
 
     async def list_active(self) -> list[FeatureFlag]:
         """List all active (enabled and not expired) feature flags."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         query = (
             select(FeatureFlagModel)
@@ -367,9 +363,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
         """Check if a feature flag exists."""
         name_str = name.value if isinstance(name, FeatureName) else name
 
-        query = select(func.count(FeatureFlagModel.id)).where(
-            FeatureFlagModel.name == name_str
-        )
+        query = select(func.count(FeatureFlagModel.id)).where(FeatureFlagModel.name == name_str)
         result = await self._session.execute(query)
         count = result.scalar_one()
 
@@ -473,7 +467,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
             .where(FeatureFlagModel.id == flag_id)
             .values(
                 enabled=True,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -493,7 +487,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
             .where(FeatureFlagModel.id == flag_id)
             .values(
                 enabled=False,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -514,7 +508,7 @@ class PostgresFeatureFlagRepository(IFeatureFlagRepository):
             .where(FeatureFlagModel.id == flag_id)
             .values(
                 rollout_percentage=percentage,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )

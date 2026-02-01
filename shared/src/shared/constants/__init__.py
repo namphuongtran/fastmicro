@@ -19,7 +19,7 @@ from shared.constants.http_status import HTTPStatus
 from shared.constants.patterns import Patterns
 
 __all__ = [
-    "HTTPStatus",
     "Environment",
+    "HTTPStatus",
     "Patterns",
 ]

@@ -23,10 +23,10 @@ V = TypeVar("V")
 
 class NullCache(AbstractCacheBackend[V]):
     """No-operation cache backend.
-    
+
     Implements the CacheBackend interface but doesn't store anything.
     Useful for testing, development, or disabling caching.
-    
+
     Example:
         >>> cache = NullCache()
         >>> await cache.set("key", "value")  # Does nothing
@@ -42,7 +42,7 @@ class NullCache(AbstractCacheBackend[V]):
         serializer: Serializer[Any] | None = None,
     ) -> None:
         """Initialize null cache.
-        
+
         Args:
             namespace: Key namespace prefix (ignored).
             default_ttl: Default TTL in seconds (ignored).
@@ -64,11 +64,11 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def get(self, key: str, default: V | None = None) -> V | None:
         """Get always returns default.
-        
+
         Args:
             key: Cache key (ignored).
             default: Default value to return.
-            
+
         Returns:
             Always returns default.
         """
@@ -82,12 +82,12 @@ class NullCache(AbstractCacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set does nothing but returns success.
-        
+
         Args:
             key: Cache key (ignored).
             value: Value to cache (ignored).
             ttl: Time-to-live (ignored).
-            
+
         Returns:
             Always True.
         """
@@ -96,10 +96,10 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def delete(self, key: str) -> bool:
         """Delete does nothing but returns success.
-        
+
         Args:
             key: Cache key (ignored).
-            
+
         Returns:
             Always True.
         """
@@ -108,10 +108,10 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def exists(self, key: str) -> bool:
         """Exists always returns False.
-        
+
         Args:
             key: Cache key (ignored).
-            
+
         Returns:
             Always False.
         """
@@ -119,10 +119,10 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def clear(self, namespace: str | None = None) -> int:
         """Clear does nothing.
-        
+
         Args:
             namespace: Namespace prefix (ignored).
-            
+
         Returns:
             Always 0.
         """
@@ -130,11 +130,11 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def increment(self, key: str, delta: int = 1) -> int:
         """Increment returns delta (as if from 0).
-        
+
         Args:
             key: Cache key (ignored).
             delta: Amount to increment.
-            
+
         Returns:
             The delta value.
         """
@@ -142,15 +142,15 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def get_many(self, keys: list[str]) -> dict[str, V | None]:
         """Get multiple values - all return None.
-        
+
         Args:
             keys: List of cache keys.
-            
+
         Returns:
             Dictionary with all values as None.
         """
         self._get_count += len(keys)
-        return {k: None for k in keys}
+        return dict.fromkeys(keys)
 
     async def set_many(
         self,
@@ -158,11 +158,11 @@ class NullCache(AbstractCacheBackend[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set multiple values - does nothing.
-        
+
         Args:
             mapping: Dictionary of key-value pairs.
             ttl: Time-to-live (ignored).
-            
+
         Returns:
             Always True.
         """
@@ -171,10 +171,10 @@ class NullCache(AbstractCacheBackend[V]):
 
     async def delete_many(self, keys: list[str]) -> int:
         """Delete multiple keys - does nothing.
-        
+
         Args:
             keys: List of cache keys.
-            
+
         Returns:
             Always returns count of keys.
         """
@@ -187,7 +187,7 @@ class NullCache(AbstractCacheBackend[V]):
 
     def stats(self) -> dict[str, Any]:
         """Get cache statistics.
-        
+
         Returns:
             Dictionary with operation counts.
         """
@@ -205,7 +205,7 @@ class NullCache(AbstractCacheBackend[V]):
         self._set_count = 0
         self._delete_count = 0
 
-    async def __aenter__(self) -> "NullCache[V]":
+    async def __aenter__(self) -> NullCache[V]:
         """Async context manager entry."""
         return self
 

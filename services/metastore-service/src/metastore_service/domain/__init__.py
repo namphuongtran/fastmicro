@@ -5,20 +5,6 @@ following Domain-Driven Design principles.
 """
 
 # Value Objects
-from metastore_service.domain.value_objects import (
-    ContentType,
-    Environment,
-    FeatureName,
-    MetadataKey,
-    MetadataValue,
-    Namespace,
-    Operator,
-    Percentage,
-    Tag,
-    TenantId,
-    Version,
-)
-
 # Entities
 from metastore_service.domain.entities import (
     Configuration,
@@ -34,6 +20,19 @@ from metastore_service.domain.repositories import (
     IConfigurationRepository,
     IFeatureFlagRepository,
     IMetadataRepository,
+)
+from metastore_service.domain.value_objects import (
+    ContentType,
+    Environment,
+    FeatureName,
+    MetadataKey,
+    MetadataValue,
+    Namespace,
+    Operator,
+    Percentage,
+    Tag,
+    TenantId,
+    Version,
 )
 
 __all__ = [
@@ -61,4 +60,3 @@ __all__ = [
     "IFeatureFlagRepository",
     "IMetadataRepository",
 ]
-

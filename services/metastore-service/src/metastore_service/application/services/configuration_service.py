@@ -16,12 +16,12 @@ from metastore_service.application.dtos.configuration_dtos import (
     CreateConfigurationDTO,
     UpdateConfigurationDTO,
 )
-from metastore_service.domain.entities.configuration import Configuration, ConfigurationSchema
+from metastore_service.domain.entities.configuration import Configuration
 from metastore_service.domain.repositories.configuration_repository import (
     IConfigurationRepository,
     IConfigurationSchemaRepository,
 )
-from metastore_service.domain.value_objects import Environment, TenantId
+from metastore_service.domain.value_objects import Environment
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ class ConfigurationService:
             extra={
                 "config_id": str(created.id),
                 "service_id": dto.service_id,
-                "name": dto.name,
+                "config_name": dto.name,
                 "environment": dto.environment.value,
                 "created_by": created_by,
             },
@@ -234,9 +234,7 @@ class ConfigurationService:
             return
 
         for ref in config.secret_refs:
-            secret_value = await self._secret_service.get_secret(
-                ref.vault_path, ref.vault_key
-            )
+            secret_value = await self._secret_service.get_secret(ref.vault_path, ref.vault_key)
             if secret_value:
                 config.values[ref.key] = secret_value
 
@@ -339,7 +337,7 @@ class ConfigurationService:
             extra={
                 "config_id": str(config_id),
                 "service_id": config.service_id,
-                "name": config.name,
+                "config_name": config.name,
                 "updated_by": updated_by,
                 "change_reason": dto.change_reason,
             },
@@ -454,7 +452,7 @@ class ConfigurationService:
             extra={
                 "config_id": str(config_id),
                 "service_id": config.service_id,
-                "name": config.name,
+                "config_name": config.name,
             },
         )
 

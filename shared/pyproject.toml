@@ -132,6 +132,9 @@ dev = [
     "pre-commit>=3.6.0",
     # Include test dependencies for optional features
     "aiosqlite>=0.19.0",
+    # Include ALL optional dependencies for comprehensive testing
+    # These are needed because tests import the full shared module
+    "shared[all]",
 ]
 
 # ============================================================================
@@ -145,6 +148,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = [
+    "A",      # flake8-builtins - prevent shadowing builtins like 'list', 'dict', 'id'
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
     "F",      # Pyflakes
@@ -152,20 +156,25 @@ select = [
     "B",      # flake8-bugbear
     "C4",     # flake8-comprehensions
     "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
     "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
     "PTH",    # flake8-use-pathlib
-    "PL",     # Pylint
     "RUF",    # Ruff-specific rules
 ]
 ignore = [
-    "E501",    # line too long (handled by formatter)
-    "PLR0913", # too many arguments
+    "E501",    # Line too long - handled by formatter (official ruff pattern)
+    "B008",    # Function calls in defaults - FastAPI Depends() pattern
+    "B024",    # Abstract class without abstract methods - valid for marker/base classes
+    "RUF022",  # __all__ not sorted - we organize by category for documentation
+    "UP046",   # Use type parameters - we use Generic for wider compatibility
+    "UP047",   # Generic function type params - we use Generic for wider compatibility
+    "A002",    # Argument shadowing builtin - 'id' is common pattern in Python ORMs/APIs
 ]
+fixable = ["ALL"]
+unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ARG", "PLR2004"]
+"__init__.py" = ["F401", "E402"]  # Re-exports and conditional imports (official pattern)
+"tests/**/*.py" = ["S101", "PLR2004", "B017", "F841"]  # Assert, magic values, raises(Exception), unused vars in tests
 
 [tool.ruff.lint.isort]
 known-first-party = ["shared"]

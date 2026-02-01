@@ -1,6 +1,6 @@
 """Health check endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field
@@ -24,7 +24,7 @@ async def health_check() -> HealthResponse:
         status="healthy",
         service=settings.service_name,
         version="0.1.0",
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
 
@@ -37,6 +37,7 @@ async def readiness_check() -> dict:
 async def metrics() -> Response:
     try:
         from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
         return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
     except ImportError:
         return Response(content="# Prometheus not installed\n", media_type="text/plain")

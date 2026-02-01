@@ -7,9 +7,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from shared.utils import now_utc
-
 from identity_service.domain.value_objects import TokenType
+from shared.utils import now_utc
 
 
 @dataclass
@@ -113,7 +112,9 @@ class AuthorizationCode:
             code_challenge=data.get("code_challenge"),
             code_challenge_method=data.get("code_challenge_method"),
             created_at=datetime.fromisoformat(data["created_at"]),
-            expires_at=datetime.fromisoformat(data["expires_at"]) if data.get("expires_at") else None,
+            expires_at=datetime.fromisoformat(data["expires_at"])
+            if data.get("expires_at")
+            else None,
             is_used=data.get("is_used", False),
         )
 
@@ -235,5 +236,7 @@ class TokenBlacklistEntry:
             jti=data["jti"],
             revoked_at=datetime.fromisoformat(data["revoked_at"]),
             reason=data.get("reason"),
-            expires_at=datetime.fromisoformat(data["expires_at"]) if data.get("expires_at") else None,
+            expires_at=datetime.fromisoformat(data["expires_at"])
+            if data.get("expires_at")
+            else None,
         )

@@ -8,7 +8,7 @@ This module provides foundational DDD patterns:
 
 Example:
     >>> from shared.ddd import Entity, ValueObject, AggregateRoot, DomainEvent
-    
+
     # Define a value object
     >>> @dataclass(frozen=True)
     ... class Email(ValueObject):
@@ -16,7 +16,7 @@ Example:
     ...     def validate(self) -> None:
     ...         if "@" not in self.value:
     ...             raise ValueError("Invalid email")
-    
+
     # Define an entity
     >>> class User(AggregateRoot):
     ...     def __init__(self, id: str, email: Email):
@@ -25,26 +25,26 @@ Example:
 """
 
 from shared.ddd.entity import (
-    Entity,
     AggregateRoot,
+    Entity,
     EntityId,
-)
-from shared.ddd.value_objects import (
-    ValueObject,
-    Email,
-    PhoneNumber,
-    Money,
-    Percentage,
-    NonEmptyString,
-    PositiveInt,
-    PositiveDecimal,
-    DateRange,
-    Address,
 )
 from shared.ddd.events import (
     DomainEvent,
     DomainEventHandler,
     EventDispatcher,
+)
+from shared.ddd.value_objects import (
+    Address,
+    DateRange,
+    Email,
+    Money,
+    NonEmptyString,
+    Percentage,
+    PhoneNumber,
+    PositiveDecimal,
+    PositiveInt,
+    ValueObject,
 )
 
 __all__ = [

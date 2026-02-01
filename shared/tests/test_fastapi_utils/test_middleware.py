@@ -6,25 +6,21 @@ correlation ID management is properly delegated to shared.observability.
 
 from __future__ import annotations
 
-import uuid
-from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
-
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from shared.fastapi_utils.middleware import (
-    RequestContextMiddleware,
-    get_request_context,
-    get_correlation_id,
     RequestContext,
+    RequestContextMiddleware,
+    get_correlation_id,
+    get_request_context,
+)
+from shared.observability.structlog_config import (
+    _correlation_id_ctx,
 )
 from shared.observability.structlog_config import (
     get_correlation_id as observability_get_correlation_id,
-    set_correlation_id as observability_set_correlation_id,
-    _correlation_id_ctx,
 )
 
 
@@ -38,7 +34,7 @@ class TestRequestContext:
             correlation_id="corr_456",
             user_id=None,
         )
-        
+
         assert ctx.request_id == "req_123"
         assert ctx.correlation_id == "corr_456"
         assert ctx.user_id is None
@@ -50,7 +46,7 @@ class TestRequestContext:
             correlation_id="corr_456",
             user_id="user_789",
         )
-        
+
         assert ctx.user_id == "user_789"
 
     def test_request_context_with_metadata(self) -> None:
@@ -61,7 +57,7 @@ class TestRequestContext:
             user_id=None,
             metadata={"tenant_id": "t1", "region": "us-east"},
         )
-        
+
         assert ctx.metadata["tenant_id"] == "t1"
 
 
@@ -73,7 +69,7 @@ class TestRequestContextMiddleware:
         """Create FastAPI app with request context middleware."""
         app = FastAPI()
         app.add_middleware(RequestContextMiddleware)
-        
+
         @app.get("/test")
         async def test_endpoint(request: Request):
             ctx = get_request_context()
@@ -81,56 +77,48 @@ class TestRequestContextMiddleware:
                 "request_id": ctx.request_id if ctx else None,
                 "correlation_id": ctx.correlation_id if ctx else None,
             }
-        
+
         return app
 
-    def test_middleware_creates_request_context(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_creates_request_context(self, app_with_middleware: FastAPI) -> None:
         """Should create request context for each request."""
         client = TestClient(app_with_middleware)
         response = client.get("/test")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["request_id"] is not None
         assert data["correlation_id"] is not None
 
-    def test_middleware_uses_provided_correlation_id(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_uses_provided_correlation_id(self, app_with_middleware: FastAPI) -> None:
         """Should use correlation ID from header if provided."""
         client = TestClient(app_with_middleware)
         response = client.get(
             "/test",
             headers={"X-Correlation-ID": "custom-corr-id"},
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["correlation_id"] == "custom-corr-id"
 
-    def test_middleware_generates_unique_request_ids(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_generates_unique_request_ids(self, app_with_middleware: FastAPI) -> None:
         """Should generate unique request IDs for each request."""
         client = TestClient(app_with_middleware)
-        
+
         response1 = client.get("/test")
         response2 = client.get("/test")
-        
+
         id1 = response1.json()["request_id"]
         id2 = response2.json()["request_id"]
-        
+
         assert id1 != id2
 
-    def test_middleware_adds_correlation_id_to_response(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+    def test_middleware_adds_correlation_id_to_response(self, app_with_middleware: FastAPI) -> None:
         """Should add correlation ID to response headers."""
         client = TestClient(app_with_middleware)
         response = client.get("/test")
-        
+
         assert "X-Correlation-ID" in response.headers
         assert response.headers["X-Correlation-ID"] == response.json()["correlation_id"]
 
@@ -169,13 +157,13 @@ class TestGetCorrelationId:
 
 class TestCorrelationIdConsolidation:
     """Tests verifying correlation ID is managed by observability module."""
-    
+
     @pytest.fixture
     def app_with_middleware(self) -> FastAPI:
         """Create FastAPI app with request context middleware."""
         app = FastAPI()
         app.add_middleware(RequestContextMiddleware)
-        
+
         @app.get("/check-correlation")
         async def check_correlation(request: Request):
             # Both should return the same value
@@ -186,21 +174,19 @@ class TestCorrelationIdConsolidation:
                 "observability_id": observability_id,
                 "match": fastapi_utils_id == observability_id,
             }
-        
+
         return app
-    
-    def test_correlation_id_is_same_in_both_modules(
-        self, app_with_middleware: FastAPI
-    ) -> None:
+
+    def test_correlation_id_is_same_in_both_modules(self, app_with_middleware: FastAPI) -> None:
         """Correlation ID from fastapi_utils should match observability."""
         client = TestClient(app_with_middleware)
         response = client.get("/check-correlation")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["match"] is True
         assert data["fastapi_utils_id"] == data["observability_id"]
-    
+
     def test_provided_correlation_id_is_set_in_observability(
         self, app_with_middleware: FastAPI
     ) -> None:
@@ -210,7 +196,7 @@ class TestCorrelationIdConsolidation:
             "/check-correlation",
             headers={"X-Correlation-ID": "provided-corr-id"},
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["fastapi_utils_id"] == "provided-corr-id"

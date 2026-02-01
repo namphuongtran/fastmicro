@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -121,7 +121,7 @@ class ConfigurationVersion:
             configuration_id=configuration_id,
             version_number=version_number,
             values=values,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             created_by=created_by,
             change_reason=change_reason,
         )
@@ -167,8 +167,8 @@ class Configuration:
     effective_from: datetime | None = None
     effective_until: datetime | None = None
     versions: list[ConfigurationVersion] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     created_by: str | None = None
     updated_by: str | None = None
 
@@ -208,7 +208,7 @@ class Configuration:
         )
 
         config_id = uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         config_values = values or {}
 
         # Validate against schema if provided
@@ -283,7 +283,7 @@ class Configuration:
 
         self.versions.append(new_version)
         self.values = merged_values
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     def set_value(
@@ -331,7 +331,7 @@ class Configuration:
         """
         ref = SecretReference(key=key, vault_path=vault_path, vault_key=vault_key)
         self.secret_refs.append(ref)
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         return ref
 
     def remove_secret_ref(self, key: str) -> bool:
@@ -339,7 +339,7 @@ class Configuration:
         for ref in self.secret_refs:
             if ref.key == key:
                 self.secret_refs.remove(ref)
-                self.updated_at = datetime.now(timezone.utc)
+                self.updated_at = datetime.now(UTC)
                 return True
         return False
 
@@ -378,13 +378,13 @@ class Configuration:
     def activate(self, updated_by: str | None = None) -> None:
         """Activate the configuration."""
         self.is_active = True
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     def deactivate(self, updated_by: str | None = None) -> None:
         """Deactivate the configuration."""
         self.is_active = False
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         self.updated_by = updated_by
 
     @property
@@ -397,7 +397,7 @@ class Configuration:
     @property
     def is_effective(self) -> bool:
         """Check if the configuration is currently effective."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if not self.is_active:
             return False
         if self.effective_from and now < self.effective_from:

@@ -1,38 +1,32 @@
 """Tests for application services."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 
-from metastore_service.application.dtos.metadata_dtos import (
-    CreateMetadataDTO,
-    UpdateMetadataDTO,
+from metastore_service.application.dtos.configuration_dtos import (
+    CreateConfigurationDTO,
 )
 from metastore_service.application.dtos.feature_flag_dtos import (
     CreateFeatureFlagDTO,
     EvaluateFeatureFlagDTO,
-    UpdateFeatureFlagDTO,
 )
-from metastore_service.application.dtos.configuration_dtos import (
-    CreateConfigurationDTO,
-    UpdateConfigurationDTO,
+from metastore_service.application.dtos.metadata_dtos import (
+    CreateMetadataDTO,
 )
-from metastore_service.application.services.metadata_service import MetadataService
-from metastore_service.application.services.feature_flag_service import FeatureFlagService
 from metastore_service.application.services.configuration_service import ConfigurationService
-from metastore_service.domain.entities.metadata import MetadataEntry
-from metastore_service.domain.entities.feature_flag import FeatureFlag
+from metastore_service.application.services.feature_flag_service import FeatureFlagService
+from metastore_service.application.services.metadata_service import MetadataService
 from metastore_service.domain.entities.configuration import Configuration
+from metastore_service.domain.entities.feature_flag import FeatureFlag
+from metastore_service.domain.entities.metadata import MetadataEntry
 from metastore_service.domain.value_objects import (
     ContentType,
     Environment,
-    FeatureName,
     MetadataKey,
     MetadataValue,
     Namespace,
-    Percentage,
 )
 from shared.cache.backends.null import NullCache
 

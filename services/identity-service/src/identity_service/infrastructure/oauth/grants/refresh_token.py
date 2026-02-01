@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from authlib.oauth2 import OAuth2Request
 from authlib.oauth2.rfc6749 import grants
 
 if TYPE_CHECKING:

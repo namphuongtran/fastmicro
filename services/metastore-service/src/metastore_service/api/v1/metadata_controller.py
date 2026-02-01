@@ -1,6 +1,6 @@
 """Metadata CRUD endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -15,8 +15,8 @@ class MetadataEntry(BaseModel):
     key: str = Field(description="Unique metadata key")
     value: Any = Field(description="Metadata value (JSON)")
     version: int = Field(default=1, description="Version number")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CreateMetadataRequest(BaseModel):
@@ -36,7 +36,7 @@ _metadata_store: dict[str, MetadataEntry] = {}
 async def create_metadata(request: CreateMetadataRequest) -> MetadataEntry:
     if request.key in _metadata_store:
         raise HTTPException(status_code=409, detail=f"Key '{request.key}' already exists")
-    
+
     entry = MetadataEntry(key=request.key, value=request.value)
     _metadata_store[request.key] = entry
     return entry
@@ -58,11 +58,11 @@ async def get_metadata(key: str) -> MetadataEntry:
 async def update_metadata(key: str, request: UpdateMetadataRequest) -> MetadataEntry:
     if key not in _metadata_store:
         raise HTTPException(status_code=404, detail=f"Key '{key}' not found")
-    
+
     entry = _metadata_store[key]
     entry.value = request.value
     entry.version += 1
-    entry.updated_at = datetime.now(timezone.utc)
+    entry.updated_at = datetime.now(UTC)
     return entry
 
 

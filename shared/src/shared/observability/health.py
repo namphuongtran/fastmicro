@@ -7,16 +7,16 @@ liveness and readiness probes.
 from __future__ import annotations
 
 import asyncio
-import functools
 import time
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 
 class HealthStatus(Enum):
     """Health check status values."""
-    
+
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
     DEGRADED = "degraded"
@@ -25,7 +25,7 @@ class HealthStatus(Enum):
 @dataclass
 class HealthCheckResult:
     """Result of a health check."""
-    
+
     name: str
     status: HealthStatus
     message: str | None = None
@@ -35,7 +35,7 @@ class HealthCheckResult:
     @property
     def is_healthy(self) -> bool:
         """Check if the result indicates healthy status.
-        
+
         Returns:
             True if status is HEALTHY.
         """
@@ -43,7 +43,7 @@ class HealthCheckResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary.
-        
+
         Returns:
             Dictionary representation.
         """
@@ -51,16 +51,16 @@ class HealthCheckResult:
             "name": self.name,
             "status": self.status.value,
         }
-        
+
         if self.message:
             result["message"] = self.message
-        
+
         if self.details:
             result["details"] = self.details
-        
+
         if self.duration_ms is not None:
             result["duration_ms"] = self.duration_ms
-        
+
         return result
 
 
@@ -71,7 +71,7 @@ HealthCheckFn = Callable[[], Coroutine[Any, Any, HealthCheckResult]]
 @dataclass
 class HealthCheck:
     """A registered health check."""
-    
+
     name: str
     check_fn: HealthCheckFn
     timeout_seconds: float = 10.0
@@ -79,12 +79,12 @@ class HealthCheck:
 
     async def run(self) -> HealthCheckResult:
         """Run the health check.
-        
+
         Returns:
             Health check result.
         """
         start = time.perf_counter()
-        
+
         try:
             result = await asyncio.wait_for(
                 self.check_fn(),
@@ -92,15 +92,15 @@ class HealthCheck:
             )
             result.duration_ms = (time.perf_counter() - start) * 1000
             return result
-        
-        except asyncio.TimeoutError:
+
+        except TimeoutError:
             return HealthCheckResult(
                 name=self.name,
                 status=HealthStatus.UNHEALTHY,
                 message=f"Health check timed out after {self.timeout_seconds}s",
                 duration_ms=(time.perf_counter() - start) * 1000,
             )
-        
+
         except Exception as e:
             return HealthCheckResult(
                 name=self.name,
@@ -122,7 +122,7 @@ def register_health_check(
     timeout_seconds: float = 10.0,
 ) -> None:
     """Register a health check.
-    
+
     Args:
         name: Health check name.
         check_fn: Async function that returns HealthCheckResult.
@@ -144,20 +144,21 @@ def create_health_check(
     timeout_seconds: float = 10.0,
 ) -> Callable[[HealthCheckFn], HealthCheckFn]:
     """Decorator to create a health check.
-    
+
     Args:
         name: Health check name.
         critical: Whether this check is critical for readiness.
         timeout_seconds: Timeout for the check.
-        
+
     Returns:
         Decorator function.
-        
+
     Example:
         @create_health_check("database", critical=True)
         async def check_database() -> HealthCheckResult:
             ...
     """
+
     def decorator(func: HealthCheckFn) -> HealthCheckFn:
         register_health_check(
             name=name,
@@ -166,16 +167,16 @@ def create_health_check(
             timeout_seconds=timeout_seconds,
         )
         return func
-    
+
     return decorator
 
 
 async def check_liveness() -> HealthCheckResult:
     """Check if the application is alive.
-    
+
     Liveness probes indicate if the application is running.
     A simple check that always returns healthy if the app is responsive.
-    
+
     Returns:
         Health check result.
     """
@@ -188,43 +189,37 @@ async def check_liveness() -> HealthCheckResult:
 
 async def check_readiness() -> dict[str, Any]:
     """Check if the application is ready to serve traffic.
-    
+
     Readiness probes check that all dependencies are available.
-    
+
     Returns:
         Dictionary with overall status and individual check results.
     """
     results: list[HealthCheckResult] = []
-    
+
     # Run all registered checks
-    for name, check in _health_checks.items():
+    for _name, check in _health_checks.items():
         result = await check.run()
         results.append(result)
-    
+
     # Determine overall status
     has_unhealthy_critical = any(
         result.status == HealthStatus.UNHEALTHY
         and _health_checks.get(result.name, HealthCheck(name="", check_fn=check_liveness)).critical
         for result in results
     )
-    
-    has_unhealthy = any(
-        result.status == HealthStatus.UNHEALTHY
-        for result in results
-    )
-    
-    has_degraded = any(
-        result.status == HealthStatus.DEGRADED
-        for result in results
-    )
-    
+
+    has_unhealthy = any(result.status == HealthStatus.UNHEALTHY for result in results)
+
+    has_degraded = any(result.status == HealthStatus.DEGRADED for result in results)
+
     if has_unhealthy_critical or (has_unhealthy and not results):
         overall_status = "unhealthy"
     elif has_unhealthy or has_degraded:
         overall_status = "degraded"
     else:
         overall_status = "healthy"
-    
+
     return {
         "status": overall_status,
         "checks": [r.to_dict() for r in results],
@@ -233,7 +228,7 @@ async def check_readiness() -> dict[str, Any]:
 
 async def get_health_status() -> dict[str, Any]:
     """Get overall health status.
-    
+
     Returns:
         Dictionary with status and all check results.
     """
@@ -241,12 +236,12 @@ async def get_health_status() -> dict[str, Any]:
 
 
 __all__ = [
-    "HealthStatus",
-    "HealthCheckResult",
     "HealthCheck",
-    "register_health_check",
-    "create_health_check",
+    "HealthCheckResult",
+    "HealthStatus",
     "check_liveness",
     "check_readiness",
+    "create_health_check",
     "get_health_status",
+    "register_health_check",
 ]

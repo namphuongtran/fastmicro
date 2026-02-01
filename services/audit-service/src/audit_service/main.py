@@ -5,8 +5,8 @@ This module initializes and configures the FastAPI application with all
 necessary middleware, routers, and lifecycle hooks.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,13 +22,17 @@ from audit_service.infrastructure.middleware import (
 
 # Import shared library components
 try:
-    from shared.observability import get_logger, setup_tracing
     from shared.exceptions import HTTPException as SharedHTTPException
+    from shared.observability import get_logger, setup_tracing
 except ImportError:
     # Fallback for standalone development
     import structlog
+
     get_logger = structlog.get_logger
-    setup_tracing = lambda x: None
+
+    def setup_tracing(_: object) -> None:  # noqa: E731
+        pass
+
     SharedHTTPException = Exception
 
 
@@ -40,7 +44,7 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Application lifespan manager.
-    
+
     Handles startup and shutdown events for the application.
     """
     # Startup
@@ -49,23 +53,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         version=app.version,
         environment=settings.app_env,
     )
-    
+
     # Initialize OpenTelemetry tracing
     if settings.otel_enabled:
         setup_tracing(settings.service_name)
         logger.info("OpenTelemetry tracing initialized")
-    
+
     # Initialize database connections
     # await init_database()
-    
+
     # Initialize cache
     # await init_cache()
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Audit Service")
-    
+
     # Cleanup resources
     # await close_database()
     # await close_cache()
@@ -74,7 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """
     Create and configure the FastAPI application.
-    
+
     Returns:
         FastAPI: Configured FastAPI application instance.
     """
@@ -87,25 +91,25 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if settings.app_env != "production" else None,
         lifespan=lifespan,
     )
-    
+
     # Configure middleware (order matters - first added is outermost)
     configure_middleware(app)
-    
+
     # Configure exception handlers
     configure_exception_handlers(app)
-    
+
     # Include routers
     configure_routers(app)
-    
+
     return app
 
 
 def configure_middleware(app: FastAPI) -> None:
     """Configure application middleware stack."""
-    
+
     # GZip compression for responses
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-    
+
     # CORS configuration
     app.add_middleware(
         CORSMiddleware,
@@ -114,17 +118,17 @@ def configure_middleware(app: FastAPI) -> None:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Request ID middleware (for tracing)
     app.add_middleware(RequestIdMiddleware)
-    
+
     # Logging middleware
     app.add_middleware(LoggingMiddleware)
 
 
 def configure_exception_handlers(app: FastAPI) -> None:
     """Configure global exception handlers."""
-    
+
     @app.exception_handler(SharedHTTPException)
     async def shared_http_exception_handler(
         request: Request, exc: SharedHTTPException
@@ -138,11 +142,9 @@ def configure_exception_handlers(app: FastAPI) -> None:
                 "details": getattr(exc, "details", None),
             },
         )
-    
+
     @app.exception_handler(Exception)
-    async def general_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """Handle unhandled exceptions."""
         logger.exception(
             "Unhandled exception",
@@ -160,13 +162,13 @@ def configure_exception_handlers(app: FastAPI) -> None:
 
 def configure_routers(app: FastAPI) -> None:
     """Configure API routers."""
-    
+
     # Health check endpoints (no prefix)
     app.include_router(
         health_controller.router,
         tags=["Health"],
     )
-    
+
     # Audit API v1
     app.include_router(
         audit_controller.router,
@@ -181,7 +183,7 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "audit_service.main:app",
         host="0.0.0.0",

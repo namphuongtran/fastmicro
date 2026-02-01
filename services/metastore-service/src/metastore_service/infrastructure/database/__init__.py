@@ -6,13 +6,13 @@ AsyncDatabaseManager for consistent connection pooling and transaction handling.
 
 from metastore_service.infrastructure.database.models import (
     Base,
+    ConfigurationModel,
+    ConfigurationSchemaModel,
+    ConfigurationVersionModel,
+    FeatureFlagModel,
     MetadataEntryModel,
     MetadataVersionModel,
-    FeatureFlagModel,
     TargetingRuleModel,
-    ConfigurationModel,
-    ConfigurationVersionModel,
-    ConfigurationSchemaModel,
 )
 
 # Re-export shared library database utilities

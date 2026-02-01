@@ -1,8 +1,8 @@
 """Identity Service - FastAPI Application Entry Point."""
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,11 +18,11 @@ from identity_service.configs import get_settings
 
 # Shared observability
 from shared.observability import (
+    LoggingConfig,
+    RequestLoggingConfig,
+    RequestLoggingMiddleware,
     configure_structlog,
     get_structlog_logger,
-    LoggingConfig,
-    RequestLoggingMiddleware,
-    RequestLoggingConfig,
 )
 
 # Paths for templates and static files
@@ -32,11 +32,13 @@ STATIC_DIR = BASE_DIR / "static"
 
 # Configure structured logging using shared library
 settings = get_settings()
-configure_structlog(LoggingConfig(
-    service_name="identity-service",
-    environment=settings.app_env,
-    log_level=settings.log_level,
-))
+configure_structlog(
+    LoggingConfig(
+        service_name="identity-service",
+        environment=settings.app_env,
+        log_level=settings.log_level,
+    )
+)
 
 logger = get_structlog_logger(__name__)
 
@@ -103,7 +105,14 @@ def create_app() -> FastAPI:
     app.add_middleware(
         RequestLoggingMiddleware,
         config=RequestLoggingConfig(
-            exclude_paths=["/health", "/healthz", "/ready", "/readyz", "/.well-known/openid-configuration", "/.well-known/jwks.json"],
+            exclude_paths=[
+                "/health",
+                "/healthz",
+                "/ready",
+                "/readyz",
+                "/.well-known/openid-configuration",
+                "/.well-known/jwks.json",
+            ],
             slow_request_threshold_ms=500.0,
         ),
     )

@@ -122,9 +122,7 @@ class CreateFeatureFlagDTO(BaseModel):
         import re
 
         if not re.match(r"^[a-z][a-z0-9-]*$", v):
-            raise ValueError(
-                "Name must be kebab-case: lowercase letters, numbers, and hyphens"
-            )
+            raise ValueError("Name must be kebab-case: lowercase letters, numbers, and hyphens")
         return v
 
 

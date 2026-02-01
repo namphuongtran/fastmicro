@@ -8,8 +8,6 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-import pytest
-
 from shared.config.auth import AuthSettings
 
 
@@ -21,7 +19,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "super-secret-key-for-testing"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.secret_key.get_secret_value() == "super-secret-key-for-testing"
 
     def test_algorithm_default(self) -> None:
@@ -29,7 +27,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.algorithm == "HS256"
 
     def test_algorithm_from_env(self) -> None:
@@ -40,7 +38,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.algorithm == "RS256"
 
     def test_access_token_expire(self) -> None:
@@ -51,7 +49,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.access_token_expire_minutes == 60
 
     def test_access_token_expire_default(self) -> None:
@@ -59,7 +57,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.access_token_expire_minutes == 30
 
     def test_refresh_token_expire(self) -> None:
@@ -70,7 +68,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.refresh_token_expire_days == 14
 
     def test_refresh_token_expire_default(self) -> None:
@@ -78,7 +76,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.refresh_token_expire_days == 7
 
     def test_token_url(self) -> None:
@@ -89,7 +87,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.token_url == "/api/v1/auth/token"
 
     def test_token_url_default(self) -> None:
@@ -97,7 +95,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.token_url == "/token"
 
     def test_scopes(self) -> None:
@@ -108,7 +106,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.scopes == {"read": "Read access", "write": "Write access"}
 
     def test_scopes_default(self) -> None:
@@ -116,7 +114,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert "read" in settings.scopes
             assert "write" in settings.scopes
 
@@ -128,7 +126,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.issuer == "https://auth.example.com"
 
     def test_audience(self) -> None:
@@ -139,7 +137,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.audience == "https://api.example.com"
 
     def test_password_min_length(self) -> None:
@@ -150,7 +148,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.password_min_length == 12
 
     def test_password_min_length_default(self) -> None:
@@ -158,7 +156,7 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.password_min_length == 8
 
     def test_api_key_header(self) -> None:
@@ -169,7 +167,7 @@ class TestAuthSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.api_key_header == "X-Custom-Api-Key"
 
     def test_api_key_header_default(self) -> None:
@@ -177,5 +175,5 @@ class TestAuthSettings:
         env = {"AUTH_SECRET_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             settings = AuthSettings()
-            
+
             assert settings.api_key_header == "X-API-Key"

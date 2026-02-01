@@ -1,9 +1,32 @@
 ---
 applyTo: '**/*'
-description: 'Guidelines for using Context7 MCP to verify library documentation before implementation'
+description: 'MANDATORY: Use Context7 MCP to verify library documentation before implementation. Training data becomes outdated - always verify APIs and patterns.'
 ---
 
-# Context7 Documentation Lookup Guidelines
+# Context7 Documentation Lookup Guidelines - MANDATORY
+
+## ⚠️ CRITICAL: VERIFY BEFORE IMPLEMENTING
+
+**ALWAYS use Context7 to verify library APIs and patterns BEFORE implementation.**
+
+AI training data becomes outdated. Libraries change, APIs evolve, best practices shift. Using outdated patterns leads to:
+- Deprecated API calls that fail at runtime
+- Security vulnerabilities from old patterns
+- Wasted time debugging version mismatches
+- Technical debt from non-idiomatic code
+
+## Quick Start
+
+```markdown
+# Step 1: Resolve the library ID
+mcp_context7_resolve-library-id
+  libraryName: "pydantic v2"
+
+# Step 2: Get documentation for specific topic
+mcp_context7_get-library-docs
+  context7CompatibleLibraryID: "/pydantic/pydantic"
+  topic: "model_config validation"
+```
 
 ## Overview
 

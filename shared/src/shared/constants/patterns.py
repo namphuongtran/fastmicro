@@ -13,10 +13,7 @@ Example:
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Pattern
-
-if TYPE_CHECKING:
-    pass
+from re import Pattern
 
 __all__ = ["Patterns"]
 
@@ -35,9 +32,7 @@ class Patterns:
     """
 
     # Email pattern - RFC 5322 simplified
-    EMAIL: Pattern[str] = re.compile(
-        r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    )
+    EMAIL: Pattern[str] = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
     # UUID pattern - supports versions 1-5
     UUID: Pattern[str] = re.compile(
@@ -81,17 +76,13 @@ class Patterns:
     )
 
     # JWT token pattern (basic structure check)
-    JWT: Pattern[str] = re.compile(
-        r"^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$"
-    )
+    JWT: Pattern[str] = re.compile(r"^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$")
 
     # Hex color pattern
     HEX_COLOR: Pattern[str] = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
     # For extraction (findall) - patterns without anchors
-    _EMAIL_EXTRACT: Pattern[str] = re.compile(
-        r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-    )
+    _EMAIL_EXTRACT: Pattern[str] = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
     _UUID_EXTRACT: Pattern[str] = re.compile(
         r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     )

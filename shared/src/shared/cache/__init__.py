@@ -40,56 +40,59 @@ Legacy Support:
 """
 
 # Core abstractions
-from shared.cache.base import (
-    CacheBackend,
-    AbstractCacheBackend,
-    Serializer,
-    NullSerializer,
-    JsonSerializer,
-    PickleSerializer,
-    CacheError,
-    CacheConnectionError,
-    CacheSerializationError,
-)
-
 # Backends
 from shared.cache.backends import (
     MemoryCache,
-    RedisCache,
     NullCache,
+    RedisCache,
 )
 from shared.cache.backends.redis import RedisConfig as RedisCacheConfig
-
-# Manager
-from shared.cache.manager import (
-    TieredCacheManager,
-    CacheConfig,
-    create_cache,
+from shared.cache.base import (
+    AbstractCacheBackend,
+    CacheBackend,
+    CacheConnectionError,
+    CacheError,
+    CacheSerializationError,
+    JsonSerializer,
+    NullSerializer,
+    PickleSerializer,
+    Serializer,
 )
 
 # Decorators
 from shared.cache.decorators import (
-    cached,
-    cache_aside,
-    invalidate_cache,
-    cached_method,
     build_cache_key,
+    cache_aside,
+    cached,
+    cached_method,
+    invalidate_cache,
 )
 
 # Lock
 from shared.cache.lock import (
     DistributedLock,
-    LockConfig,
     LockAcquisitionError,
+    LockConfig,
     LockReleaseError,
+)
+
+# Manager
+from shared.cache.manager import (
+    CacheConfig,
+    TieredCacheManager,
+    create_cache,
 )
 
 # Legacy support - keep for backward compatibility
 from shared.cache.redis_client import (
     AsyncRedisClient,
     RedisConfig,
+)
+from shared.cache.redis_client import (
     CacheError as LegacyCacheError,
-    ConnectionError as LegacyConnectionError,
+)
+from shared.cache.redis_client import (
+    RedisConnectionError as LegacyConnectionError,
 )
 
 __all__ = [

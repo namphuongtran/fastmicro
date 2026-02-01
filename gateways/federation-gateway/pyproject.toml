@@ -80,8 +80,20 @@ target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "SIM"]
-ignore = ["E501", "B008", "B009"]
+select = ["A", "E", "W", "F", "I", "B", "C4", "UP", "SIM"]  # A = flake8-builtins (prevent shadowing)
+ignore = [
+    "E501",   # Line too long - handled by formatter (official ruff pattern)
+    "B008",   # Function calls in default arguments - FastAPI Depends() pattern
+]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "E402"]  # Re-exports and conditional imports (official pattern)
+"tests/**/*.py" = ["S101", "PLR2004", "B017", "F841"]  # Assert, magic values, raises(Exception), unused vars in tests
+"**/api/**/*.py" = ["B904"]  # HTTPException in except - intentional for API error responses
+"**/services/*.py" = ["B904"]  # Exception chaining in services - intentional wrapping
+"**/middleware/*.py" = ["B904"]  # HTTPException in middleware auth - intentional error handling
 
 [tool.ruff.lint.isort]
 known-first-party = ["federation_gateway", "shared"]

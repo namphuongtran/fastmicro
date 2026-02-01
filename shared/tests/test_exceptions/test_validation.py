@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from shared.exceptions.http import UnprocessableEntityException
 from shared.exceptions.validation import (
     FieldError,

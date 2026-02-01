@@ -8,9 +8,6 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-import pytest
-from pydantic import SecretStr
-
 from shared.config.database import DatabaseSettings, DatabaseType
 
 
@@ -46,7 +43,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.host == "localhost"
             assert settings.port == 5432
             assert settings.db_type == DatabaseType.POSTGRESQL
@@ -62,7 +59,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.host == "db.example.com"
             assert settings.port == 5433
             assert settings.name == "mydb"
@@ -81,7 +78,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.pool_size == 10
             assert settings.max_overflow == 20
             assert settings.pool_timeout == 60
@@ -95,7 +92,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.pool_size == 5
             assert settings.max_overflow == 10
             assert settings.pool_timeout == 30
@@ -112,7 +109,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.sync_url == "postgresql://testuser:testpass@localhost:5432/testdb"
 
     def test_postgresql_async_url(self) -> None:
@@ -127,8 +124,10 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
-            assert settings.async_url == "postgresql+asyncpg://testuser:testpass@localhost:5432/testdb"
+
+            assert (
+                settings.async_url == "postgresql+asyncpg://testuser:testpass@localhost:5432/testdb"
+            )
 
     def test_mysql_sync_url(self) -> None:
         """Should generate sync MySQL URL."""
@@ -142,7 +141,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.sync_url == "mysql+pymysql://testuser:testpass@localhost:3306/testdb"
 
     def test_mysql_async_url(self) -> None:
@@ -157,7 +156,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.async_url == "mysql+aiomysql://testuser:testpass@localhost:3306/testdb"
 
     def test_sqlite_url(self) -> None:
@@ -168,7 +167,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.sync_url == "sqlite:///./data/test.db"
             assert settings.async_url == "sqlite+aiosqlite:///./data/test.db"
 
@@ -184,7 +183,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert "mssql+pyodbc://sa:testpass@localhost:1433/testdb" in settings.sync_url
 
     def test_echo_setting(self) -> None:
@@ -197,7 +196,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.echo is True
 
     def test_echo_default_false(self) -> None:
@@ -209,7 +208,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.echo is False
 
     def test_pool_pre_ping(self) -> None:
@@ -222,7 +221,7 @@ class TestDatabaseSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
-            
+
             assert settings.pool_pre_ping is True
 
     def test_default_port_by_type(self) -> None:
@@ -232,7 +231,7 @@ class TestDatabaseSettings:
         with patch.dict(os.environ, env, clear=True):
             settings = DatabaseSettings()
             assert settings.port == 5432
-        
+
         # MySQL default
         env = {"DB_NAME": "test", "DB_USER": "user", "DB_PASSWORD": "pass", "DB_TYPE": "mysql"}
         with patch.dict(os.environ, env, clear=True):

@@ -8,17 +8,16 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Generic, TypeVar
-
 
 T = TypeVar("T")
 
 
 class FilterOperator(Enum):
     """Filter comparison operators."""
-    
+
     EQ = "eq"
     NE = "ne"
     GT = "gt"
@@ -39,7 +38,7 @@ class FilterOperator(Enum):
 
 class OrderDirection(Enum):
     """Order direction."""
-    
+
     ASC = "asc"
     DESC = "desc"
 
@@ -47,7 +46,7 @@ class OrderDirection(Enum):
 @dataclass
 class Filter:
     """Filter specification for queries."""
-    
+
     field: str
     value: Any
     operator: FilterOperator = FilterOperator.EQ
@@ -56,7 +55,7 @@ class Filter:
 @dataclass
 class OrderBy:
     """Order specification for queries."""
-    
+
     field: str
     direction: OrderDirection = OrderDirection.ASC
 
@@ -64,14 +63,14 @@ class OrderBy:
 @dataclass
 class PageRequest:
     """Pagination request parameters."""
-    
+
     page: int = 1
     size: int = 10
 
     @property
     def offset(self) -> int:
         """Calculate offset for database query.
-        
+
         Returns:
             The offset value.
         """
@@ -81,7 +80,7 @@ class PageRequest:
 @dataclass
 class PageResponse(Generic[T]):
     """Paginated response with metadata."""
-    
+
     items: list[T]
     total: int
     page: int
@@ -90,7 +89,7 @@ class PageResponse(Generic[T]):
     @property
     def total_pages(self) -> int:
         """Calculate total number of pages.
-        
+
         Returns:
             Total pages.
         """
@@ -99,7 +98,7 @@ class PageResponse(Generic[T]):
     @property
     def has_next(self) -> bool:
         """Check if there is a next page.
-        
+
         Returns:
             True if next page exists.
         """
@@ -108,7 +107,7 @@ class PageResponse(Generic[T]):
     @property
     def has_previous(self) -> bool:
         """Check if there is a previous page.
-        
+
         Returns:
             True if previous page exists.
         """
@@ -117,7 +116,7 @@ class PageResponse(Generic[T]):
 
 class AbstractRepository(ABC, Generic[T]):
     """Abstract repository interface.
-    
+
     Defines the standard CRUD operations and query methods
     that all repositories must implement.
     """
@@ -125,10 +124,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def add(self, entity: T) -> T:
         """Add a new entity.
-        
+
         Args:
             entity: The entity to add.
-            
+
         Returns:
             The added entity.
         """
@@ -137,10 +136,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def get(self, id: str) -> T | None:
         """Get entity by ID.
-        
+
         Args:
             id: The entity ID.
-            
+
         Returns:
             The entity or None if not found.
         """
@@ -149,7 +148,7 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def get_all(self) -> list[T]:
         """Get all entities.
-        
+
         Returns:
             List of all entities.
         """
@@ -158,10 +157,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def update(self, entity: T) -> T:
         """Update an existing entity.
-        
+
         Args:
             entity: The entity to update.
-            
+
         Returns:
             The updated entity.
         """
@@ -170,10 +169,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def delete(self, id: str) -> bool:
         """Delete entity by ID.
-        
+
         Args:
             id: The entity ID.
-            
+
         Returns:
             True if deleted, False if not found.
         """
@@ -182,10 +181,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def exists(self, id: str) -> bool:
         """Check if entity exists.
-        
+
         Args:
             id: The entity ID.
-            
+
         Returns:
             True if exists.
         """
@@ -194,10 +193,10 @@ class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
     async def count(self, filters: list[Filter] | None = None) -> int:
         """Count entities.
-        
+
         Args:
             filters: Optional filters to apply.
-            
+
         Returns:
             Number of entities.
         """
@@ -206,13 +205,13 @@ class AbstractRepository(ABC, Generic[T]):
 
 class InMemoryRepository(AbstractRepository[T]):
     """In-memory repository implementation.
-    
+
     Useful for testing and prototyping. Stores entities in a dict.
     """
 
     def __init__(self, id_field: str = "id") -> None:
         """Initialize the repository.
-        
+
         Args:
             id_field: Name of the ID field on entities.
         """
@@ -221,54 +220,54 @@ class InMemoryRepository(AbstractRepository[T]):
 
     def _get_id(self, entity: T) -> str:
         """Get ID from entity.
-        
+
         Args:
             entity: The entity.
-            
+
         Returns:
             The entity ID.
         """
         return str(getattr(entity, self._id_field))
 
-    def _matches_filter(self, entity: T, filter: Filter) -> bool:
+    def _matches_filter(self, entity: T, filter_spec: Filter) -> bool:
         """Check if entity matches a filter.
-        
+
         Args:
             entity: The entity to check.
-            filter: The filter to apply.
-            
+            filter_spec: The filter to apply.
+
         Returns:
             True if entity matches.
         """
-        value = getattr(entity, filter.field, None)
-        
-        match filter.operator:
+        value = getattr(entity, filter_spec.field, None)
+
+        match filter_spec.operator:
             case FilterOperator.EQ:
-                return value == filter.value
+                return value == filter_spec.value
             case FilterOperator.NE:
-                return value != filter.value
+                return value != filter_spec.value
             case FilterOperator.GT:
-                return value > filter.value
+                return value > filter_spec.value
             case FilterOperator.GTE:
-                return value >= filter.value
+                return value >= filter_spec.value
             case FilterOperator.LT:
-                return value < filter.value
+                return value < filter_spec.value
             case FilterOperator.LTE:
-                return value <= filter.value
+                return value <= filter_spec.value
             case FilterOperator.LIKE:
-                return filter.value.lower() in str(value).lower()
+                return filter_spec.value.lower() in str(value).lower()
             case FilterOperator.IN:
-                return value in filter.value
+                return value in filter_spec.value
             case _:
                 return False
 
     def _apply_filters(self, entities: list[T], filters: list[Filter]) -> list[T]:
         """Apply filters to entity list.
-        
+
         Args:
             entities: List of entities.
             filters: Filters to apply.
-            
+
         Returns:
             Filtered list.
         """
@@ -279,11 +278,11 @@ class InMemoryRepository(AbstractRepository[T]):
 
     def _apply_ordering(self, entities: list[T], order_by: list[OrderBy]) -> list[T]:
         """Apply ordering to entity list.
-        
+
         Args:
             entities: List of entities.
             order_by: Ordering specifications.
-            
+
         Returns:
             Ordered list.
         """
@@ -341,22 +340,22 @@ class InMemoryRepository(AbstractRepository[T]):
         order_by: list[OrderBy] | None = None,
     ) -> list[T]:
         """Find entities with filters and ordering.
-        
+
         Args:
             filters: Optional filters.
             order_by: Optional ordering.
-            
+
         Returns:
             List of matching entities.
         """
         result = list(self._storage.values())
-        
+
         if filters:
             result = self._apply_filters(result, filters)
-        
+
         if order_by:
             result = self._apply_ordering(result, order_by)
-        
+
         return result
 
     async def find_one(
@@ -364,10 +363,10 @@ class InMemoryRepository(AbstractRepository[T]):
         filters: list[Filter] | None = None,
     ) -> T | None:
         """Find first matching entity.
-        
+
         Args:
             filters: Optional filters.
-            
+
         Returns:
             First matching entity or None.
         """
@@ -381,22 +380,22 @@ class InMemoryRepository(AbstractRepository[T]):
         order_by: list[OrderBy] | None = None,
     ) -> PageResponse[T]:
         """Find entities with pagination.
-        
+
         Args:
             page_request: Pagination parameters.
             filters: Optional filters.
             order_by: Optional ordering.
-            
+
         Returns:
             Paginated response.
         """
         all_items = await self.find(filters=filters, order_by=order_by)
         total = len(all_items)
-        
+
         start = page_request.offset
         end = start + page_request.size
         items = all_items[start:end]
-        
+
         return PageResponse(
             items=items,
             total=total,
@@ -410,12 +409,12 @@ class InMemoryRepository(AbstractRepository[T]):
 
 
 __all__ = [
-    "FilterOperator",
-    "OrderDirection",
+    "AbstractRepository",
     "Filter",
+    "FilterOperator",
+    "InMemoryRepository",
     "OrderBy",
+    "OrderDirection",
     "PageRequest",
     "PageResponse",
-    "AbstractRepository",
-    "InMemoryRepository",
 ]

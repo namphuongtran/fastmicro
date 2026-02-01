@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -529,7 +529,7 @@ class PostgresConfigurationRepository(IConfigurationRepository):
             .where(ConfigurationModel.id == config_id)
             .values(
                 is_active=True,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -549,7 +549,7 @@ class PostgresConfigurationRepository(IConfigurationRepository):
             .where(ConfigurationModel.id == config_id)
             .values(
                 is_active=False,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
                 updated_by=updated_by,
             )
         )
@@ -568,9 +568,7 @@ class PostgresConfigurationSchemaRepository(IConfigurationSchemaRepository):
 
     async def get_by_id(self, schema_id: UUID) -> ConfigurationSchema | None:
         """Get a schema by ID."""
-        query = select(ConfigurationSchemaModel).where(
-            ConfigurationSchemaModel.id == schema_id
-        )
+        query = select(ConfigurationSchemaModel).where(ConfigurationSchemaModel.id == schema_id)
         result = await self._session.execute(query)
         model = result.scalar_one_or_none()
 
@@ -675,9 +673,7 @@ class PostgresConfigurationSchemaRepository(IConfigurationSchemaRepository):
 
     async def delete(self, schema_id: UUID) -> bool:
         """Delete a schema by ID."""
-        stmt = delete(ConfigurationSchemaModel).where(
-            ConfigurationSchemaModel.id == schema_id
-        )
+        stmt = delete(ConfigurationSchemaModel).where(ConfigurationSchemaModel.id == schema_id)
         result = await self._session.execute(stmt)
         await self._session.flush()
 

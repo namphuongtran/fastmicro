@@ -9,7 +9,7 @@ This module provides middleware that automatically:
 Usage:
     from fastapi import FastAPI
     from shared.observability.middleware import RequestLoggingMiddleware
-    
+
     app = FastAPI()
     app.add_middleware(RequestLoggingMiddleware)
 
@@ -18,7 +18,7 @@ With configuration:
         RequestLoggingMiddleware,
         RequestLoggingConfig,
     )
-    
+
     app.add_middleware(
         RequestLoggingMiddleware,
         config=RequestLoggingConfig(
@@ -33,8 +33,8 @@ With configuration:
 from __future__ import annotations
 
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -50,15 +50,15 @@ from shared.observability.structlog_config import (
     set_correlation_id,
 )
 
-
 # =============================================================================
 # Configuration
 # =============================================================================
 
+
 @dataclass
 class RequestLoggingConfig:
     """Configuration for request logging middleware.
-    
+
     Attributes:
         correlation_id_header: HTTP header name for correlation ID.
             The middleware will look for this header in incoming requests
@@ -75,33 +75,40 @@ class RequestLoggingConfig:
         max_body_log_size: Maximum body size to log (bytes).
         slow_request_threshold_ms: Threshold for slow request warnings (milliseconds).
     """
+
     correlation_id_header: str = "X-Correlation-ID"
     request_id_header: str = "X-Request-ID"
     log_request_headers: bool = False
     log_response_headers: bool = False
     log_request_body: bool = False
     log_response_body: bool = False
-    exclude_paths: list[str] = field(default_factory=lambda: [
-        "/health",
-        "/healthz",
-        "/ready",
-        "/readyz",
-        "/live",
-        "/livez",
-        "/metrics",
-        "/favicon.ico",
-    ])
-    exclude_paths_startswith: list[str] = field(default_factory=lambda: [
-        "/static/",
-        "/.well-known/",
-    ])
-    sensitive_headers: set[str] = field(default_factory=lambda: {
-        "authorization",
-        "cookie",
-        "x-api-key",
-        "x-auth-token",
-        "x-csrf-token",
-    })
+    exclude_paths: list[str] = field(
+        default_factory=lambda: [
+            "/health",
+            "/healthz",
+            "/ready",
+            "/readyz",
+            "/live",
+            "/livez",
+            "/metrics",
+            "/favicon.ico",
+        ]
+    )
+    exclude_paths_startswith: list[str] = field(
+        default_factory=lambda: [
+            "/static/",
+            "/.well-known/",
+        ]
+    )
+    sensitive_headers: set[str] = field(
+        default_factory=lambda: {
+            "authorization",
+            "cookie",
+            "x-api-key",
+            "x-auth-token",
+            "x-csrf-token",
+        }
+    )
     max_body_log_size: int = 1024  # 1KB
     slow_request_threshold_ms: float = 1000.0  # 1 second
 
@@ -117,9 +124,10 @@ DEFAULT_CONFIG = RequestLoggingConfig()
 # Middleware Implementation
 # =============================================================================
 
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware for automatic request logging and correlation ID propagation.
-    
+
     This middleware:
     1. Extracts correlation ID from request headers (or generates one)
     2. Binds request context to structlog for the entire request
@@ -127,11 +135,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     4. Logs outgoing responses with status code and duration
     5. Adds correlation ID to response headers
     6. Clears context after request completes
-    
+
     Example:
         app = FastAPI()
         app.add_middleware(RequestLoggingMiddleware)
-        
+
         # Or with custom config:
         app.add_middleware(
             RequestLoggingMiddleware,
@@ -141,14 +149,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             ),
         )
     """
-    
+
     def __init__(
         self,
         app: ASGIApp,
         config: RequestLoggingConfig | None = None,
     ) -> None:
         """Initialize the middleware.
-        
+
         Args:
             app: The ASGI application.
             config: Optional configuration. Uses defaults if not provided.
@@ -156,29 +164,29 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.config = config or DEFAULT_CONFIG
         self.logger = get_structlog_logger("shared.observability.middleware")
-    
+
     async def dispatch(
         self,
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         """Process the request and add logging/correlation ID.
-        
+
         Args:
             request: The incoming request.
             call_next: The next middleware/handler in the chain.
-            
+
         Returns:
             The response with correlation ID header added.
         """
         # Check if this path should be excluded from logging
         if self._should_exclude_path(request.url.path):
             return await call_next(request)
-        
+
         # Extract or generate correlation ID
         correlation_id = self._extract_correlation_id(request)
         set_correlation_id(correlation_id)
-        
+
         # Bind request context to structlog
         bind_contextvars(
             correlation_id=correlation_id,
@@ -186,18 +194,18 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             http_path=request.url.path,
             client_ip=self._get_client_ip(request),
         )
-        
+
         # Record start time
         start_time = time.perf_counter()
-        
+
         # Log incoming request
         request_log_data = self._build_request_log_data(request)
         self.logger.info("Request started", **request_log_data)
-        
+
         # Process request
         response: Response | None = None
         error: Exception | None = None
-        
+
         try:
             response = await call_next(request)
         except Exception as exc:
@@ -206,7 +214,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         finally:
             # Calculate duration
             duration_ms = (time.perf_counter() - start_time) * 1000
-            
+
             # Log response/error
             self._log_response(
                 request=request,
@@ -214,42 +222,38 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 error=error,
                 duration_ms=duration_ms,
             )
-            
+
             # Clear context
             clear_contextvars()
-        
+
         # Add correlation ID to response headers
         if response is not None:
             response.headers[self.config.correlation_id_header] = correlation_id
-        
+
         return response
-    
+
     def _should_exclude_path(self, path: str) -> bool:
         """Check if the path should be excluded from logging.
-        
+
         Args:
             path: The request path.
-            
+
         Returns:
             True if the path should be excluded.
         """
         # Exact match
         if path in self.config.exclude_paths:
             return True
-        
+
         # Prefix match
-        for prefix in self.config.exclude_paths_startswith:
-            if path.startswith(prefix):
-                return True
-        
-        return False
-    
+        return any(path.startswith(prefix) for prefix in self.config.exclude_paths_startswith)
+
     def _extract_correlation_id(self, request: Request) -> str:
         """Extract correlation ID from request headers or generate one.
-        
+
         Args:
             request: The incoming request.
-            
+
         Returns:
             The correlation ID (extracted or generated).
         """
@@ -257,21 +261,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         correlation_id = request.headers.get(self.config.correlation_id_header)
         if correlation_id:
             return correlation_id
-        
+
         # Try alternative header
         correlation_id = request.headers.get(self.config.request_id_header)
         if correlation_id:
             return correlation_id
-        
+
         # Generate new ID
         return generate_correlation_id()
-    
+
     def _get_client_ip(self, request: Request) -> str:
         """Extract client IP from request, handling proxies.
-        
+
         Args:
             request: The incoming request.
-            
+
         Returns:
             The client IP address.
         """
@@ -280,24 +284,24 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         if forwarded_for:
             # Take the first IP (original client)
             return forwarded_for.split(",")[0].strip()
-        
+
         # Check X-Real-IP header
         real_ip = request.headers.get("x-real-ip")
         if real_ip:
             return real_ip
-        
+
         # Fall back to direct client
         if request.client:
             return request.client.host
-        
+
         return "unknown"
-    
+
     def _build_request_log_data(self, request: Request) -> dict:
         """Build log data for the incoming request.
-        
+
         Args:
             request: The incoming request.
-            
+
         Returns:
             Dictionary of log data.
         """
@@ -306,20 +310,20 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             "query_string": str(request.query_params) if request.query_params else None,
             "user_agent": request.headers.get("user-agent"),
         }
-        
+
         # Add headers if configured
         if self.config.log_request_headers:
             data["headers"] = self._sanitize_headers(dict(request.headers))
-        
+
         # Remove None values
         return {k: v for k, v in data.items() if v is not None}
-    
+
     def _sanitize_headers(self, headers: dict[str, str]) -> dict[str, str]:
         """Sanitize headers by redacting sensitive values.
-        
+
         Args:
             headers: The headers dictionary.
-            
+
         Returns:
             Sanitized headers with sensitive values redacted.
         """
@@ -330,7 +334,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             else:
                 sanitized[key] = value
         return sanitized
-    
+
     def _log_response(
         self,
         request: Request,
@@ -339,7 +343,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         duration_ms: float,
     ) -> None:
         """Log the response or error.
-        
+
         Args:
             request: The original request.
             response: The response (if successful).
@@ -349,10 +353,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         log_data = {
             "duration_ms": round(duration_ms, 2),
         }
-        
+
         # Check for slow request
         is_slow = duration_ms >= self.config.slow_request_threshold_ms
-        
+
         if error is not None:
             # Log error
             log_data["error_type"] = type(error).__name__
@@ -362,13 +366,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             # Log response
             log_data["http_status"] = response.status_code
             log_data["content_type"] = response.headers.get("content-type")
-            
+
             # Add response headers if configured
             if self.config.log_response_headers:
-                log_data["response_headers"] = self._sanitize_headers(
-                    dict(response.headers)
-                )
-            
+                log_data["response_headers"] = self._sanitize_headers(dict(response.headers))
+
             # Determine log level based on status and duration
             if response.status_code >= 500:
                 self.logger.error("Request completed", **log_data)
@@ -384,45 +386,44 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # Convenience Functions
 # =============================================================================
 
+
 def add_request_logging_middleware(
     app: ASGIApp,
     config: RequestLoggingConfig | None = None,
 ) -> None:
     """Add request logging middleware to a FastAPI/Starlette app.
-    
+
     This is a convenience function that's equivalent to:
         app.add_middleware(RequestLoggingMiddleware, config=config)
-    
+
     Args:
         app: The FastAPI/Starlette application.
         config: Optional configuration.
-        
+
     Example:
         from fastapi import FastAPI
         from shared.observability.middleware import add_request_logging_middleware
-        
+
         app = FastAPI()
         add_request_logging_middleware(app)
     """
     # Note: For FastAPI, use app.add_middleware directly
     # This function is provided for non-FastAPI Starlette apps
-    raise NotImplementedError(
-        "Use app.add_middleware(RequestLoggingMiddleware) for FastAPI apps"
-    )
+    raise NotImplementedError("Use app.add_middleware(RequestLoggingMiddleware) for FastAPI apps")
 
 
 def get_correlation_id_from_request(request: Request) -> str | None:
     """Get the correlation ID from the current request context.
-    
+
     This is useful when you need to access the correlation ID
     inside a route handler.
-    
+
     Args:
         request: The FastAPI/Starlette request.
-        
+
     Returns:
         The correlation ID if set, None otherwise.
-        
+
     Example:
         @app.get("/example")
         async def example(request: Request):

@@ -4,7 +4,6 @@ Defines the contract for metadata persistence operations.
 """
 
 from abc import ABC, abstractmethod
-from typing import Protocol
 from uuid import UUID
 
 from metastore_service.domain.entities.metadata import MetadataEntry, MetadataVersion

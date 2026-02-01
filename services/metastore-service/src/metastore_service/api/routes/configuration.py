@@ -8,6 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from metastore_service.api.dependencies import get_configuration_service
 from metastore_service.application.dtos.configuration_dtos import (
     ConfigurationDTO,
     ConfigurationListDTO,
@@ -18,7 +19,6 @@ from metastore_service.application.dtos.configuration_dtos import (
 )
 from metastore_service.application.services.configuration_service import ConfigurationService
 from metastore_service.domain.value_objects import Environment
-from metastore_service.api.dependencies import get_configuration_service
 
 logger = logging.getLogger(__name__)
 
@@ -105,9 +105,7 @@ async def list_configurations_by_service(
     offset: int = Query(default=0, ge=0, description="Offset for pagination"),
 ) -> ConfigurationListDTO:
     """List configurations by service."""
-    return await svc.list_by_service(
-        service_id, environment, tenant_id, active_only, limit, offset
-    )
+    return await svc.list_by_service(service_id, environment, tenant_id, active_only, limit, offset)
 
 
 @router.get(
@@ -125,9 +123,7 @@ async def list_configurations_by_environment(
     offset: int = Query(default=0, ge=0, description="Offset for pagination"),
 ) -> ConfigurationListDTO:
     """List configurations by environment."""
-    return await svc.list_by_environment(
-        environment, tenant_id, active_only, limit, offset
-    )
+    return await svc.list_by_environment(environment, tenant_id, active_only, limit, offset)
 
 
 @router.get(
@@ -197,6 +193,7 @@ async def delete_configuration(
 
 # Effective configuration endpoint
 
+
 @router.get(
     "/effective/{service_id}",
     response_model=dict[str, Any],
@@ -211,12 +208,11 @@ async def get_effective_configuration(
     resolve_secrets: bool = Query(default=False, description="Resolve secret references"),
 ) -> dict[str, Any]:
     """Get effective configuration for a service."""
-    return await svc.get_effective_config(
-        service_id, environment, tenant_id, resolve_secrets
-    )
+    return await svc.get_effective_config(service_id, environment, tenant_id, resolve_secrets)
 
 
 # Activation endpoints
+
 
 @router.post(
     "/{config_id}/activate",
@@ -261,6 +257,7 @@ async def deactivate_configuration(
 
 
 # Version endpoints
+
 
 @router.get(
     "/{config_id}/versions",
@@ -327,6 +324,7 @@ async def rollback_configuration(
 
 
 # Schema endpoints
+
 
 @router.get(
     "/schemas",

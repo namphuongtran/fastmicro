@@ -9,20 +9,19 @@ This module provides reusable mixins for SQLAlchemy models:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, String, event
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr
+from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class TimestampMixin:
     """Mixin that adds automatic timestamp columns.
-    
+
     Adds created_at and updated_at columns that are automatically
     managed on insert and update operations.
-    
+
     Example:
         >>> class User(TimestampMixin, Base):
         ...     __tablename__ = "users"
@@ -31,24 +30,24 @@ class TimestampMixin:
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
-    
+
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=True,
     )
 
 
 class SoftDeleteMixin:
     """Mixin that adds soft delete functionality.
-    
+
     Instead of actually deleting records, marks them as deleted
     with is_deleted flag and deleted_at timestamp.
-    
+
     Example:
         >>> class Document(SoftDeleteMixin, Base):
         ...     __tablename__ = "documents"
@@ -63,7 +62,7 @@ class SoftDeleteMixin:
         default=False,
         nullable=False,
     )
-    
+
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -72,7 +71,7 @@ class SoftDeleteMixin:
     def soft_delete(self) -> None:
         """Mark entity as soft deleted."""
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.now(UTC)
 
     def restore(self) -> None:
         """Restore soft deleted entity."""
@@ -82,9 +81,9 @@ class SoftDeleteMixin:
 
 class UUIDPrimaryKeyMixin:
     """Mixin that provides UUID primary key.
-    
+
     Generates UUID4 as the primary key for the model.
-    
+
     Example:
         >>> class Event(UUIDPrimaryKeyMixin, Base):
         ...     __tablename__ = "events"
@@ -100,9 +99,9 @@ class UUIDPrimaryKeyMixin:
 
 class AuditMixin:
     """Mixin that adds user audit fields.
-    
+
     Tracks which user created and last updated the entity.
-    
+
     Example:
         >>> class Order(AuditMixin, Base):
         ...     __tablename__ = "orders"
@@ -115,7 +114,7 @@ class AuditMixin:
         String(100),
         nullable=True,
     )
-    
+
     updated_by: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
@@ -124,9 +123,9 @@ class AuditMixin:
 
 class TenantMixin:
     """Mixin that adds multi-tenant support.
-    
+
     Adds a tenant_id column for multi-tenant data isolation.
-    
+
     Example:
         >>> class Document(TenantMixin, Base):
         ...     __tablename__ = "documents"
@@ -144,10 +143,10 @@ class TenantMixin:
 
 class VersionMixin:
     """Mixin for optimistic concurrency control.
-    
+
     Adds a version column that auto-increments on updates.
     Use with SQLAlchemy's version_id_col for optimistic locking.
-    
+
     Example:
         >>> class Order(VersionMixin, Base):
         ...     __tablename__ = "orders"
@@ -159,7 +158,7 @@ class VersionMixin:
         default=1,
         nullable=False,
     )
-    
+
     def increment_version(self) -> None:
         """Manually increment version."""
         self.version += 1
@@ -167,25 +166,27 @@ class VersionMixin:
 
 class FullAuditMixin(TimestampMixin, AuditMixin, VersionMixin):
     """Combined mixin with timestamps, user audit, and versioning.
-    
+
     Provides complete audit trail for entities.
-    
+
     Example:
         >>> class Invoice(FullAuditMixin, Base):
         ...     __tablename__ = "invoices"
         ...     id = Column(Integer, primary_key=True)
     """
+
     pass
 
 
 class TenantAuditMixin(TimestampMixin, AuditMixin, TenantMixin):
     """Combined mixin with timestamps, user audit, and multi-tenancy.
-    
+
     Ideal for multi-tenant applications requiring audit trails.
-    
+
     Example:
         >>> class Contract(TenantAuditMixin, Base):
         ...     __tablename__ = "contracts"
         ...     id = Column(Integer, primary_key=True)
     """
+
     pass

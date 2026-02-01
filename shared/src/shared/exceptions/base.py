@@ -21,10 +21,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from enum import Enum
 from functools import total_ordering
-from typing import TYPE_CHECKING, Any, Self
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
+from typing import Any, Self
 
 __all__ = [
     "BaseServiceException",

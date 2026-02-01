@@ -6,24 +6,18 @@ context propagation, and trace configuration.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, patch
-
 import pytest
-
-if TYPE_CHECKING:
-    pass
 
 from shared.observability.tracing import (
     SpanKind,
     TracingConfig,
+    configure_tracing,
     create_span,
+    extract_context,
     get_current_span,
     get_trace_id,
     inject_context,
-    extract_context,
     traced,
-    configure_tracing,
 )
 
 
@@ -33,7 +27,7 @@ class TestTracingConfig:
     def test_default_values(self) -> None:
         """Should have sensible defaults."""
         config = TracingConfig(service_name="test-service")
-        
+
         assert config.service_name == "test-service"
         assert config.enabled is True
         assert config.sample_rate == 1.0
@@ -46,7 +40,7 @@ class TestTracingConfig:
             sample_rate=0.5,
             exporter_endpoint="http://jaeger:14268",
         )
-        
+
         assert config.service_name == "my-service"
         assert config.enabled is False
         assert config.sample_rate == 0.5
@@ -92,16 +86,14 @@ class TestCreateSpan:
 
     def test_nested_spans(self) -> None:
         """Should support nested spans."""
-        with create_span("parent") as parent_span:
-            with create_span("child") as child_span:
-                # Child should be nested under parent
-                pass
+        with create_span("parent") as parent_span, create_span("child") as child_span:
+            # Child should be nested under parent
+            pass
 
     def test_span_records_exception(self) -> None:
         """Should record exceptions on span."""
-        with pytest.raises(ValueError):
-            with create_span("failing-operation") as span:
-                raise ValueError("Test error")
+        with pytest.raises(ValueError), create_span("failing-operation") as span:
+            raise ValueError("Test error")
 
 
 class TestGetCurrentSpan:
@@ -143,16 +135,16 @@ class TestContextPropagation:
     def test_inject_context_to_dict(self) -> None:
         """Should inject trace context into carrier dict."""
         carrier: dict[str, str] = {}
-        
+
         with create_span("test"):
             inject_context(carrier)
-        
+
         # Carrier may have traceparent header (if tracing is enabled)
 
     def test_extract_context_from_dict(self) -> None:
         """Should extract trace context from carrier dict."""
         carrier = {"traceparent": "00-trace-span-01"}
-        
+
         context = extract_context(carrier)
         # Should return a context object (may be empty if invalid)
 
@@ -162,57 +154,64 @@ class TestTracedDecorator:
 
     def test_decorates_sync_function(self) -> None:
         """Should decorate synchronous functions."""
+
         @traced("my-operation")
         def my_function() -> str:
             return "result"
-        
+
         result = my_function()
         assert result == "result"
 
     def test_decorates_async_function(self) -> None:
         """Should decorate async functions."""
+
         @traced("async-operation")
         async def my_async_function() -> str:
             return "async result"
-        
+
         import asyncio
+
         result = asyncio.run(my_async_function())
         assert result == "async result"
 
     def test_preserves_function_metadata(self) -> None:
         """Should preserve function name and docstring."""
+
         @traced("operation")
         def documented_function() -> None:
             """This is the docstring."""
             pass
-        
+
         assert documented_function.__name__ == "documented_function"
         assert "docstring" in (documented_function.__doc__ or "")
 
     def test_passes_arguments(self) -> None:
         """Should pass arguments to decorated function."""
+
         @traced("add-operation")
         def add(a: int, b: int) -> int:
             return a + b
-        
+
         result = add(2, 3)
         assert result == 5
 
     def test_handles_exceptions(self) -> None:
         """Should propagate exceptions from decorated function."""
+
         @traced("failing")
         def failing_function() -> None:
             raise RuntimeError("Intentional error")
-        
+
         with pytest.raises(RuntimeError, match="Intentional error"):
             failing_function()
 
     def test_with_attributes(self) -> None:
         """Should support custom attributes."""
+
         @traced("operation", attributes={"custom": "attr"})
         def attributed_function() -> str:
             return "done"
-        
+
         result = attributed_function()
         assert result == "done"
 
@@ -226,7 +225,7 @@ class TestConfigureTracing:
             service_name="test-service",
             enabled=True,
         )
-        
+
         # Should not raise
         configure_tracing(config)
 
@@ -236,9 +235,9 @@ class TestConfigureTracing:
             service_name="test-service",
             enabled=False,
         )
-        
+
         configure_tracing(config)
-        
+
         # Operations should still work (as no-ops)
         with create_span("test"):
             pass

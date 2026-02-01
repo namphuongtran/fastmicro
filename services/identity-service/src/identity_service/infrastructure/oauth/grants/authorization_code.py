@@ -7,12 +7,10 @@ from typing import TYPE_CHECKING, Any
 
 from authlib.oauth2 import OAuth2Request
 from authlib.oauth2.rfc6749 import grants
-from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.oidc.core import OpenIDCode as BaseOpenIDCode
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import AuthorizationCode, Client, User
-    from identity_service.infrastructure.oauth.oauth_server import IdentityAuthorizationServer
+    from identity_service.domain.entities import AuthorizationCode, User
 
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
@@ -56,9 +54,7 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
         self.server.save_authorization_code(auth_code)
         return auth_code
 
-    def query_authorization_code(
-        self, code: str, client: Any
-    ) -> AuthorizationCode | None:
+    def query_authorization_code(self, code: str, client: Any) -> AuthorizationCode | None:
         """Query authorization code from storage.
 
         Args:

@@ -17,9 +17,9 @@ from metastore_service.application.dtos.feature_flag_dtos import (
     TargetingRuleDTO,
     UpdateFeatureFlagDTO,
 )
-from metastore_service.domain.entities.feature_flag import FeatureFlag, TargetingRule
+from metastore_service.domain.entities.feature_flag import FeatureFlag
 from metastore_service.domain.repositories.feature_flag_repository import IFeatureFlagRepository
-from metastore_service.domain.value_objects import Environment, Operator, Percentage
+from metastore_service.domain.value_objects import Environment
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ class FeatureFlagService:
             "Created feature flag",
             extra={
                 "flag_id": str(created.id),
-                "name": dto.name,
+                "flag_name": dto.name,
                 "enabled": dto.enabled,
                 "created_by": created_by,
             },
@@ -287,7 +287,7 @@ class FeatureFlagService:
             "Updated feature flag",
             extra={
                 "flag_id": str(flag_id),
-                "name": flag.name.value,
+                "flag_name": flag.name.value,
                 "updated_by": updated_by,
             },
         )
@@ -318,7 +318,7 @@ class FeatureFlagService:
 
         logger.info(
             "Deleted feature flag",
-            extra={"flag_id": str(flag_id), "name": flag.name.value},
+            extra={"flag_id": str(flag_id), "flag_name": flag.name.value},
         )
 
         return result
@@ -522,9 +522,7 @@ class FeatureFlagService:
         Returns:
             True if updated, False if not found
         """
-        result = await self._repository.set_rollout_percentage(
-            flag_id, percentage, updated_by
-        )
+        result = await self._repository.set_rollout_percentage(flag_id, percentage, updated_by)
 
         if result:
             # Invalidate cache

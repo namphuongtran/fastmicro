@@ -15,12 +15,9 @@ from __future__ import annotations
 
 import os
 from enum import Enum
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
-if TYPE_CHECKING:
-    pass
-
-__all__ = ["Environment", "ENVIRONMENT_ALIASES"]
+__all__ = ["ENVIRONMENT_ALIASES", "Environment"]
 
 
 # Module-level aliases mapping - kept outside the enum for Python 3.14 compatibility
@@ -98,9 +95,7 @@ class Environment(Enum):
             return default
 
         valid_values = [e.value for e in cls]
-        raise ValueError(
-            f"Unknown environment: '{value}'. Valid values: {valid_values}"
-        )
+        raise ValueError(f"Unknown environment: '{value}'. Valid values: {valid_values}")
 
     @classmethod
     def current(cls) -> Self:

@@ -60,9 +60,7 @@ class PasswordService:
         """
         return self._hasher.verify(password, password_hash)
 
-    def verify_and_update(
-        self, password: str, password_hash: str
-    ) -> tuple[bool, str | None]:
+    def verify_and_update(self, password: str, password_hash: str) -> tuple[bool, str | None]:
         """Verify password and upgrade hash if needed.
 
         If password is valid and hash uses outdated algorithm (bcrypt)
@@ -108,9 +106,7 @@ class PasswordService:
         settings = self._settings
 
         if len(password) < settings.password_min_length:
-            errors.append(
-                f"Password must be at least {settings.password_min_length} characters"
-            )
+            errors.append(f"Password must be at least {settings.password_min_length} characters")
 
         if settings.password_require_uppercase and not re.search(r"[A-Z]", password):
             errors.append("Password must contain at least one uppercase letter")
@@ -121,9 +117,7 @@ class PasswordService:
         if settings.password_require_digit and not re.search(r"\d", password):
             errors.append("Password must contain at least one digit")
 
-        if settings.password_require_special and not re.search(
-            r'[!@#$%^&*(),.?":{}|<>]', password
-        ):
+        if settings.password_require_special and not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
             errors.append("Password must contain at least one special character")
 
         return errors

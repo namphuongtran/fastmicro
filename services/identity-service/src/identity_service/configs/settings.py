@@ -74,9 +74,7 @@ class Settings(BaseSettings):
     authorization_code_lifetime: int = Field(
         default=600, ge=60, le=3600, description="Authorization code lifetime"
     )
-    id_token_lifetime: int = Field(
-        default=3600, ge=60, le=86400, description="ID token lifetime"
-    )
+    id_token_lifetime: int = Field(default=3600, ge=60, le=86400, description="ID token lifetime")
 
     # Session Configuration
     session_secret_key: SecretStr = Field(
@@ -89,7 +87,9 @@ class Settings(BaseSettings):
     )
 
     # Security
-    password_min_length: int = Field(default=12, ge=8, le=128, description="Minimum password length")
+    password_min_length: int = Field(
+        default=12, ge=8, le=128, description="Minimum password length"
+    )
     password_require_uppercase: bool = Field(default=True, description="Require uppercase")
     password_require_lowercase: bool = Field(default=True, description="Require lowercase")
     password_require_digit: bool = Field(default=True, description="Require digit")
@@ -120,9 +120,7 @@ class Settings(BaseSettings):
     )
 
     # Admin Configuration
-    admin_email: str = Field(
-        default="admin@example.com", description="Default admin email"
-    )
+    admin_email: str = Field(default="admin@example.com", description="Default admin email")
 
     @field_validator("cors_origins", mode="before")
     @classmethod

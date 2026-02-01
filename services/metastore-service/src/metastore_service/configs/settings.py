@@ -18,10 +18,10 @@ from shared.sqlalchemy_async import DatabaseConfig
 
 class Settings(BaseSettings):
     """Application settings with environment variable binding.
-    
+
     Settings are loaded from environment variables with optional .env file support.
     The class provides factory methods for creating shared library config objects.
-    
+
     Example:
         >>> settings = get_settings()
         >>> db_config = settings.get_database_config()
@@ -98,10 +98,10 @@ class Settings(BaseSettings):
 
     def get_database_config(self) -> DatabaseConfig:
         """Create DatabaseConfig for AsyncDatabaseManager.
-        
+
         Returns:
             DatabaseConfig instance configured from settings.
-            
+
         Example:
             >>> settings = get_settings()
             >>> config = settings.get_database_config()
@@ -118,10 +118,10 @@ class Settings(BaseSettings):
 
     def get_cache_config(self) -> CacheConfig:
         """Create CacheConfig for TieredCacheManager.
-        
+
         Returns:
             CacheConfig instance configured from settings.
-            
+
         Example:
             >>> settings = get_settings()
             >>> config = settings.get_cache_config()
@@ -146,11 +146,10 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance.
-    
+
     Uses LRU cache to ensure settings are loaded only once.
-    
+
     Returns:
         Singleton Settings instance.
     """
     return Settings()
-

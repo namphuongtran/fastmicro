@@ -6,26 +6,21 @@ including transaction management and repository coordination.
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-if TYPE_CHECKING:
-    pass
-
+from shared.dbs.repository import InMemoryRepository
 from shared.dbs.unit_of_work import (
     AbstractUnitOfWork,
     InMemoryUnitOfWork,
 )
-from shared.dbs.repository import InMemoryRepository
 
 
 @dataclass
 class User:
     """Test user entity."""
+
     id: str
     name: str
     email: str
@@ -34,6 +29,7 @@ class User:
 @dataclass
 class Order:
     """Test order entity."""
+
     id: str
     user_id: str
     total: float
@@ -90,7 +86,7 @@ class TestInMemoryUnitOfWork:
         """Should register repositories."""
         users_repo = InMemoryRepository[User](id_field="id")
         uow.register_repository("users", users_repo)
-        
+
         assert uow.get_repository("users") is users_repo
 
     @pytest.mark.asyncio
@@ -104,19 +100,19 @@ class TestInMemoryUnitOfWork:
         """Should support multiple repositories."""
         users_repo = InMemoryRepository[User](id_field="id")
         orders_repo = InMemoryRepository[Order](id_field="id")
-        
+
         uow.register_repository("users", users_repo)
         uow.register_repository("orders", orders_repo)
-        
+
         async with uow:
             # Add user
             await users_repo.add(User(id="1", name="Alice", email="alice@test.com"))
-            
+
             # Add order for user
             await orders_repo.add(Order(id="100", user_id="1", total=99.99))
-            
+
             await uow.commit()
-        
+
         # Verify both repositories have data
         assert await users_repo.count() == 1
         assert await orders_repo.count() == 1
@@ -125,10 +121,10 @@ class TestInMemoryUnitOfWork:
     async def test_is_active_property(self, uow: InMemoryUnitOfWork) -> None:
         """Should track if UoW is active."""
         assert uow.is_active is False
-        
+
         async with uow:
             assert uow.is_active is True
-        
+
         assert uow.is_active is False
 
 
@@ -146,23 +142,21 @@ class TestUnitOfWorkTransactions:
     async def test_commit_persists_changes(self, uow: InMemoryUnitOfWork) -> None:
         """Should persist changes on commit."""
         users = uow.get_repository("users")
-        
+
         async with uow:
             await users.add(User(id="1", name="Test", email="test@test.com"))
             await uow.commit()
-        
+
         assert await users.exists("1")
 
     @pytest.mark.asyncio
-    async def test_changes_visible_within_transaction(
-        self, uow: InMemoryUnitOfWork
-    ) -> None:
+    async def test_changes_visible_within_transaction(self, uow: InMemoryUnitOfWork) -> None:
         """Should see changes within same transaction."""
         users = uow.get_repository("users")
-        
+
         async with uow:
             await users.add(User(id="1", name="Test", email="test@test.com"))
-            
+
             # Should be visible before commit
             user = await users.get("1")
             assert user is not None

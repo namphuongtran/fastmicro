@@ -7,11 +7,11 @@ Provides pluggable cache backends:
 """
 
 from shared.cache.backends.memory import MemoryCache
-from shared.cache.backends.redis import RedisCache
 from shared.cache.backends.null import NullCache
+from shared.cache.backends.redis import RedisCache
 
 __all__ = [
     "MemoryCache",
-    "RedisCache",
     "NullCache",
+    "RedisCache",
 ]

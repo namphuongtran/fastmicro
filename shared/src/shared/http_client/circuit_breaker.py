@@ -9,10 +9,11 @@ This module provides a circuit breaker for resilient service calls:
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -22,7 +23,7 @@ T = TypeVar("T")
 
 class CircuitState(str, Enum):
     """Circuit breaker states.
-    
+
     CLOSED: Normal operation, requests pass through.
     OPEN: Failures exceeded threshold, requests are rejected.
     HALF_OPEN: Testing recovery, limited requests allowed.
@@ -35,7 +36,7 @@ class CircuitState(str, Enum):
 
 class CircuitOpenError(Exception):
     """Error raised when circuit is open.
-    
+
     Attributes:
         service_name: Name of the service.
         retry_after: Suggested retry time in seconds.
@@ -47,7 +48,7 @@ class CircuitOpenError(Exception):
         retry_after: float | None = None,
     ) -> None:
         """Initialize circuit open error.
-        
+
         Args:
             service_name: Name of the service.
             retry_after: Suggested retry time in seconds.
@@ -63,7 +64,7 @@ class CircuitOpenError(Exception):
 @dataclass
 class CircuitBreakerConfig:
     """Configuration for circuit breaker.
-    
+
     Attributes:
         failure_threshold: Number of failures before opening circuit.
         recovery_timeout: Seconds to wait before trying recovery.
@@ -81,13 +82,13 @@ class CircuitBreakerConfig:
 
 class CircuitBreaker:
     """Circuit breaker for resilient service calls.
-    
+
     Implements the circuit breaker pattern to prevent cascading failures:
-    
+
     1. CLOSED state: Normal operation, failures are counted
     2. OPEN state: After threshold failures, requests are rejected
     3. HALF_OPEN state: After recovery timeout, limited requests are allowed
-    
+
     Example:
         >>> breaker = CircuitBreaker("user-service", CircuitBreakerConfig())
         >>> async def fetch_user():
@@ -106,7 +107,7 @@ class CircuitBreaker:
         config: CircuitBreakerConfig | None = None,
     ) -> None:
         """Initialize circuit breaker.
-        
+
         Args:
             name: Service name for identification.
             config: Circuit breaker configuration.
@@ -140,13 +141,13 @@ class CircuitBreaker:
         func: Callable[[], Awaitable[T]],
     ) -> T:
         """Execute function through circuit breaker.
-        
+
         Args:
             func: Async function to execute.
-            
+
         Returns:
             Result of the function.
-            
+
         Raises:
             CircuitOpenError: If circuit is open.
             Exception: Original exception from the function.
@@ -177,16 +178,16 @@ class CircuitBreaker:
         """Check if recovery should be attempted."""
         if self._opened_at is None:
             return False
-        
-        elapsed = (datetime.now(timezone.utc) - self._opened_at).total_seconds()
+
+        elapsed = (datetime.now(UTC) - self._opened_at).total_seconds()
         return elapsed >= self._config.recovery_timeout
 
     def _get_retry_after(self) -> float | None:
         """Calculate retry after time."""
         if self._opened_at is None:
             return None
-        
-        elapsed = (datetime.now(timezone.utc) - self._opened_at).total_seconds()
+
+        elapsed = (datetime.now(UTC) - self._opened_at).total_seconds()
         remaining = self._config.recovery_timeout - elapsed
         return max(0, remaining)
 
@@ -214,7 +215,7 @@ class CircuitBreaker:
     def _open(self) -> None:
         """Open the circuit."""
         self._state = CircuitState.OPEN
-        self._opened_at = datetime.now(timezone.utc)
+        self._opened_at = datetime.now(UTC)
 
     def _close(self) -> None:
         """Close the circuit."""
@@ -230,7 +231,7 @@ class CircuitBreaker:
 
     def get_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics.
-        
+
         Returns:
             Dictionary with current stats.
         """

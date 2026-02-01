@@ -25,56 +25,44 @@ class TestPasswordService:
     def test_hash_password(self, password_service: PasswordService) -> None:
         """Should hash password."""
         hashed = password_service.hash("mypassword123")
-        
+
         assert isinstance(hashed, str)
         assert hashed != "mypassword123"
         assert hashed.startswith("$argon2")
 
-    def test_hash_produces_different_hashes(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_hash_produces_different_hashes(self, password_service: PasswordService) -> None:
         """Should produce different hashes for same password (salting)."""
         hash1 = password_service.hash("mypassword123")
         hash2 = password_service.hash("mypassword123")
-        
+
         assert hash1 != hash2
 
-    def test_verify_correct_password(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_correct_password(self, password_service: PasswordService) -> None:
         """Should verify correct password."""
         hashed = password_service.hash("mypassword123")
-        
+
         assert password_service.verify("mypassword123", hashed) is True
 
-    def test_verify_incorrect_password(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_incorrect_password(self, password_service: PasswordService) -> None:
         """Should reject incorrect password."""
         hashed = password_service.hash("mypassword123")
-        
+
         assert password_service.verify("wrongpassword", hashed) is False
 
-    def test_verify_empty_password(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_empty_password(self, password_service: PasswordService) -> None:
         """Should reject empty password."""
         hashed = password_service.hash("mypassword123")
-        
+
         assert password_service.verify("", hashed) is False
 
-    def test_verify_invalid_hash(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_verify_invalid_hash(self, password_service: PasswordService) -> None:
         """Should return False for invalid hash format."""
         assert password_service.verify("password", "invalid-hash") is False
 
-    def test_needs_rehash_false(
-        self, password_service: PasswordService
-    ) -> None:
+    def test_needs_rehash_false(self, password_service: PasswordService) -> None:
         """Should not need rehash for fresh hash."""
         hashed = password_service.hash("mypassword123")
-        
+
         assert password_service.needs_rehash(hashed) is False
 
     def test_needs_rehash_old_parameters(self) -> None:
@@ -90,9 +78,9 @@ class TestPasswordService:
             memory_cost=65536,
             parallelism=4,
         )
-        
+
         old_hash = old_service.hash("mypassword123")
-        
+
         # New service should detect old hash needs rehashing
         assert new_service.needs_rehash(old_hash) is True
 
@@ -103,7 +91,7 @@ class TestPasswordService:
             memory_cost=131072,
             parallelism=8,
         )
-        
+
         hashed = service.hash("mypassword123")
         assert service.verify("mypassword123", hashed) is True
 
@@ -120,7 +108,7 @@ class TestCheckPasswordStrength:
         """Should reject password that is too short."""
         with pytest.raises(PasswordStrengthError) as exc_info:
             check_password_strength("Short1!", min_length=8)
-        
+
         assert "at least 8 characters" in str(exc_info.value)
 
     def test_password_no_uppercase(self) -> None:
@@ -130,7 +118,7 @@ class TestCheckPasswordStrength:
                 "mypassword123!",
                 require_uppercase=True,
             )
-        
+
         assert "uppercase" in str(exc_info.value).lower()
 
     def test_password_no_lowercase(self) -> None:
@@ -140,7 +128,7 @@ class TestCheckPasswordStrength:
                 "MYPASSWORD123!",
                 require_lowercase=True,
             )
-        
+
         assert "lowercase" in str(exc_info.value).lower()
 
     def test_password_no_digit(self) -> None:
@@ -150,7 +138,7 @@ class TestCheckPasswordStrength:
                 "MyPassword!",
                 require_digit=True,
             )
-        
+
         assert "digit" in str(exc_info.value).lower()
 
     def test_password_no_special(self) -> None:
@@ -160,14 +148,14 @@ class TestCheckPasswordStrength:
                 "MyPassword123",
                 require_special=True,
             )
-        
+
         assert "special" in str(exc_info.value).lower()
 
     def test_custom_min_length(self) -> None:
         """Should support custom minimum length."""
         # Should not raise with 12+ chars
         check_password_strength("MyPassword12!", min_length=12)
-        
+
         # Should raise with less than 12 chars
         with pytest.raises(PasswordStrengthError):
             check_password_strength("MyPass1!", min_length=12)
@@ -176,7 +164,7 @@ class TestCheckPasswordStrength:
         """Should use sensible default requirements."""
         # Should accept password meeting basic requirements
         check_password_strength("Password123")
-        
+
         # Should reject password that's too short
         with pytest.raises(PasswordStrengthError):
             check_password_strength("Pass1")
@@ -188,7 +176,7 @@ class TestPasswordStrengthError:
     def test_password_strength_error(self) -> None:
         """Should create password strength error."""
         error = PasswordStrengthError("Password too weak")
-        
+
         assert str(error) == "Password too weak"
         assert isinstance(error, ValueError)
 
@@ -198,5 +186,5 @@ class TestPasswordStrengthError:
             "Password does not meet requirements",
             failed_requirements=["uppercase", "special"],
         )
-        
+
         assert error.failed_requirements == ["uppercase", "special"]

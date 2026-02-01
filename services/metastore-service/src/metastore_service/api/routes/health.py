@@ -6,11 +6,10 @@ Kubernetes-compatible liveness and readiness probes.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-from shared.fastapi_utils.health_router import create_health_router
+from datetime import UTC, datetime
 
 from metastore_service.configs.settings import get_settings
+from shared.fastapi_utils.health_router import create_health_router
 
 settings = get_settings()
 
@@ -21,5 +20,5 @@ router = create_health_router(
     prefix="/health",
     tags=["Health"],
     include_details=True,
-    startup_time=datetime.now(timezone.utc),
+    startup_time=datetime.now(UTC),
 )

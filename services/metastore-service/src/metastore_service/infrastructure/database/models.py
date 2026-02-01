@@ -5,7 +5,7 @@ These models map domain entities to the PostgreSQL database schema.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -20,7 +20,8 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from metastore_service.domain.value_objects import ContentType, Environment, Operator
@@ -61,19 +62,19 @@ class MetadataEntryModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationships
-    versions: Mapped[list["MetadataVersionModel"]] = relationship(
+    versions: Mapped[list[MetadataVersionModel]] = relationship(
         "MetadataVersionModel",
         back_populates="metadata_entry",
         cascade="all, delete-orphan",
@@ -101,13 +102,13 @@ class MetadataVersionModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     change_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    metadata_entry: Mapped["MetadataEntryModel"] = relationship(
+    metadata_entry: Mapped[MetadataEntryModel] = relationship(
         "MetadataEntryModel",
         back_populates="versions",
     )
@@ -137,19 +138,19 @@ class FeatureFlagModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationships
-    targeting_rules: Mapped[list["TargetingRuleModel"]] = relationship(
+    targeting_rules: Mapped[list[TargetingRuleModel]] = relationship(
         "TargetingRuleModel",
         back_populates="feature_flag",
         cascade="all, delete-orphan",
@@ -161,9 +162,7 @@ class TargetingRuleModel(Base):
     """SQLAlchemy model for feature flag targeting rules."""
 
     __tablename__ = "targeting_rules"
-    __table_args__ = (
-        Index("ix_targeting_rule_flag_id", "feature_flag_id"),
-    )
+    __table_args__ = (Index("ix_targeting_rule_flag_id", "feature_flag_id"),)
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     feature_flag_id: Mapped[UUID] = mapped_column(
@@ -182,7 +181,7 @@ class TargetingRuleModel(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    feature_flag: Mapped["FeatureFlagModel"] = relationship(
+    feature_flag: Mapped[FeatureFlagModel] = relationship(
         "FeatureFlagModel",
         back_populates="targeting_rules",
     )
@@ -194,7 +193,10 @@ class ConfigurationModel(Base):
     __tablename__ = "configurations"
     __table_args__ = (
         UniqueConstraint(
-            "service_id", "name", "environment", "tenant_id",
+            "service_id",
+            "name",
+            "environment",
+            "tenant_id",
             name="uq_config_service_name_env_tenant",
         ),
         Index("ix_config_service_id", "service_id"),
@@ -225,25 +227,25 @@ class ConfigurationModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationships
-    versions: Mapped[list["ConfigurationVersionModel"]] = relationship(
+    versions: Mapped[list[ConfigurationVersionModel]] = relationship(
         "ConfigurationVersionModel",
         back_populates="configuration",
         cascade="all, delete-orphan",
         order_by="desc(ConfigurationVersionModel.version_number)",
     )
-    schema: Mapped["ConfigurationSchemaModel | None"] = relationship(
+    schema: Mapped[ConfigurationSchemaModel | None] = relationship(
         "ConfigurationSchemaModel",
         back_populates="configurations",
     )
@@ -269,13 +271,13 @@ class ConfigurationVersionModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     change_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    configuration: Mapped["ConfigurationModel"] = relationship(
+    configuration: Mapped[ConfigurationModel] = relationship(
         "ConfigurationModel",
         back_populates="versions",
     )
@@ -285,9 +287,7 @@ class ConfigurationSchemaModel(Base):
     """SQLAlchemy model for configuration schemas."""
 
     __tablename__ = "configuration_schemas"
-    __table_args__ = (
-        UniqueConstraint("name", "version", name="uq_schema_name_version"),
-    )
+    __table_args__ = (UniqueConstraint("name", "version", name="uq_schema_name_version"),)
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -297,11 +297,11 @@ class ConfigurationSchemaModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     # Relationships
-    configurations: Mapped[list["ConfigurationModel"]] = relationship(
+    configurations: Mapped[list[ConfigurationModel]] = relationship(
         "ConfigurationModel",
         back_populates="schema",
     )

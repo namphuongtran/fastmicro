@@ -13,9 +13,7 @@ from __future__ import annotations
 import json
 import pickle
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Generic,
     Protocol,
@@ -64,9 +62,7 @@ class CacheSerializationError(CacheError):
         *,
         details: dict[str, Any] | None = None,
     ) -> None:
-        super().__init__(
-            message, error_code="CACHE_SERIALIZATION_ERROR", details=details
-        )
+        super().__init__(message, error_code="CACHE_SERIALIZATION_ERROR", details=details)
 
 
 # ============================================================================
@@ -79,10 +75,10 @@ class Serializer(Protocol[T]):
 
     def serialize(self, value: T) -> bytes:
         """Serialize a value to bytes.
-        
+
         Args:
             value: Value to serialize.
-            
+
         Returns:
             Serialized bytes.
         """
@@ -90,10 +86,10 @@ class Serializer(Protocol[T]):
 
     def deserialize(self, data: bytes) -> T:
         """Deserialize bytes to a value.
-        
+
         Args:
             data: Bytes to deserialize.
-            
+
         Returns:
             Deserialized value.
         """
@@ -102,7 +98,7 @@ class Serializer(Protocol[T]):
 
 class NullSerializer:
     """Serializer that does nothing - for in-memory caches.
-    
+
     Memory caches can store Python objects directly,
     so no serialization is needed.
     """
@@ -118,10 +114,10 @@ class NullSerializer:
 
 class JsonSerializer:
     """JSON serializer for cache values.
-    
+
     Best for human-readable, debuggable cache entries.
     Works well with Redis and other string-based backends.
-    
+
     Example:
         >>> serializer = JsonSerializer()
         >>> data = serializer.serialize({"name": "John", "age": 30})
@@ -131,7 +127,7 @@ class JsonSerializer:
 
     def __init__(self, encoding: str = "utf-8") -> None:
         """Initialize JSON serializer.
-        
+
         Args:
             encoding: String encoding to use.
         """
@@ -139,13 +135,13 @@ class JsonSerializer:
 
     def serialize(self, value: Any) -> bytes:
         """Serialize value to JSON bytes.
-        
+
         Args:
             value: Value to serialize (must be JSON-serializable).
-            
+
         Returns:
             JSON-encoded bytes.
-            
+
         Raises:
             CacheSerializationError: If serialization fails.
         """
@@ -159,13 +155,13 @@ class JsonSerializer:
 
     def deserialize(self, data: bytes) -> Any:
         """Deserialize JSON bytes to value.
-        
+
         Args:
             data: JSON-encoded bytes.
-            
+
         Returns:
             Deserialized Python object.
-            
+
         Raises:
             CacheSerializationError: If deserialization fails.
         """
@@ -182,10 +178,10 @@ class JsonSerializer:
 
 class PickleSerializer:
     """Pickle serializer for cache values.
-    
+
     Supports complex Python objects but less portable.
     Use with caution - pickle can execute arbitrary code.
-    
+
     Example:
         >>> from datetime import datetime
         >>> serializer = PickleSerializer()
@@ -196,7 +192,7 @@ class PickleSerializer:
 
     def __init__(self, protocol: int = pickle.HIGHEST_PROTOCOL) -> None:
         """Initialize Pickle serializer.
-        
+
         Args:
             protocol: Pickle protocol version.
         """
@@ -204,13 +200,13 @@ class PickleSerializer:
 
     def serialize(self, value: Any) -> bytes:
         """Serialize value to pickle bytes.
-        
+
         Args:
             value: Value to serialize.
-            
+
         Returns:
             Pickled bytes.
-            
+
         Raises:
             CacheSerializationError: If serialization fails.
         """
@@ -224,18 +220,18 @@ class PickleSerializer:
 
     def deserialize(self, data: bytes) -> Any:
         """Deserialize pickle bytes to value.
-        
+
         Args:
             data: Pickled bytes.
-            
+
         Returns:
             Deserialized Python object.
-            
+
         Raises:
             CacheSerializationError: If deserialization fails.
         """
         try:
-            return pickle.loads(data)  # noqa: S301
+            return pickle.loads(data)
         except (pickle.UnpicklingError, TypeError) as e:
             raise CacheSerializationError(
                 f"Failed to unpickle value: {e}",
@@ -251,10 +247,10 @@ class PickleSerializer:
 @runtime_checkable
 class CacheBackend(Protocol[V]):
     """Protocol defining the cache backend interface.
-    
+
     All cache backends (Memory, Redis, Null) must implement this interface.
     This enables the TieredCacheManager to work with any backend.
-    
+
     Type Parameters:
         V: The value type stored in the cache.
     """
@@ -266,11 +262,11 @@ class CacheBackend(Protocol[V]):
 
     async def get(self, key: str, default: V | None = None) -> V | None:
         """Get a value from the cache.
-        
+
         Args:
             key: Cache key.
             default: Default value if key not found.
-            
+
         Returns:
             Cached value or default.
         """
@@ -283,12 +279,12 @@ class CacheBackend(Protocol[V]):
         ttl: int | None = None,
     ) -> bool:
         """Set a value in the cache.
-        
+
         Args:
             key: Cache key.
             value: Value to cache.
             ttl: Time-to-live in seconds (None = use default).
-            
+
         Returns:
             True if successful.
         """
@@ -296,10 +292,10 @@ class CacheBackend(Protocol[V]):
 
     async def delete(self, key: str) -> bool:
         """Delete a key from the cache.
-        
+
         Args:
             key: Cache key to delete.
-            
+
         Returns:
             True if key was deleted, False if not found.
         """
@@ -307,10 +303,10 @@ class CacheBackend(Protocol[V]):
 
     async def exists(self, key: str) -> bool:
         """Check if a key exists in the cache.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             True if key exists.
         """
@@ -318,10 +314,10 @@ class CacheBackend(Protocol[V]):
 
     async def clear(self, namespace: str | None = None) -> int:
         """Clear cache entries.
-        
+
         Args:
             namespace: Optional namespace prefix to clear.
-            
+
         Returns:
             Number of keys cleared.
         """
@@ -329,11 +325,11 @@ class CacheBackend(Protocol[V]):
 
     async def increment(self, key: str, delta: int = 1) -> int:
         """Increment a numeric value.
-        
+
         Args:
             key: Cache key.
             delta: Amount to increment (can be negative).
-            
+
         Returns:
             New value after increment.
         """
@@ -351,7 +347,7 @@ class CacheBackend(Protocol[V]):
 
 class AbstractCacheBackend(ABC, Generic[V]):
     """Abstract base class implementing common cache backend functionality.
-    
+
     Subclasses only need to implement the core operations.
     """
 
@@ -362,7 +358,7 @@ class AbstractCacheBackend(ABC, Generic[V]):
         serializer: Serializer[Any] | None = None,
     ) -> None:
         """Initialize cache backend.
-        
+
         Args:
             namespace: Key namespace prefix.
             default_ttl: Default TTL in seconds.
@@ -380,10 +376,10 @@ class AbstractCacheBackend(ABC, Generic[V]):
 
     def build_key(self, key: str) -> str:
         """Build full cache key with namespace.
-        
+
         Args:
             key: Base key.
-            
+
         Returns:
             Full key with namespace prefix.
         """
@@ -393,10 +389,10 @@ class AbstractCacheBackend(ABC, Generic[V]):
 
     def _get_ttl(self, ttl: int | None) -> int | None:
         """Get effective TTL.
-        
+
         Args:
             ttl: Explicit TTL or None.
-            
+
         Returns:
             Effective TTL to use.
         """
@@ -443,7 +439,7 @@ class AbstractCacheBackend(ABC, Generic[V]):
         """Close backend (default: no-op)."""
         pass
 
-    async def __aenter__(self) -> "AbstractCacheBackend[V]":
+    async def __aenter__(self) -> AbstractCacheBackend[V]:
         """Async context manager entry."""
         return self
 

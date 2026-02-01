@@ -6,10 +6,10 @@ for microservices with environment variable support.
 Example:
     >>> from shared.config import BaseServiceSettings, DatabaseSettings
     >>> from shared.config import get_settings, clear_settings_cache
-    >>> 
+    >>>
     >>> class MySettings(BaseServiceSettings):
     ...     custom_setting: str = "default"
-    >>> 
+    >>>
     >>> settings = get_settings(MySettings)
 """
 

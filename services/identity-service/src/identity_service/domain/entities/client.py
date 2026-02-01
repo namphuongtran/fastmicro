@@ -7,14 +7,13 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from shared.utils import now_utc
-
 from identity_service.domain.value_objects import (
     AuthMethod,
     ClientType,
     GrantType,
     ResponseType,
 )
+from shared.utils import now_utc
 
 
 @dataclass
@@ -81,9 +80,7 @@ class Client:
     grant_types: list[GrantType] = field(
         default_factory=lambda: [GrantType.AUTHORIZATION_CODE, GrantType.REFRESH_TOKEN]
     )
-    response_types: list[ResponseType] = field(
-        default_factory=lambda: [ResponseType.CODE]
-    )
+    response_types: list[ResponseType] = field(default_factory=lambda: [ResponseType.CODE])
 
     # PKCE settings
     require_pkce: bool = True
@@ -189,7 +186,9 @@ class Client:
 
         return None
 
-    def add_secret(self, description: str | None = None, expires_at: datetime | None = None) -> tuple[str, ClientSecret]:
+    def add_secret(
+        self, description: str | None = None, expires_at: datetime | None = None
+    ) -> tuple[str, ClientSecret]:
         """Generate and add a new client secret.
 
         Returns:
@@ -259,9 +258,7 @@ class Client:
     def add_scope(self, scope: str, is_default: bool = False) -> None:
         """Add an allowed scope to the client."""
         if scope not in self.get_allowed_scopes():
-            self.scopes.append(
-                ClientScope(client_id=self.id, scope=scope, is_default=is_default)
-            )
+            self.scopes.append(ClientScope(client_id=self.id, scope=scope, is_default=is_default))
             self.updated_at = now_utc()
 
     def add_redirect_uri(self, uri: str, is_default: bool = False) -> None:

@@ -6,13 +6,6 @@ truncation, case conversion, and text processing functions.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import pytest
-
-if TYPE_CHECKING:
-    pass
-
 from shared.utils.strings import (
     camel_to_snake,
     generate_random_string,

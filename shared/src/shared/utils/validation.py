@@ -15,35 +15,27 @@ Example:
 
 from __future__ import annotations
 
-import html
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
-
-if TYPE_CHECKING:
-    pass
 
 __all__ = [
     "ValidationResult",
     "is_valid_email",
     "is_valid_url",
     "is_valid_uuid",
-    "validate_required",
+    "sanitize_html",
     "validate_length",
     "validate_range",
-    "sanitize_html",
+    "validate_required",
 ]
 
 
 # Pre-compiled regex patterns for performance
-_EMAIL_PATTERN = re.compile(
-    r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-)
+_EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
-_URL_PATTERN = re.compile(
-    r"^https?://[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+.*$"
-)
+_URL_PATTERN = re.compile(r"^https?://[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+.*$")
 
 _HTML_DANGEROUS_PATTERNS = [
     re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL),
@@ -146,7 +138,7 @@ def is_valid_email(email: str) -> bool:
     """
     if not email or not email.strip():
         return False
-    
+
     return bool(_EMAIL_PATTERN.match(email.strip()))
 
 
@@ -168,7 +160,7 @@ def is_valid_url(url: str) -> bool:
     """
     if not url or not url.strip():
         return False
-    
+
     return bool(_URL_PATTERN.match(url.strip()))
 
 
@@ -192,7 +184,7 @@ def is_valid_uuid(value: str) -> bool:
     """
     if not value:
         return False
-    
+
     try:
         UUID(value)
         return True
@@ -230,7 +222,7 @@ def validate_required(
         else:
             # Non-string truthy/falsy values (including 0 and False)
             return ValidationResult.valid()
-    
+
     return ValidationResult.invalid(f"{field_name} is required")
 
 
@@ -258,17 +250,17 @@ def validate_length(
         False
     """
     length = len(value)
-    
+
     if min_length is not None and length < min_length:
         return ValidationResult.invalid(
             f"{field_name} must be at least {min_length} characters (got {length})"
         )
-    
+
     if max_length is not None and length > max_length:
         return ValidationResult.invalid(
             f"{field_name} must be at most {max_length} characters (got {length})"
         )
-    
+
     return ValidationResult.valid()
 
 
@@ -296,15 +288,11 @@ def validate_range(
         True
     """
     if min_value is not None and value < min_value:
-        return ValidationResult.invalid(
-            f"{field_name} must be at least {min_value} (got {value})"
-        )
-    
+        return ValidationResult.invalid(f"{field_name} must be at least {min_value} (got {value})")
+
     if max_value is not None and value > max_value:
-        return ValidationResult.invalid(
-            f"{field_name} must be at most {max_value} (got {value})"
-        )
-    
+        return ValidationResult.invalid(f"{field_name} must be at most {max_value} (got {value})")
+
     return ValidationResult.valid()
 
 
@@ -328,18 +316,18 @@ def sanitize_html(content: str) -> str:
     """
     if not content:
         return ""
-    
+
     result = content
-    
+
     # Remove dangerous patterns
     for pattern in _HTML_DANGEROUS_PATTERNS:
         result = pattern.sub("", result)
-    
+
     # Remove remaining tags that had dangerous attributes
     # This is a simple approach - for comprehensive sanitization,
     # use a dedicated library like bleach
     result = re.sub(r"<[^>]*>", lambda m: _sanitize_tag(m.group(0)), result)
-    
+
     return result.strip()
 
 
@@ -348,8 +336,8 @@ def _sanitize_tag(tag: str) -> str:
     # Remove event handlers
     tag = re.sub(r"\s+on\w+\s*=\s*['\"][^'\"]*['\"]", "", tag, flags=re.IGNORECASE)
     tag = re.sub(r"\s+on\w+\s*=\s*\S+", "", tag, flags=re.IGNORECASE)
-    
+
     # Remove javascript: URLs
     tag = re.sub(r"href\s*=\s*['\"]?javascript:[^'\">\s]*['\"]?", "", tag, flags=re.IGNORECASE)
-    
+
     return tag

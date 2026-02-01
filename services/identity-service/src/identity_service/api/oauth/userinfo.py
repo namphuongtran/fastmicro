@@ -62,7 +62,10 @@ async def userinfo_endpoint(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
-            detail={"error": "invalid_token", "error_description": "Missing or invalid authorization header"},
+            detail={
+                "error": "invalid_token",
+                "error_description": "Missing or invalid authorization header",
+            },
         )
 
     access_token = authorization[7:]  # Remove "Bearer " prefix

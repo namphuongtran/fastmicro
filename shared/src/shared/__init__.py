@@ -25,6 +25,20 @@ from __future__ import annotations
 __version__ = "0.1.0"
 
 # Re-export commonly used items for convenience
+# Application Layer Patterns
+from shared.application import (
+    BaseReadService,
+    BaseService,
+    BaseWriteService,
+    ConflictError,
+    CRUDService,
+    NotFoundError,
+    ServiceContext,
+    ServiceError,
+)
+from shared.application import (
+    ValidationError as ServiceValidationError,
+)
 from shared.constants import Environment, HTTPStatus, Patterns
 from shared.dbs import (
     AbstractRepository,
@@ -37,6 +51,17 @@ from shared.dbs import (
     OrderDirection,
     PageRequest,
     PageResponse,
+)
+
+# DDD Building Blocks
+from shared.ddd import (
+    AggregateRoot,
+    DomainEvent,
+    DomainEventHandler,
+    Entity,
+    EntityId,
+    EventDispatcher,
+    ValueObject,
 )
 from shared.exceptions import (
     BadGatewayException,
@@ -63,85 +88,63 @@ from shared.exceptions import (
     UnprocessableEntityException,
     ValidationException,
 )
+from shared.extensions import (
+    # Dependency Injection
+    Container,
+    Depends,
+    Scope,
+    cache,
+    deprecated,
+    get_container,
+    inject,
+    log_calls,
+    rate_limit,
+    register,
+    resolve,
+    # Decorators
+    retry,
+    singleton,
+    timeout,
+    validate_args,
+)
 from shared.observability import (
-    # Logging
-    JSONFormatter,
     CorrelationIdFilter,
-    set_correlation_id,
-    get_correlation_id,
-    generate_correlation_id,
-    with_context,
-    get_logger,
-    configure_logging,
-    # Tracing
-    SpanKind,
-    TracingConfig,
-    Span,
-    configure_tracing,
-    get_current_span,
-    get_trace_id,
-    create_span,
-    inject_context,
-    extract_context,
-    traced,
     # Metrics
     Counter,
     Gauge,
-    Histogram,
-    MetricsRegistry,
-    get_metrics_registry,
-    configure_metrics,
-    timed,
+    HealthCheck,
+    HealthCheckResult,
     # Health
     HealthStatus,
-    HealthCheckResult,
-    HealthCheck,
-    register_health_check,
-    create_health_check,
+    Histogram,
+    # Logging
+    JSONFormatter,
+    MetricsRegistry,
+    Span,
+    # Tracing
+    SpanKind,
+    TracingConfig,
     check_liveness,
     check_readiness,
+    configure_logging,
+    configure_metrics,
+    configure_tracing,
+    create_health_check,
+    create_span,
+    extract_context,
+    generate_correlation_id,
+    get_correlation_id,
+    get_current_span,
     get_health_status,
-)
-from shared.extensions import (
-    # Decorators
-    retry,
-    cache,
-    rate_limit,
-    timeout,
-    deprecated,
-    log_calls,
-    validate_args,
-    singleton,
-    # Dependency Injection
-    Container,
-    Scope,
-    Depends,
-    inject,
-    get_container,
-    register,
-    resolve,
-)
-# DDD Building Blocks
-from shared.ddd import (
-    Entity,
-    AggregateRoot,
-    EntityId,
-    ValueObject,
-    DomainEvent,
-    DomainEventHandler,
-    EventDispatcher,
-)
-# Application Layer Patterns
-from shared.application import (
-    BaseService,
-    BaseReadService,
-    BaseWriteService,
-    CRUDService,
-    ServiceContext,
-    ServiceError,
-    NotFoundError,
-    ValidationError as ServiceValidationError,
-    ConflictError,
+    get_logger,
+    get_metrics_registry,
+    get_trace_id,
+    inject_context,
+    register_health_check,
+    set_correlation_id,
+    timed,
+    traced,
+    with_context,
 )
 from shared.utils import (
     CustomJSONEncoder,

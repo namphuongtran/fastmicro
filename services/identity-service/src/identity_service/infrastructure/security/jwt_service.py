@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import os
 import time
 import uuid
 from functools import lru_cache
@@ -292,11 +290,11 @@ class JWTService:
 @lru_cache
 def get_key_manager(private_key_path: str, public_key_path: str) -> KeyManager:
     """Get cached key manager instance.
-    
+
     Args:
         private_key_path: Path to RSA private key
         public_key_path: Path to RSA public key
-    
+
     Returns:
         Initialized KeyManager instance
     """
@@ -314,10 +312,10 @@ _jwt_service_cache: dict[tuple[str, str], JWTService] = {}
 
 def get_jwt_service(settings: Settings) -> JWTService:
     """Get cached JWT service instance.
-    
+
     Args:
         settings: Application settings
-    
+
     Returns:
         JWTService instance (cached by key paths)
     """

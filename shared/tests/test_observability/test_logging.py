@@ -10,13 +10,7 @@ import json
 import logging
 import sys
 from io import StringIO
-from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, patch
-
-import pytest
-
-if TYPE_CHECKING:
-    pass
+from unittest.mock import MagicMock
 
 from shared.observability.logging import (
     CorrelationIdFilter,
@@ -44,10 +38,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert parsed["message"] == "Test message"
         assert parsed["level"] == "INFO"
 
@@ -63,10 +57,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert "timestamp" in parsed
         assert "T" in parsed["timestamp"]  # ISO format
 
@@ -82,10 +76,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert parsed["logger"] == "myapp.service"
 
     def test_includes_extra_fields(self) -> None:
@@ -102,22 +96,22 @@ class TestJSONFormatter:
         )
         record.user_id = "user-123"
         record.request_id = "req-456"
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert parsed["user_id"] == "user-123"
         assert parsed["request_id"] == "req-456"
 
     def test_handles_exception_info(self) -> None:
         """Should include exception traceback."""
         formatter = JSONFormatter()
-        
+
         try:
             raise ValueError("Test error")
         except ValueError:
             exc_info = sys.exc_info()
-        
+
         record = logging.LogRecord(
             name="test",
             level=logging.ERROR,
@@ -127,10 +121,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=exc_info,
         )
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert "exception" in parsed
         assert "ValueError" in parsed["exception"]
         assert "Test error" in parsed["exception"]
@@ -147,10 +141,10 @@ class TestJSONFormatter:
             args=("john", "192.168.1.1"),
             exc_info=None,
         )
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert parsed["message"] == "User john logged in from 192.168.1.1"
 
     def test_custom_fields(self) -> None:
@@ -165,10 +159,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         output = formatter.format(record)
         parsed = json.loads(output)
-        
+
         assert parsed["service"] == "api"
         assert parsed["version"] == "1.0"
 
@@ -188,10 +182,10 @@ class TestCorrelationIdFilter:
             args=(),
             exc_info=None,
         )
-        
+
         set_correlation_id("test-correlation-123")
         filter_.filter(record)
-        
+
         assert hasattr(record, "correlation_id")
         assert record.correlation_id == "test-correlation-123"
 
@@ -207,10 +201,10 @@ class TestCorrelationIdFilter:
             args=(),
             exc_info=None,
         )
-        
+
         set_correlation_id(None)  # Clear any existing
         filter_.filter(record)
-        
+
         assert hasattr(record, "correlation_id")
         # Should have some value (either generated or empty)
 
@@ -235,7 +229,7 @@ class TestCorrelationId:
         """Should isolate correlation ID per context."""
         set_correlation_id("id-1")
         assert get_correlation_id() == "id-1"
-        
+
         set_correlation_id("id-2")
         assert get_correlation_id() == "id-2"
 
@@ -250,10 +244,10 @@ class TestWithContext:
         handler.emit = MagicMock()
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
-        
+
         with with_context(user_id="user-123", action="login"):
             logger.info("Test message")
-        
+
         # Verify emit was called
         assert handler.emit.called
 
@@ -262,7 +256,7 @@ class TestWithContext:
         # Context should be scoped to the with block
         with with_context(temp_field="temp_value"):
             pass
-        
+
         # After exiting, the context should be cleaned up
         # This is tested implicitly by the context manager behavior
 
@@ -310,7 +304,7 @@ class TestConfigureLogging:
         """Should add correlation ID filter."""
         configure_logging(level="INFO")
         root_logger = logging.getLogger()
-        
+
         # Check that some filter exists
         # (implementation detail - may vary)
 
@@ -323,16 +317,16 @@ class TestStructuredLogging:
         stream = StringIO()
         handler = logging.StreamHandler(stream)
         handler.setFormatter(JSONFormatter())
-        
+
         logger = logging.getLogger("test.integration")
         logger.handlers = [handler]
         logger.setLevel(logging.INFO)
-        
+
         logger.info("User action", extra={"user_id": "u123", "action": "click"})
-        
+
         output = stream.getvalue()
         parsed = json.loads(output.strip())
-        
+
         assert parsed["message"] == "User action"
         assert parsed["level"] == "INFO"
         assert parsed["user_id"] == "u123"
@@ -344,19 +338,19 @@ class TestStructuredLogging:
         stream = StringIO()
         handler = logging.StreamHandler(stream)
         handler.setFormatter(JSONFormatter())
-        
+
         logger = logging.getLogger("test.error")
         logger.handlers = [handler]
         logger.setLevel(logging.ERROR)
-        
+
         try:
             raise RuntimeError("Something went wrong")
         except RuntimeError:
             logger.exception("Operation failed")
-        
+
         output = stream.getvalue()
         parsed = json.loads(output.strip())
-        
+
         assert parsed["level"] == "ERROR"
         assert "exception" in parsed
         assert "RuntimeError" in parsed["exception"]

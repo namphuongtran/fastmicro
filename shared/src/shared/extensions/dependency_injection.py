@@ -10,13 +10,13 @@ import asyncio
 import functools
 import inspect
 import threading
+from collections.abc import Callable
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
     ParamSpec,
     TypeVar,
@@ -276,7 +276,7 @@ def inject(func: Callable[P, T]) -> Callable[P, T]:
         ...     return db.query("SELECT 1")
     """
     sig = inspect.signature(func)
-    
+
     # Find parameters with Depends defaults
     depends_params: dict[str, Depends] = {}
     for name, param in sig.parameters.items():

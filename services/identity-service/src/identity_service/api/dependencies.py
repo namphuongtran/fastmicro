@@ -6,8 +6,7 @@ See: https://fastapi.tiangolo.com/tutorial/dependencies/
 
 from __future__ import annotations
 
-from functools import lru_cache
-from typing import Annotated, TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends
 
@@ -15,10 +14,7 @@ from identity_service.application.services import OAuth2Service
 from identity_service.configs import Settings, get_settings
 
 if TYPE_CHECKING:
-    from identity_service.domain.repositories import (
-        ClientRepository,
-        UserRepository,
-    )
+    pass
 
 # =============================================================================
 # Annotated Type Aliases for Dependency Injection
@@ -34,6 +30,7 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 # Placeholder for actual repository implementations
 # These will be implemented in Phase 1 infrastructure layer
+
 
 class InMemoryUserRepository:
     """In-memory user repository for development/testing."""
@@ -184,7 +181,9 @@ class InMemoryRefreshTokenRepository:
         return count
 
     async def list_active_for_user(self, user_id, skip=0, limit=100):
-        return [t for t in self._tokens.values() if t.user_id == user_id and t.is_valid()][skip:skip+limit]
+        return [t for t in self._tokens.values() if t.user_id == user_id and t.is_valid()][
+            skip : skip + limit
+        ]
 
     async def cleanup_expired(self):
         expired = [k for k, v in self._tokens.items() if v.is_expired()]
@@ -254,7 +253,9 @@ class InMemoryConsentRepository:
         return count
 
     async def list_by_user(self, user_id, skip=0, limit=100):
-        return [v for k, v in self._consents.items() if k.startswith(str(user_id))][skip:skip+limit]
+        return [v for k, v in self._consents.items() if k.startswith(str(user_id))][
+            skip : skip + limit
+        ]
 
 
 class InMemorySessionRepository:
@@ -296,6 +297,7 @@ class InMemorySessionRepository:
 
     async def extend(self, session_id, seconds):
         from datetime import timedelta
+
         session = await self.get_by_id(session_id)
         if session and session.expires_at:
             session.expires_at += timedelta(seconds=seconds)

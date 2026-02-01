@@ -7,13 +7,12 @@ from datetime import datetime
 from typing import Annotated, Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Form, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from identity_service.api.dependencies import get_oauth2_service
 from identity_service.application.services.oauth2_service import OAuth2Service
-from identity_service.domain.value_objects import GrantType, ResponseType
 
 router = APIRouter(tags=["web"])
 
@@ -83,7 +82,7 @@ async def login_page(
 ) -> HTMLResponse:
     """Render login page."""
     tpl = get_templates()
-    
+
     # Check if user is already logged in
     session = _get_session(request)
     if session.get("user_id"):
@@ -104,16 +103,16 @@ async def login_page(
         if code_challenge:
             query_params.append(f"code_challenge={code_challenge}")
             query_params.append(f"code_challenge_method={code_challenge_method or 'plain'}")
-        
+
         consent_url = "/consent?" + "&".join(query_params) if query_params else "/consent"
         return RedirectResponse(url=consent_url, status_code=status.HTTP_302_FOUND)
-    
+
     # Get client name if client_id provided
     client_name = None
     if client_id:
         # In production, fetch from client repository
         client_name = client_id  # Simplified
-    
+
     return tpl.TemplateResponse(
         "login.html",
         {
@@ -152,10 +151,10 @@ async def login_submit(
 ) -> Response:
     """Handle login form submission."""
     tpl = get_templates()
-    
+
     # Authenticate user
     result = await oauth2_service.login(email, password)
-    
+
     if not result.success:
         return tpl.TemplateResponse(
             "login.html",
@@ -176,22 +175,27 @@ async def login_submit(
             },
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
-    
+
     # Create session
     response = RedirectResponse(
-        url="/consent?" + "&".join([
-            f"response_type={response_type}",
-            f"client_id={client_id}",
-            f"redirect_uri={redirect_uri}",
-            f"scope={scope}",
-            f"state={state}",
-            f"nonce={nonce}",
-            f"code_challenge={code_challenge}",
-            f"code_challenge_method={code_challenge_method}",
-        ]) if client_id else "/",
+        url="/consent?"
+        + "&".join(
+            [
+                f"response_type={response_type}",
+                f"client_id={client_id}",
+                f"redirect_uri={redirect_uri}",
+                f"scope={scope}",
+                f"state={state}",
+                f"nonce={nonce}",
+                f"code_challenge={code_challenge}",
+                f"code_challenge_method={code_challenge_method}",
+            ]
+        )
+        if client_id
+        else "/",
         status_code=status.HTTP_302_FOUND,
     )
-    
+
     _set_session(
         response,
         {
@@ -200,7 +204,7 @@ async def login_submit(
             "remember": remember,
         },
     )
-    
+
     return response
 
 
@@ -219,7 +223,7 @@ async def consent_page(
 ) -> Response:
     """Render consent page."""
     tpl = get_templates()
-    
+
     # Check if user is logged in
     session = _get_session(request)
     if not session.get("user_id"):
@@ -237,16 +241,16 @@ async def consent_page(
         if code_challenge:
             query_params.append(f"code_challenge={code_challenge}")
             query_params.append(f"code_challenge_method={code_challenge_method or 'plain'}")
-        
+
         return RedirectResponse(
             url="/login?" + "&".join(query_params),
             status_code=status.HTTP_302_FOUND,
         )
-    
+
     # Check for existing consent
     user_id = session["user_id"]
     has_consent = await oauth2_service.check_consent(user_id, client_id, scope.split())
-    
+
     if has_consent:
         # Skip consent page, generate code directly
         return await _process_consent_allow(
@@ -263,7 +267,7 @@ async def consent_page(
             code_challenge_method=code_challenge_method,
             oauth2_service=oauth2_service,
         )
-    
+
     # Parse scopes for display
     scope_descriptions = {
         "openid": ("OpenID", "Access your basic profile"),
@@ -271,12 +275,12 @@ async def consent_page(
         "email": ("Email", "View your email address"),
         "offline_access": ("Offline Access", "Access your data when you're not present"),
     }
-    
+
     scopes = []
     for s in scope.split():
         name, description = scope_descriptions.get(s, (s, f"Access to {s}"))
         scopes.append({"name": name, "description": description})
-    
+
     return tpl.TemplateResponse(
         "consent.html",
         {
@@ -315,7 +319,7 @@ async def consent_submit(
 ) -> Response:
     """Handle consent form submission."""
     tpl = get_templates()
-    
+
     # Check if user is logged in
     session = _get_session(request)
     if not session.get("user_id"):
@@ -331,21 +335,21 @@ async def consent_submit(
             },
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
-    
+
     user_id = session["user_id"]
     user_email = session["email"]
-    
+
     if action == "deny":
         # User denied consent
         error_url = f"{redirect_uri}?error=access_denied&error_description=User%20denied%20consent"
         if state:
             error_url += f"&state={state}"
         return RedirectResponse(url=error_url, status_code=status.HTTP_302_FOUND)
-    
+
     # Save consent if requested
     if remember_consent:
         await oauth2_service.save_consent(user_id, client_id, scope.split())
-    
+
     return await _process_consent_allow(
         request=request,
         user_id=user_id,
@@ -378,7 +382,7 @@ async def _process_consent_allow(
 ) -> Response:
     """Process consent allow action and generate authorization code."""
     tpl = get_templates()
-    
+
     # Generate authorization code
     try:
         result = await oauth2_service.create_authorization_code(
@@ -390,14 +394,14 @@ async def _process_consent_allow(
             code_challenge=code_challenge,
             code_challenge_method=code_challenge_method,
         )
-        
+
         # Build redirect URL with code
         callback_url = f"{redirect_uri}?code={result.code}"
         if state:
             callback_url += f"&state={state}"
-        
+
         return RedirectResponse(url=callback_url, status_code=status.HTTP_302_FOUND)
-        
+
     except Exception as e:
         return tpl.TemplateResponse(
             "error.html",
@@ -420,11 +424,11 @@ async def logout(
 ) -> Response:
     """Handle logout."""
     session_id = request.cookies.get("session_id")
-    
+
     redirect_url = post_logout_redirect or "/"
     response = RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
     _clear_session(response, session_id)
-    
+
     return response
 
 
@@ -436,7 +440,7 @@ async def error_page(
 ) -> HTMLResponse:
     """Render error page."""
     tpl = get_templates()
-    
+
     return tpl.TemplateResponse(
         "error.html",
         {

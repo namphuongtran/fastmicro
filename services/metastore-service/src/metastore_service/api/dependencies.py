@@ -6,14 +6,10 @@ for consistent database and cache access across the application.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from shared.sqlalchemy_async import AsyncDatabaseManager
-from shared.cache import TieredCacheManager
-from shared.cache.backends.null import NullCache
 
 from metastore_service.application.services.configuration_service import ConfigurationService
 from metastore_service.application.services.feature_flag_service import FeatureFlagService
@@ -28,6 +24,9 @@ from metastore_service.infrastructure.repositories.feature_flag_repository impor
 from metastore_service.infrastructure.repositories.metadata_repository import (
     PostgresMetadataRepository,
 )
+from shared.cache import TieredCacheManager
+from shared.cache.backends.null import NullCache
+from shared.sqlalchemy_async import AsyncDatabaseManager
 
 # Global managers - initialized in main.py lifespan
 _database_manager: AsyncDatabaseManager | None = None
@@ -36,7 +35,7 @@ _cache_manager: TieredCacheManager | None = None
 
 def get_database_manager() -> AsyncDatabaseManager:
     """Get the database manager.
-    
+
     Raises:
         RuntimeError: If database manager not initialized.
     """
@@ -66,7 +65,7 @@ def set_cache(cache: TieredCacheManager) -> None:
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for database sessions.
-    
+
     Yields:
         AsyncSession with automatic commit/rollback handling.
     """

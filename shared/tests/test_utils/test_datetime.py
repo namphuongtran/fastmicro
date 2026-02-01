@@ -7,17 +7,13 @@ ISO formatting, relative time calculations, and date arithmetic.
 from __future__ import annotations
 
 import datetime
-from datetime import timedelta, timezone
-from typing import TYPE_CHECKING
-from unittest.mock import patch
+from datetime import timedelta
 
 import pytest
 
-if TYPE_CHECKING:
-    pass
-
 # Import after the module is implemented
 from shared.utils.datetime import (
+    end_of_day,
     format_iso8601,
     format_relative_time,
     get_date_range,
@@ -25,7 +21,6 @@ from shared.utils.datetime import (
     now_utc,
     parse_iso8601,
     start_of_day,
-    end_of_day,
     utc_timestamp,
 )
 
@@ -42,14 +37,14 @@ class TestNowUtc:
         """Should return datetime with UTC timezone."""
         result = now_utc()
         assert result.tzinfo is not None
-        assert result.tzinfo == timezone.utc
+        assert result.tzinfo == datetime.UTC
 
     def test_is_close_to_current_time(self) -> None:
         """Should return time close to current time."""
-        before = datetime.datetime.now(tz=timezone.utc)
+        before = datetime.datetime.now(tz=datetime.UTC)
         result = now_utc()
-        after = datetime.datetime.now(tz=timezone.utc)
-        
+        after = datetime.datetime.now(tz=datetime.UTC)
+
         assert before <= result <= after
 
 
@@ -68,10 +63,10 @@ class TestUtcTimestamp:
 
     def test_is_close_to_current_time(self) -> None:
         """Should return timestamp close to current time."""
-        before = datetime.datetime.now(tz=timezone.utc).timestamp()
+        before = datetime.datetime.now(tz=datetime.UTC).timestamp()
         result = utc_timestamp()
-        after = datetime.datetime.now(tz=timezone.utc).timestamp()
-        
+        after = datetime.datetime.now(tz=datetime.UTC).timestamp()
+
         assert before <= result <= after
 
 
@@ -80,7 +75,7 @@ class TestFormatIso8601:
 
     def test_formats_datetime_with_timezone(self) -> None:
         """Should format datetime with timezone to ISO8601."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = format_iso8601(dt)
         assert result == "2024-01-15T10:30:45+00:00"
 
@@ -92,13 +87,13 @@ class TestFormatIso8601:
 
     def test_formats_with_microseconds(self) -> None:
         """Should include microseconds when present."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=datetime.UTC)
         result = format_iso8601(dt, include_microseconds=True)
         assert ".123456" in result
 
     def test_excludes_microseconds_by_default(self) -> None:
         """Should exclude microseconds by default."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=datetime.UTC)
         result = format_iso8601(dt)
         assert "123456" not in result
 
@@ -198,7 +193,7 @@ class TestStartOfDay:
 
     def test_returns_midnight(self) -> None:
         """Should return midnight of the given date."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = start_of_day(dt)
         assert result.hour == 0
         assert result.minute == 0
@@ -207,7 +202,7 @@ class TestStartOfDay:
 
     def test_preserves_date(self) -> None:
         """Should preserve the date."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = start_of_day(dt)
         assert result.year == 2024
         assert result.month == 1
@@ -215,9 +210,9 @@ class TestStartOfDay:
 
     def test_preserves_timezone(self) -> None:
         """Should preserve the timezone."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = start_of_day(dt)
-        assert result.tzinfo == timezone.utc
+        assert result.tzinfo == datetime.UTC
 
 
 class TestEndOfDay:
@@ -225,7 +220,7 @@ class TestEndOfDay:
 
     def test_returns_end_of_day(self) -> None:
         """Should return 23:59:59.999999 of the given date."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = end_of_day(dt)
         assert result.hour == 23
         assert result.minute == 59
@@ -234,7 +229,7 @@ class TestEndOfDay:
 
     def test_preserves_date(self) -> None:
         """Should preserve the date."""
-        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
+        dt = datetime.datetime(2024, 1, 15, 10, 30, 45, tzinfo=datetime.UTC)
         result = end_of_day(dt)
         assert result.year == 2024
         assert result.month == 1
@@ -249,7 +244,7 @@ class TestIsBusinessDay:
         # Monday
         monday = datetime.date(2024, 1, 15)
         assert is_business_day(monday) is True
-        
+
         # Friday
         friday = datetime.date(2024, 1, 19)
         assert is_business_day(friday) is True
@@ -258,13 +253,13 @@ class TestIsBusinessDay:
         """Saturday-Sunday should not be business days."""
         saturday = datetime.date(2024, 1, 20)
         sunday = datetime.date(2024, 1, 21)
-        
+
         assert is_business_day(saturday) is False
         assert is_business_day(sunday) is False
 
     def test_accepts_datetime(self) -> None:
         """Should accept datetime objects."""
-        monday_dt = datetime.datetime(2024, 1, 15, 10, 30, tzinfo=timezone.utc)
+        monday_dt = datetime.datetime(2024, 1, 15, 10, 30, tzinfo=datetime.UTC)
         assert is_business_day(monday_dt) is True
 
 
@@ -275,9 +270,9 @@ class TestGetDateRange:
         """Should return list of dates."""
         start = datetime.date(2024, 1, 1)
         end = datetime.date(2024, 1, 5)
-        
+
         result = get_date_range(start, end)
-        
+
         assert len(result) == 5
         assert all(isinstance(d, datetime.date) for d in result)
 
@@ -285,9 +280,9 @@ class TestGetDateRange:
         """Should include both start and end dates."""
         start = datetime.date(2024, 1, 1)
         end = datetime.date(2024, 1, 3)
-        
+
         result = get_date_range(start, end)
-        
+
         assert result[0] == start
         assert result[-1] == end
 
@@ -295,7 +290,7 @@ class TestGetDateRange:
         """Should handle single day range."""
         date = datetime.date(2024, 1, 15)
         result = get_date_range(date, date)
-        
+
         assert len(result) == 1
         assert result[0] == date
 
@@ -303,7 +298,7 @@ class TestGetDateRange:
         """Should return empty list when start > end."""
         start = datetime.date(2024, 1, 5)
         end = datetime.date(2024, 1, 1)
-        
+
         result = get_date_range(start, end)
-        
+
         assert result == []

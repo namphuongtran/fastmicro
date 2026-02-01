@@ -6,13 +6,6 @@ data sanitization, and validation result handling.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import pytest
-
-if TYPE_CHECKING:
-    pass
-
 from shared.utils.validation import (
     ValidationResult,
     is_valid_email,

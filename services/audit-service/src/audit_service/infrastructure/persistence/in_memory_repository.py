@@ -16,24 +16,24 @@ from audit_service.domain.repositories.audit_repository import IAuditRepository
 class InMemoryAuditRepository(IAuditRepository):
     """
     In-memory implementation of audit repository.
-    
+
     Stores audit events in memory. Suitable for development and testing only.
     """
-    
+
     def __init__(self) -> None:
         """Initialize the in-memory repository."""
         self._events: dict[UUID, AuditEvent] = {}
-    
+
     async def create(self, event: AuditEvent) -> AuditEvent:
         """Create a new audit event."""
         self._events[event.id] = event
         return event
-    
+
     async def get_by_id(self, event_id: UUID) -> AuditEvent | None:
         """Get an audit event by ID."""
         return self._events.get(event_id)
-    
-    async def list(
+
+    async def list_events(
         self,
         *,
         page: int = 1,
@@ -42,7 +42,7 @@ class InMemoryAuditRepository(IAuditRepository):
     ) -> tuple[list[AuditEvent], int]:
         """List audit events with pagination and filtering."""
         events = list(self._events.values())
-        
+
         # Apply filters
         if filters:
             if actor_id := filters.get("actor_id"):
@@ -53,19 +53,19 @@ class InMemoryAuditRepository(IAuditRepository):
                 events = [e for e in events if e.action == action]
             if severity := filters.get("severity"):
                 events = [e for e in events if e.severity == severity]
-        
+
         # Sort by timestamp descending
         events.sort(key=lambda e: e.timestamp, reverse=True)
-        
+
         total = len(events)
-        
+
         # Apply pagination
         start = (page - 1) * page_size
         end = start + page_size
         paginated = events[start:end]
-        
+
         return paginated, total
-    
+
     async def search(
         self,
         query: str,
@@ -78,19 +78,21 @@ class InMemoryAuditRepository(IAuditRepository):
         """Full-text search across audit events."""
         query_lower = query.lower()
         events = []
-        
+
         for event in self._events.values():
             # Simple text search across relevant fields
-            searchable = " ".join([
-                event.actor_id,
-                event.actor_name or "",
-                event.resource_type,
-                event.resource_id,
-                event.resource_name or "",
-                event.description or "",
-                event.action.value,
-            ]).lower()
-            
+            searchable = " ".join(
+                [
+                    event.actor_id,
+                    event.actor_name or "",
+                    event.resource_type,
+                    event.resource_id,
+                    event.resource_name or "",
+                    event.description or "",
+                    event.action.value,
+                ]
+            ).lower()
+
             if query_lower in searchable:
                 # Apply date filters
                 if start_date and event.timestamp < start_date:
@@ -98,39 +100,37 @@ class InMemoryAuditRepository(IAuditRepository):
                 if end_date and event.timestamp > end_date:
                     continue
                 events.append(event)
-        
+
         # Sort by timestamp descending
         events.sort(key=lambda e: e.timestamp, reverse=True)
-        
+
         total = len(events)
-        
+
         # Apply pagination
         start_idx = (page - 1) * page_size
         end_idx = start_idx + page_size
         paginated = events[start_idx:end_idx]
-        
+
         return paginated, total
-    
+
     async def delete_by_id(self, event_id: UUID) -> bool:
         """Delete an audit event by ID."""
         if event_id in self._events:
             del self._events[event_id]
             return True
         return False
-    
+
     async def delete_before_date(self, cutoff_date: datetime) -> int:
         """Delete audit events older than the specified date."""
         to_delete = [
-            event_id
-            for event_id, event in self._events.items()
-            if event.timestamp < cutoff_date
+            event_id for event_id, event in self._events.items() if event.timestamp < cutoff_date
         ]
-        
+
         for event_id in to_delete:
             del self._events[event_id]
-        
+
         return len(to_delete)
-    
+
     async def count_by_actor(
         self,
         actor_id: str,
@@ -149,7 +149,7 @@ class InMemoryAuditRepository(IAuditRepository):
                 continue
             count += 1
         return count
-    
+
     async def count_by_resource(
         self,
         resource_type: str,

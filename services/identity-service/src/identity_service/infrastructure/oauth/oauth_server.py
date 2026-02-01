@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from authlib.oauth2 import AuthorizationServer
 from authlib.oauth2.rfc6749 import ClientMixin
-from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7636 import CodeChallenge
 
 from identity_service.infrastructure.oauth.grants import (

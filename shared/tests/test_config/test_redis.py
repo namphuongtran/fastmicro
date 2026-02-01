@@ -8,8 +8,6 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-import pytest
-
 from shared.config.redis import RedisSettings
 
 
@@ -20,7 +18,7 @@ class TestRedisSettings:
         """Should have sensible defaults."""
         with patch.dict(os.environ, {}, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.host == "localhost"
             assert settings.port == 6379
             assert settings.db == 0
@@ -36,7 +34,7 @@ class TestRedisSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.host == "redis.example.com"
             assert settings.port == 6380
             assert settings.db == 1
@@ -51,7 +49,7 @@ class TestRedisSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.url == "redis://localhost:6379/0"
 
     def test_url_with_password(self) -> None:
@@ -64,7 +62,7 @@ class TestRedisSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.url == "redis://:secret123@localhost:6379/0"
 
     def test_url_with_username(self) -> None:
@@ -78,7 +76,7 @@ class TestRedisSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.url == "redis://myuser:secret123@localhost:6379/0"
 
     def test_ssl_enabled(self) -> None:
@@ -89,7 +87,7 @@ class TestRedisSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.ssl is True
             assert settings.url.startswith("rediss://")
 
@@ -97,7 +95,7 @@ class TestRedisSettings:
         """Should default SSL to disabled."""
         with patch.dict(os.environ, {}, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.ssl is False
             assert settings.url.startswith("redis://")
 
@@ -110,7 +108,7 @@ class TestRedisSettings:
         }
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.max_connections == 20
             assert settings.socket_timeout == 10.0
             assert settings.socket_connect_timeout == 5.0
@@ -119,7 +117,7 @@ class TestRedisSettings:
         """Should have default pool settings."""
         with patch.dict(os.environ, {}, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.max_connections == 10
             assert settings.socket_timeout == 5.0
             assert settings.socket_connect_timeout == 5.0
@@ -129,14 +127,14 @@ class TestRedisSettings:
         env = {"REDIS_KEY_PREFIX": "myapp:"}
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.key_prefix == "myapp:"
 
     def test_default_key_prefix_empty(self) -> None:
         """Should default key prefix to empty."""
         with patch.dict(os.environ, {}, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.key_prefix == ""
 
     def test_ttl_default(self) -> None:
@@ -144,7 +142,7 @@ class TestRedisSettings:
         env = {"REDIS_DEFAULT_TTL": "3600"}
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.default_ttl == 3600
 
     def test_cluster_mode(self) -> None:
@@ -152,12 +150,12 @@ class TestRedisSettings:
         env = {"REDIS_CLUSTER_MODE": "true"}
         with patch.dict(os.environ, env, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.cluster_mode is True
 
     def test_cluster_mode_default_false(self) -> None:
         """Should default cluster mode to false."""
         with patch.dict(os.environ, {}, clear=True):
             settings = RedisSettings()
-            
+
             assert settings.cluster_mode is False

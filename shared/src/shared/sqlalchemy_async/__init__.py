@@ -31,25 +31,6 @@ Example:
     ...     page = await repo.paginate(PageRequest(page=1, size=10))
 """
 
-from shared.sqlalchemy_async.database import (
-    AsyncDatabaseManager,
-    DatabaseConfig,
-    get_async_session,
-)
-from shared.sqlalchemy_async.repository import (
-    AsyncRepository,
-    AsyncCRUDRepository,
-)
-from shared.sqlalchemy_async.models import (
-    TimestampMixin,
-    SoftDeleteMixin,
-    UUIDPrimaryKeyMixin,
-    AuditMixin,
-    TenantMixin,
-    VersionMixin,
-    FullAuditMixin,
-    TenantAuditMixin,
-)
 # Re-export from shared.dbs for convenience
 from shared.dbs.repository import (
     Filter,
@@ -58,6 +39,25 @@ from shared.dbs.repository import (
     OrderDirection,
     PageRequest,
     PageResponse,
+)
+from shared.sqlalchemy_async.database import (
+    AsyncDatabaseManager,
+    DatabaseConfig,
+    get_async_session,
+)
+from shared.sqlalchemy_async.models import (
+    AuditMixin,
+    FullAuditMixin,
+    SoftDeleteMixin,
+    TenantAuditMixin,
+    TenantMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+    VersionMixin,
+)
+from shared.sqlalchemy_async.repository import (
+    AsyncCRUDRepository,
+    AsyncRepository,
 )
 
 __all__ = [

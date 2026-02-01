@@ -18,20 +18,16 @@ import re
 import secrets
 import string
 import unicodedata
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
 
 __all__ = [
-    "slugify",
-    "truncate",
     "camel_to_snake",
-    "snake_to_camel",
     "generate_random_string",
     "mask_sensitive",
-    "sanitize_filename",
     "pluralize",
+    "sanitize_filename",
+    "slugify",
+    "snake_to_camel",
+    "truncate",
 ]
 
 
@@ -160,7 +156,7 @@ def snake_to_camel(
 
     # Split and capitalize
     parts = value.lower().split("_")
-    
+
     if pascal:
         return "".join(part.capitalize() for part in parts)
     else:
@@ -188,7 +184,7 @@ def generate_random_string(
         20
     """
     alphabet = string.ascii_letters + string.digits
-    
+
     if include_special:
         alphabet += string.punctuation
 
@@ -230,7 +226,7 @@ def mask_sensitive(
     start = value[:visible_chars]
     end = value[-visible_chars:]
     middle_length = len(value) - (visible_chars * 2)
-    
+
     return start + mask_char * middle_length + end
 
 
@@ -262,16 +258,16 @@ def sanitize_filename(
 
     # Characters invalid in Windows filenames
     invalid_chars = r'[<>:"/\\|?*\x00-\x1f]'
-    
+
     # Replace invalid characters
     result = re.sub(invalid_chars, replacement, filename)
-    
+
     # Collapse multiple replacements
     result = re.sub(f"{re.escape(replacement)}+", replacement, result)
-    
+
     # Strip leading/trailing replacement chars and spaces
     result = result.strip(f"{replacement} ")
-    
+
     # Truncate if necessary
     if len(result) > max_length:
         result = result[:max_length].rstrip(f"{replacement} ")
@@ -306,8 +302,8 @@ def pluralize(
     """
     if count == 1:
         return word
-    
+
     if plural is not None:
         return plural
-    
+
     return word + "s"

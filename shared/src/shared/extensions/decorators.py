@@ -7,6 +7,7 @@ rate limiting, timeouts, deprecation warnings, logging, and more.
 from __future__ import annotations
 
 import asyncio
+import builtins
 import functools
 import hashlib
 import logging
@@ -14,17 +15,12 @@ import threading
 import time
 import warnings
 from collections import OrderedDict
+from collections.abc import Callable
 from typing import (
-    TYPE_CHECKING,
     Any,
-    Callable,
     ParamSpec,
     TypeVar,
-    overload,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -53,7 +49,7 @@ class RateLimitExceededError(Exception):
         super().__init__(message)
 
 
-class TimeoutError(Exception):  # noqa: A001
+class OperationTimeoutError(Exception):
     """Raised when operation times out."""
 
     def __init__(self, message: str = "Operation timed out") -> None:
@@ -286,7 +282,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
         Decorated function with timeout.
 
     Raises:
-        TimeoutError: When execution exceeds timeout.
+        OperationTimeoutError: When execution exceeds timeout.
 
     Example:
         >>> @timeout(5.0)
@@ -304,7 +300,7 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                 try:
                     return future.result(timeout=seconds)
                 except concurrent.futures.TimeoutError:
-                    raise TimeoutError(
+                    raise OperationTimeoutError(
                         f"Operation timed out after {seconds} seconds"
                     ) from None
 
@@ -315,8 +311,8 @@ def timeout(seconds: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
                     func(*args, **kwargs),  # type: ignore[arg-type]
                     timeout=seconds,
                 )
-            except asyncio.TimeoutError:
-                raise TimeoutError(
+            except builtins.TimeoutError:
+                raise OperationTimeoutError(
                     f"Operation timed out after {seconds} seconds"
                 ) from None
 
@@ -358,7 +354,7 @@ def deprecated(
                 message_parts.append(f": {reason}")
             if alternative:
                 message_parts.append(f". Use {alternative} instead")
-            
+
             warnings.warn(
                 "".join(message_parts),
                 DeprecationWarning,
@@ -461,9 +457,7 @@ def validate_args(
                 if arg_name in bound_args:
                     value = bound_args[arg_name]
                     if not validator(value):
-                        raise ValueError(
-                            f"Validation failed for argument '{arg_name}'"
-                        )
+                        raise ValueError(f"Validation failed for argument '{arg_name}'")
 
             return func(*args, **kwargs)
 

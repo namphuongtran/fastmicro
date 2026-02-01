@@ -9,13 +9,9 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncGenerator, Generator
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
-
-if TYPE_CHECKING:
-    from _pytest.fixtures import FixtureRequest
-
 
 # ============================================================================
 # Async Configuration
@@ -74,13 +70,30 @@ def all_http_status_codes() -> list[int]:
     """Provide all standard HTTP status codes for testing."""
     return [
         # 2xx Success
-        200, 201, 202, 204,
+        200,
+        201,
+        202,
+        204,
         # 3xx Redirection
-        301, 302, 304, 307, 308,
+        301,
+        302,
+        304,
+        307,
+        308,
         # 4xx Client Errors
-        400, 401, 403, 404, 405, 409, 422, 429,
+        400,
+        401,
+        403,
+        404,
+        405,
+        409,
+        422,
+        429,
         # 5xx Server Errors
-        500, 502, 503, 504,
+        500,
+        502,
+        503,
+        504,
     ]
 
 
