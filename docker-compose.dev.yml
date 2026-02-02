@@ -277,6 +277,43 @@ services:
       - "traefik.http.routers.identity.rule=Host(`identity.localhost`) || (Host(`api.localhost`) && PathPrefix(`/oauth2`, `/.well-known`))"
       - "traefik.http.services.identity.loadbalancer.server.port=8000"
 
+  identity-admin-service:
+    build:
+      context: .
+      dockerfile: ./services/identity-admin-service/Dockerfile
+    container_name: identity-admin-service
+    restart: unless-stopped
+    ports:
+      - "8081:8000"
+    environment:
+      APP_ENV: development
+      APP_PORT: "8000"
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@identity-postgresql:5432/identity_db
+      REDIS_URL: redis://redis:6379/2
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      SEQ_URL: http://seq:5341
+    volumes:
+      - ./services/identity-admin-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "identity_admin_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      identity-postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.identity-admin.rule=Host(`api.localhost`) && PathPrefix(`/admin/identity`)"
+      - "traefik.http.services.identity-admin.loadbalancer.server.port=8000"
+
   identity-postgresql:
     image: postgres:16-alpine
     container_name: identity-postgresql

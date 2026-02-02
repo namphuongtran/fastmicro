@@ -29,7 +29,6 @@ on:
 
 env:
   COMPOSE_PROJECT_NAME: fastmicro-integration
-  COMPOSE_FILES: -f docker-compose.yml -f docker-compose.dev.yml
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -43,14 +42,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build all images
+      - name: Build service images
         run: |
-          docker compose ${{ env.COMPOSE_FILES }} build --parallel
+          # Build only the services we need for integration testing
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml build \
+            identity-service \
+            identity-admin-service \
+            audit-service \
+            metastore-service \
+            federation-gateway
 
       - name: Save images
         run: |
           docker save \
-            $(docker compose ${{ env.COMPOSE_FILES }} config --images | grep -v '^$') \
+            fastmicro-identity-service \
+            fastmicro-identity-admin-service \
+            fastmicro-audit-service \
+            fastmicro-metastore-service \
+            fastmicro-federation-gateway \
             -o /tmp/images.tar
 
       - name: Upload images
@@ -105,8 +114,8 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose ${{ env.COMPOSE_FILES }} up -d \
-            identity-service audit-service metastore-service \
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d \
+            identity-service identity-admin-service audit-service metastore-service \
             --no-build \
             --wait \
             --wait-timeout 180
@@ -122,6 +131,9 @@ jobs:
           # Check health endpoints
           echo "Checking identity-service health..."
           curl -sf http://localhost:8003/health || echo "identity-service not ready"
+          
+          echo "Checking identity-admin-service health..."
+          curl -sf http://localhost:8081/health || echo "identity-admin-service not ready"
           
           echo "Checking audit-service health..."
           curl -sf http://localhost:8001/health || echo "audit-service not ready"
@@ -141,6 +153,7 @@ jobs:
           
           SERVICES = {
               "identity": "http://localhost:8003",
+              "identity_admin": "http://localhost:8081",
               "audit": "http://localhost:8001",
               "metastore": "http://localhost:8002",
           }
@@ -149,6 +162,12 @@ jobs:
           async def test_identity_health():
               async with httpx.AsyncClient() as client:
                   response = await client.get(f"{SERVICES['identity']}/health")
+                  assert response.status_code == 200
+          
+          @pytest.mark.asyncio
+          async def test_identity_admin_health():
+              async with httpx.AsyncClient() as client:
+                  response = await client.get(f"{SERVICES['identity_admin']}/health")
                   assert response.status_code == 200
           
           @pytest.mark.asyncio
@@ -177,7 +196,7 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
-          docker compose ${{ env.COMPOSE_FILES }} logs > docker-compose-logs.txt
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml logs > docker-compose-logs.txt
           
       - name: Upload logs
         if: failure()
@@ -188,7 +207,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose ${{ env.COMPOSE_FILES }} down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 
   # ---------------------------------------------------------------------------
   # Load Testing with k6
@@ -226,7 +245,7 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose ${{ env.COMPOSE_FILES }} up -d \
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d \
             identity-service \
             --no-build \
             --wait \
@@ -264,7 +283,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose ${{ env.COMPOSE_FILES }} down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 
   # ---------------------------------------------------------------------------
   # E2E Tests with Playwright
@@ -294,9 +313,10 @@ jobs:
 
       - name: Start backend services
         run: |
-          docker compose ${{ env.COMPOSE_FILES }} up -d \
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d \
             --no-build \
             identity-service \
+            identity-admin-service \
             audit-service \
             metastore-service \
             --wait \
@@ -330,8 +350,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose ${{ env.COMPOSE_FILES }} down -v
-
-      - name: Stop services
-        if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
