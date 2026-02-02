@@ -4,33 +4,23 @@
 # =============================================================================
 
 # Stage 1: Builder with uv
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
-
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Install dependencies first (better layer caching)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=services/identity-service/pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=services/identity-service/uv.lock,target=uv.lock \
-    --mount=type=bind,source=shared/,target=/shared/ \
-    uv sync --locked --no-install-project --no-dev
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy source and install project
-COPY services/identity-service/src/ ./src/
-COPY services/identity-service/templates/ ./templates/
-COPY services/identity-service/static/ ./static/
-COPY shared/ /shared/
-COPY services/identity-service/pyproject.toml services/identity-service/uv.lock ./
+# Copy shared library first (maintains relative path structure)
+COPY shared /app/shared
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
+# Copy service files
+COPY services/identity-service /app/services/identity-service
+
+WORKDIR /app/services/identity-service
+
+# Install dependencies (frozen allows minor lock differences)
+RUN uv sync --frozen --no-dev
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
@@ -56,11 +46,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy virtual environment and application from builder
-COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
-COPY --from=builder --chown=appuser:appgroup /app/src ./src/
-COPY --from=builder --chown=appuser:appgroup /app/templates ./templates/
-COPY --from=builder --chown=appuser:appgroup /app/static ./static/
-COPY --from=builder --chown=appuser:appgroup /shared /shared
+COPY --from=builder --chown=appuser:appgroup /app/services/identity-service/.venv /app/.venv
+COPY --from=builder --chown=appuser:appgroup /app/services/identity-service/src ./src/
+COPY --from=builder --chown=appuser:appgroup /app/services/identity-service/templates ./templates/
+COPY --from=builder --chown=appuser:appgroup /app/services/identity-service/static ./static/
 
 # Create directory for RSA keys
 RUN mkdir -p /app/keys && chown -R appuser:appgroup /app

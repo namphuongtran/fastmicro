@@ -3,33 +3,23 @@
 # =============================================================================
 
 # Stage 1: Builder with uv
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
-
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Copy libs to maintain the correct relative path structure
-COPY libs/ /app/libs/
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install dependencies first (better layer caching)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=gateways/federation-gateway/pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=gateways/federation-gateway/uv.lock,target=uv.lock \
-    uv sync --locked --no-install-project --no-dev
+# Copy shared library first (maintains relative path structure)
+COPY shared /app/shared
 
-# Copy source and install project
-COPY gateways/federation-gateway/src/ ./src/
-COPY gateways/federation-gateway/pyproject.toml gateways/federation-gateway/uv.lock ./
+# Copy gateway files
+COPY gateways/federation-gateway /app/gateways/federation-gateway
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
+WORKDIR /app/gateways/federation-gateway
+
+# Install dependencies (frozen allows minor lock differences)
+RUN uv sync --frozen --no-dev
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
@@ -56,9 +46,8 @@ RUN groupadd --gid 1000 appgroup && \
     useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
 # Copy virtual environment and application from builder
-COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
-COPY --from=builder --chown=appuser:appgroup /app/src ./src/
-COPY --from=builder --chown=appuser:appgroup /app/libs /app/libs
+COPY --from=builder --chown=appuser:appgroup /app/gateways/federation-gateway/.venv /app/.venv
+COPY --from=builder --chown=appuser:appgroup /app/gateways/federation-gateway/src ./src/
 
 USER appuser
 

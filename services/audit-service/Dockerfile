@@ -8,35 +8,23 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Builder with uv
 # -----------------------------------------------------------------------------
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
-# Set environment variables
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0
-
-# Install system dependencies for building
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /app
 
-# Install dependencies first (better layer caching)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=services/audit-service/pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=services/audit-service/uv.lock,target=uv.lock \
-    --mount=type=bind,source=shared/,target=/shared/ \
-    uv sync --locked --no-install-project --no-dev
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy source and install project
-COPY services/audit-service/src/ ./src/
-COPY shared/ /shared/
-COPY services/audit-service/pyproject.toml services/audit-service/uv.lock ./
+# Copy shared library first (maintains relative path structure)
+COPY shared /app/shared
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
+# Copy service files
+COPY services/audit-service /app/services/audit-service
+
+WORKDIR /app/services/audit-service
+
+# Install dependencies (frozen allows minor lock differences)
+RUN uv sync --frozen --no-dev
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
@@ -70,9 +58,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy virtual environment and application from builder
-COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
-COPY --from=builder --chown=appuser:appgroup /app/src ./src/
-COPY --from=builder --chown=appuser:appgroup /shared /shared
+COPY --from=builder --chown=appuser:appgroup /app/services/audit-service/.venv /app/.venv
+COPY --from=builder --chown=appuser:appgroup /app/services/audit-service/src ./src/
 
 # Switch to non-root user
 USER appuser
