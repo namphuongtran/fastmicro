@@ -55,11 +55,11 @@ jobs:
       - name: Save images
         run: |
           docker save \
-            fastmicro-identity-service \
-            fastmicro-identity-admin-service \
-            fastmicro-audit-service \
-            fastmicro-metastore-service \
-            fastmicro-federation-gateway \
+            ${COMPOSE_PROJECT_NAME}-identity-service \
+            ${COMPOSE_PROJECT_NAME}-identity-admin-service \
+            ${COMPOSE_PROJECT_NAME}-audit-service \
+            ${COMPOSE_PROJECT_NAME}-metastore-service \
+            ${COMPOSE_PROJECT_NAME}-federation-gateway \
             -o /tmp/images.tar
 
       - name: Upload images
