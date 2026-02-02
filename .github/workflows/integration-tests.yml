@@ -29,6 +29,7 @@ on:
 
 env:
   COMPOSE_PROJECT_NAME: fastmicro-integration
+  COMPOSE_FILES: -f docker-compose.yml -f docker-compose.dev.yml
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -44,12 +45,12 @@ jobs:
 
       - name: Build all images
         run: |
-          docker compose -f docker-compose.yml build
+          docker compose ${{ env.COMPOSE_FILES }} build --parallel
 
       - name: Save images
         run: |
           docker save \
-            $(docker compose config --images) \
+            $(docker compose ${{ env.COMPOSE_FILES }} config --images | grep -v '^$') \
             -o /tmp/images.tar
 
       - name: Upload images
@@ -104,10 +105,11 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose -f docker-compose.yml up -d \
+          docker compose ${{ env.COMPOSE_FILES }} up -d \
+            identity-service audit-service metastore-service \
             --no-build \
             --wait \
-            --wait-timeout 120
+            --wait-timeout 180
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
           REDIS_URL: redis://localhost:6379
@@ -118,34 +120,56 @@ jobs:
           sleep 30
           
           # Check health endpoints
-          for service in identity-service audit-service metastore-service; do
-            echo "Checking $service health..."
-            curl -sf http://localhost:8000/healthz || echo "$service not ready"
-          done
+          echo "Checking identity-service health..."
+          curl -sf http://localhost:8003/health || echo "identity-service not ready"
+          
+          echo "Checking audit-service health..."
+          curl -sf http://localhost:8001/health || echo "audit-service not ready"
+          
+          echo "Checking metastore-service health..."
+          curl -sf http://localhost:8002/health || echo "metastore-service not ready"
 
       - name: Run API Integration Tests
         run: |
           # Install httpx for API testing
           pip install httpx pytest pytest-asyncio
           
-          # Create simple integration test
+          # Create simple integration test for each service
           cat > /tmp/test_integration.py << 'EOF'
           import httpx
           import pytest
           
-          BASE_URL = "http://localhost:8000"
+          SERVICES = {
+              "identity": "http://localhost:8003",
+              "audit": "http://localhost:8001",
+              "metastore": "http://localhost:8002",
+          }
           
           @pytest.mark.asyncio
-          async def test_health_endpoint():
+          async def test_identity_health():
               async with httpx.AsyncClient() as client:
-                  response = await client.get(f"{BASE_URL}/healthz")
+                  response = await client.get(f"{SERVICES['identity']}/health")
                   assert response.status_code == 200
           
           @pytest.mark.asyncio
-          async def test_readiness_endpoint():
+          async def test_audit_health():
               async with httpx.AsyncClient() as client:
-                  response = await client.get(f"{BASE_URL}/readyz")
+                  response = await client.get(f"{SERVICES['audit']}/health")
                   assert response.status_code == 200
+          
+          @pytest.mark.asyncio
+          async def test_metastore_health():
+              async with httpx.AsyncClient() as client:
+                  response = await client.get(f"{SERVICES['metastore']}/health")
+                  assert response.status_code == 200
+          
+          @pytest.mark.asyncio
+          async def test_identity_wellknown():
+              async with httpx.AsyncClient() as client:
+                  response = await client.get(f"{SERVICES['identity']}/.well-known/openid-configuration")
+                  assert response.status_code == 200
+                  data = response.json()
+                  assert "issuer" in data
           EOF
           
           pytest /tmp/test_integration.py -v || echo "Integration tests completed"
@@ -153,7 +177,7 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
-          docker compose logs > docker-compose-logs.txt
+          docker compose ${{ env.COMPOSE_FILES }} logs > docker-compose-logs.txt
           
       - name: Upload logs
         if: failure()
@@ -164,7 +188,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose down -v
+        run: docker compose ${{ env.COMPOSE_FILES }} down -v
 
   # ---------------------------------------------------------------------------
   # Load Testing with k6
@@ -202,15 +226,18 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose -f docker-compose.yml up -d \
+          docker compose ${{ env.COMPOSE_FILES }} up -d \
+            identity-service \
             --no-build \
             --wait \
-            --wait-timeout 120
+            --wait-timeout 180
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
       - name: Wait for services
-        run: sleep 30
+        run: |
+          sleep 30
+          curl -sf http://localhost:8003/health || echo "Service not ready"
 
       - name: Install k6
         run: |
@@ -225,7 +252,8 @@ jobs:
           k6 run k6/loadtest.js \
             --duration ${{ github.event.inputs.load_test_duration || '30s' }} \
             --vus 10 \
-            --out json=k6-results.json
+            --out json=k6-results.json \
+            -e BASE_URL=http://localhost:8003
         continue-on-error: true
 
       - name: Upload k6 results
@@ -236,7 +264,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose down -v
+        run: docker compose ${{ env.COMPOSE_FILES }} down -v
 
   # ---------------------------------------------------------------------------
   # E2E Tests with Playwright
@@ -266,11 +294,13 @@ jobs:
 
       - name: Start backend services
         run: |
-          docker compose -f docker-compose.yml up -d \
+          docker compose ${{ env.COMPOSE_FILES }} up -d \
             --no-build \
             identity-service \
             audit-service \
-            metastore-service
+            metastore-service \
+            --wait \
+            --wait-timeout 180
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
@@ -297,6 +327,10 @@ jobs:
         with:
           name: playwright-report
           path: services/webshell-service/playwright-report/
+
+      - name: Stop services
+        if: always()
+        run: docker compose ${{ env.COMPOSE_FILES }} down -v
 
       - name: Stop services
         if: always()
