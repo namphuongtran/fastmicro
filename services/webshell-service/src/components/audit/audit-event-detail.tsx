@@ -8,13 +8,11 @@
 
 import { format } from "date-fns";
 import {
-  X,
   User,
   Server,
   Clock,
   Tag,
   FileText,
-  ExternalLink,
   Copy,
   Check,
 } from "lucide-react";

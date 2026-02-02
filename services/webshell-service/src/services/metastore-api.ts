@@ -18,7 +18,6 @@ import type {
   EvaluateFeatureFlagResponse,
   MetadataEntry,
   MetadataQueryParams,
-  PaginatedMetadata,
   CreateMetadataRequest,
   UpdateMetadataRequest,
 } from "@/types/metastore";

@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Activity,
   Bell,
-  Search,
   ChevronDown,
 } from "lucide-react";
 

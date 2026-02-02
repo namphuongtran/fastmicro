@@ -69,7 +69,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   // Redirect to login if not authenticated

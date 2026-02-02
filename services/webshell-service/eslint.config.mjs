@@ -18,6 +18,20 @@ const eslintConfig = [
     },
     rules: {
       // ================================================================
+      // General TypeScript Rules
+      // ================================================================
+      
+      // Allow unused variables/params with underscore prefix (convention for intentionally unused)
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      
+      // ================================================================
       // File Naming Convention Rules
       // ================================================================
       
@@ -35,11 +49,21 @@ const eslintConfig = [
       ],
       
       // Enforce kebab-case for folder names
+      // NOTE: Next.js uses special folder conventions:
+      //   - (group) for route groups (organizational, don't affect URL)
+      //   - [param] for dynamic routes
+      //   - [...catch] for catch-all routes
+      //   - [[...optional]] for optional catch-all routes
+      // These patterns need to be handled via ignores or disabled for app/ routes
       "check-file/folder-naming-convention": [
         "error",
         {
-          // All folders in src should be kebab-case
-          "src/**/": "KEBAB_CASE",
+          // Only apply to non-app directories where we have control
+          "src/components/**/": "KEBAB_CASE",
+          "src/hooks/**/": "KEBAB_CASE",
+          "src/lib/**/": "KEBAB_CASE",
+          "src/services/**/": "KEBAB_CASE",
+          "src/types/**/": "KEBAB_CASE",
           // Tests folder structure
           "tests/**/": "KEBAB_CASE",
         },
@@ -76,9 +100,11 @@ const eslintConfig = [
           format: ["UPPER_CASE"],
         },
         // Variables: camelCase or UPPER_CASE for constants
+        // Allow leading underscore for "private" variables (e.g., _open, _setOpen)
         {
           selector: "variable",
           format: ["camelCase", "UPPER_CASE", "PascalCase"],
+          leadingUnderscore: "allow",
         },
         // Functions: camelCase (PascalCase allowed for React components)
         {

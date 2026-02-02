@@ -6,7 +6,6 @@
  */
 "use client";
 
-import { useState } from "react";
 import { formatDistanceToNow, format } from "date-fns";
 import {
   ChevronLeft,
@@ -38,7 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import type { AuditEvent, AuditQueryParams } from "@/types/audit";
+import type { AuditEvent } from "@/types/audit";
 import {
   severityVariants,
   severityColors,
@@ -135,7 +134,7 @@ export function AuditLogTable({
   pageSize,
   isLoading = false,
   onPageChange,
-  onPageSizeChange,
+  onPageSizeChange: _onPageSizeChange,  // TODO: Implement page size selector
   onEventClick,
   onRefresh,
   onExport,

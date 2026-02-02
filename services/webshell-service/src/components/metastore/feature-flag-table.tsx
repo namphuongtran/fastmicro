@@ -18,7 +18,6 @@ import {
   RefreshCw,
   Plus,
   Search,
-  Filter,
 } from "lucide-react";
 import type { FeatureFlag, PaginatedFeatureFlags } from "@/types/metastore";
 

@@ -33,7 +33,6 @@ import type {
   CreateFeatureFlagRequest,
   UpdateFeatureFlagRequest,
   AddTargetingRuleRequest,
-  MetadataEntry,
   MetadataQueryParams,
   CreateMetadataRequest,
   UpdateMetadataRequest,

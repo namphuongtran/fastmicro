@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import type {
   FeatureFlag,
   CreateFeatureFlagRequest,
