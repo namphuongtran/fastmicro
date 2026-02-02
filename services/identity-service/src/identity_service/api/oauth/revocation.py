@@ -3,7 +3,7 @@
 This module implements token revocation for access and refresh tokens.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Form, Header, HTTPException, Response, status
@@ -34,7 +34,7 @@ def revoke_token(token_id: str, token_type: str = "access_token") -> None:
         token_type: Type of token being revoked
     """
     if token_type == "refresh_token":
-        _revoked_refresh_tokens[token_id] = datetime.now(timezone.utc)
+        _revoked_refresh_tokens[token_id] = datetime.now(UTC)
     else:
         _revoked_tokens.add(token_id)
 
@@ -62,7 +62,7 @@ def cleanup_expired_revocations(max_age_hours: int = 24) -> int:
     Returns:
         Number of entries cleaned up
     """
-    cutoff = datetime.now(timezone.utc) - __import__("datetime").timedelta(hours=max_age_hours)
+    cutoff = datetime.now(UTC) - __import__("datetime").timedelta(hours=max_age_hours)
     expired = [t for t, revoked_at in _revoked_refresh_tokens.items() if revoked_at < cutoff]
     for token in expired:
         _revoked_refresh_tokens.pop(token, None)
@@ -227,5 +227,5 @@ async def check_revocation(
     """
     return {
         "revoked": is_token_revoked(token_id),
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
     }

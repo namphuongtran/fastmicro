@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -189,7 +189,7 @@ class SessionManagementService:
         Returns:
             Session creation result with token
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Generate session ID and token
         session_id = str(uuid4())
@@ -268,7 +268,7 @@ class SessionManagementService:
         if not session:
             return None
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Check if expired
         if session.expires_at < now:
@@ -321,7 +321,7 @@ class SessionManagementService:
         """
         session_ids = _user_sessions.get(user_id, set())
         sessions: list[SessionInfo] = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for sid in session_ids:
             session = _sessions.get(sid)
@@ -366,7 +366,7 @@ class SessionManagementService:
             return False
 
         session.status = SessionStatus.REVOKED
-        session.revoked_at = datetime.now(timezone.utc)
+        session.revoked_at = datetime.now(UTC)
         session.revoke_reason = reason
 
         logger.info(
@@ -472,7 +472,7 @@ class SessionManagementService:
         Returns:
             Number of sessions cleaned up
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Keep revoked sessions for 24 hours for audit
         cleanup_cutoff = now - timedelta(hours=24)
 

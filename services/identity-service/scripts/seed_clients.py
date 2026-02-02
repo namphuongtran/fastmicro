@@ -138,7 +138,9 @@ def create_client_from_config(config: dict) -> Client:
     scopes = [
         ClientScope(
             client_id=client_uuid,
-            scope=scope_config["scope"] if isinstance(scope_config["scope"], str) else scope_config["scope"].value,
+            scope=scope_config["scope"]
+            if isinstance(scope_config["scope"], str)
+            else scope_config["scope"].value,
             is_default=scope_config.get("is_default", False),
         )
         for scope_config in config.get("scopes", [])

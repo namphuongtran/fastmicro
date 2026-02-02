@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -57,13 +57,41 @@ class PasswordValidationResult:
 # ========================================
 
 COMMON_PASSWORDS = {
-    "password", "123456", "12345678", "qwerty", "abc123",
-    "monkey", "1234567", "letmein", "trustno1", "dragon",
-    "baseball", "iloveyou", "master", "sunshine", "ashley",
-    "bailey", "passw0rd", "shadow", "123123", "654321",
-    "superman", "qazwsx", "michael", "football", "password1",
-    "password123", "welcome", "welcome1", "admin", "admin123",
-    "root", "toor", "login", "changeme", "default",
+    "password",
+    "123456",
+    "12345678",
+    "qwerty",
+    "abc123",
+    "monkey",
+    "1234567",
+    "letmein",
+    "trustno1",
+    "dragon",
+    "baseball",
+    "iloveyou",
+    "master",
+    "sunshine",
+    "ashley",
+    "bailey",
+    "passw0rd",
+    "shadow",
+    "123123",
+    "654321",
+    "superman",
+    "qazwsx",
+    "michael",
+    "football",
+    "password1",
+    "password123",
+    "welcome",
+    "welcome1",
+    "admin",
+    "admin123",
+    "root",
+    "toor",
+    "login",
+    "changeme",
+    "default",
     # Add more in production
 }
 
@@ -92,7 +120,7 @@ def add_to_password_history(
         _password_history[user_id] = []
 
     history = _password_history[user_id]
-    history.append((password_hash, datetime.now(timezone.utc)))
+    history.append((password_hash, datetime.now(UTC)))
 
     # Trim old entries
     if len(history) > max_history:
@@ -131,7 +159,7 @@ def set_password_timestamp(user_id: str, timestamp: datetime | None = None) -> N
         user_id: User identifier
         timestamp: When password was changed (defaults to now)
     """
-    _password_timestamps[user_id] = timestamp or datetime.now(timezone.utc)
+    _password_timestamps[user_id] = timestamp or datetime.now(UTC)
 
 
 def get_password_timestamp(user_id: str) -> datetime | None:
@@ -167,7 +195,7 @@ def is_password_expired(
         return True  # No timestamp = treat as expired
 
     expiry = timestamp + timedelta(days=max_age_days)
-    return datetime.now(timezone.utc) > expiry
+    return datetime.now(UTC) > expiry
 
 
 def days_until_expiry(
@@ -191,7 +219,7 @@ def days_until_expiry(
         return 0  # Treat as expired
 
     expiry = timestamp + timedelta(days=max_age_days)
-    delta = expiry - datetime.now(timezone.utc)
+    delta = expiry - datetime.now(UTC)
     return delta.days
 
 
@@ -277,8 +305,14 @@ class PasswordPolicyService:
 
         # Keyboard pattern check (qwerty, 12345, etc.)
         keyboard_patterns = [
-            "qwerty", "asdfgh", "zxcvbn", "qazwsx",
-            "123456", "654321", "abcdef", "fedcba",
+            "qwerty",
+            "asdfgh",
+            "zxcvbn",
+            "qazwsx",
+            "123456",
+            "654321",
+            "abcdef",
+            "fedcba",
         ]
         lower_pass = password.lower()
         for pattern in keyboard_patterns:
@@ -319,9 +353,7 @@ class PasswordPolicyService:
             for old_hash, _ in recent_history:
                 try:
                     if verify_func(password, old_hash):
-                        errors.append(
-                            f"Cannot reuse any of your last {history_limit} passwords"
-                        )
+                        errors.append(f"Cannot reuse any of your last {history_limit} passwords")
                         break
                 except Exception:
                     pass  # Invalid hash format, skip
@@ -372,14 +404,14 @@ class PasswordPolicyService:
         Returns:
             True if password is compromised
         """
-        # Calculate SHA-1 hash
+        # Calculate SHA-1 hash (k-anonymity model)
         sha1 = hashlib.sha1(password.encode()).hexdigest().upper()
         prefix = sha1[:5]
-        suffix = sha1[5:]
+        # suffix = sha1[5:]  # Would be used to compare against HIBP response
 
-        # In production, make API call to HIBP
+        # In production, make API call to HIBP:
         # GET https://api.pwnedpasswords.com/range/{prefix}
-        # Check if suffix appears in response
+        # Then check if suffix appears in the response hashes
 
         # For demo, return False (not breached)
         logger.debug("Breach check performed", prefix=prefix)

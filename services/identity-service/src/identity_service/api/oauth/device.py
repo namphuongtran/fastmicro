@@ -9,7 +9,7 @@ Flow:
 3. Device polls /oauth2/token with device_code until authorized
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import uuid4
 
@@ -101,7 +101,6 @@ def _generate_user_code(length: int = 8) -> str:
     Excludes confusing characters: 0, O, 1, I, L
     """
     import random
-    import string
 
     # Characters that are easy to read and type
     chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
@@ -111,7 +110,7 @@ def _generate_user_code(length: int = 8) -> str:
 
 def _cleanup_expired_codes() -> None:
     """Remove expired device codes."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expired = [dc for dc, entry in _device_codes.items() if entry.expires_at < now]
     for dc in expired:
         entry = _device_codes.pop(dc, None)
@@ -207,9 +206,9 @@ async def device_authorization(
 
     # Calculate expiration (default 15 minutes)
     expires_in = getattr(settings, "device_code_lifetime", 900)
-    expires_at = datetime.now(timezone.utc).replace(
-        microsecond=0
-    ) + __import__("datetime").timedelta(seconds=expires_in)
+    expires_at = datetime.now(UTC).replace(microsecond=0) + __import__("datetime").timedelta(
+        seconds=expires_in
+    )
 
     # Store device code
     entry = DeviceCodeEntry(
@@ -280,12 +279,12 @@ def authorize_device_code(
     if not entry:
         return False
 
-    if entry.expires_at < datetime.now(timezone.utc):
+    if entry.expires_at < datetime.now(UTC):
         return False
 
     entry.authorized = True
     entry.user_id = user_id
-    entry.authorized_at = datetime.now(timezone.utc)
+    entry.authorized_at = datetime.now(UTC)
 
     logger.info(
         "Device code authorized",
@@ -349,7 +348,7 @@ def check_polling_rate(device_code: str, interval: int = 5) -> bool:
     if not entry:
         return True
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if entry.last_polled_at:
         elapsed = (now - entry.last_polled_at).total_seconds()
         if elapsed < interval:

@@ -11,7 +11,7 @@ Features:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -116,7 +116,7 @@ def _get_ip_tracker(ip_address: str) -> AttemptTracker:
 
 def _cleanup_old_attempts(tracker: AttemptTracker, window_minutes: int = 30) -> None:
     """Remove attempts older than the tracking window."""
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+    cutoff = datetime.now(UTC) - timedelta(minutes=window_minutes)
     tracker.attempts = [a for a in tracker.attempts if a.timestamp > cutoff]
 
     # Recalculate failed count
@@ -161,7 +161,7 @@ class BruteForceProtectionService:
 
         # Check if lock has expired
         if tracker.locked and tracker.locked_until:
-            if datetime.now(timezone.utc) > tracker.locked_until:
+            if datetime.now(UTC) > tracker.locked_until:
                 # Auto-unlock
                 tracker.locked = False
                 tracker.locked_at = None
@@ -180,7 +180,7 @@ class BruteForceProtectionService:
             # Check if enough time has passed since last attempt
             if tracker.attempts:
                 last_attempt = tracker.attempts[-1]
-                elapsed = (datetime.now(timezone.utc) - last_attempt.timestamp).total_seconds()
+                elapsed = (datetime.now(UTC) - last_attempt.timestamp).total_seconds()
                 required_delay = max(0, required_delay - elapsed)
 
         return AccountLockStatus(
@@ -215,7 +215,7 @@ class BruteForceProtectionService:
 
         # Check if block has expired
         if tracker.locked and tracker.locked_until:
-            if datetime.now(timezone.utc) > tracker.locked_until:
+            if datetime.now(UTC) > tracker.locked_until:
                 tracker.locked = False
                 tracker.locked_at = None
                 tracker.locked_until = None
@@ -255,7 +255,7 @@ class BruteForceProtectionService:
         Returns:
             Tuple of (account_status, ip_status)
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         attempt = LoginAttempt(
             timestamp=now,
             ip_address=ip_address,

@@ -165,7 +165,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(oauth_router)
     app.include_router(web_router)
-    
+
     # NOTE: Admin functionality has been moved to identity-admin-service
     # for security isolation. Admin API is no longer exposed from this service.
 

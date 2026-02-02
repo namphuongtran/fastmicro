@@ -4,8 +4,8 @@ from identity_service.infrastructure.security.brute_force import (
     AccountLockStatus,
     BruteForceProtectionService,
     IPStatus,
-    LoginAttempt,
     LockoutReason,
+    LoginAttempt,
     get_brute_force_protection_service,
 )
 from identity_service.infrastructure.security.jwt_service import (
