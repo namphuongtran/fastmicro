@@ -34,7 +34,7 @@ def _format_date_display(dt: datetime) -> str:
     """Format datetime for display."""
     now = datetime.utcnow()
     diff = now - dt
-    
+
     if diff.days == 0:
         hours = diff.seconds // 3600
         if hours == 0:
@@ -62,24 +62,26 @@ async def admin_dashboard(
 ) -> HTMLResponse:
     """Render admin dashboard page."""
     tmpl = get_templates()
-    
+
     # Gather stats
     total_clients = await client_repo.count(include_inactive=True)
     active_clients = await client_repo.count(include_inactive=False)
     total_users = await user_repo.count(include_inactive=True)
-    
+
     # Get recent clients
     recent_clients = await client_repo.list_active(skip=0, limit=5)
     recent_clients_data = [
         {
             "id": str(c.id),
             "client_name": c.client_name,
-            "client_type": c.client_type.value if hasattr(c.client_type, 'value') else c.client_type,
+            "client_type": c.client_type.value
+            if hasattr(c.client_type, "value")
+            else c.client_type,
             "is_active": c.is_active,
         }
         for c in recent_clients
     ]
-    
+
     # Stats for dashboard
     stats = {
         "total_users": total_users,
@@ -89,10 +91,10 @@ async def admin_dashboard(
         "active_sessions": 0,
         "tokens_issued_today": 0,
     }
-    
+
     # Recent activity (placeholder)
     recent_activity: list[dict[str, Any]] = []
-    
+
     return tmpl.TemplateResponse(
         request=request,
         name="admin/dashboard.html",
@@ -124,9 +126,9 @@ async def admin_clients_list(
     tmpl = get_templates()
     page_size = 20
     skip = (page - 1) * page_size
-    
+
     include_inactive = status is None or status == "inactive"
-    
+
     if search:
         clients = await client_repo.search(
             query=search,
@@ -147,21 +149,23 @@ async def admin_clients_list(
         else:
             clients = await client_repo.list_active(skip=skip, limit=page_size)
             total = await client_repo.count(include_inactive=False)
-    
+
     # Filter by client type if specified
     if client_type:
         type_value = client_type.lower()
         clients = [
-            c for c in clients 
-            if (c.client_type.value if hasattr(c.client_type, 'value') else c.client_type) == type_value
+            c
+            for c in clients
+            if (c.client_type.value if hasattr(c.client_type, "value") else c.client_type)
+            == type_value
         ]
-    
+
     # Filter by status
     if status == "active":
         clients = [c for c in clients if c.is_active]
     elif status == "inactive":
         clients = [c for c in clients if not c.is_active]
-    
+
     # Convert to template data
     clients_data = [
         {
@@ -170,17 +174,19 @@ async def admin_clients_list(
             "client_name": c.client_name,
             "client_description": c.client_description,
             "logo_uri": c.logo_uri,
-            "client_type": c.client_type.value if hasattr(c.client_type, 'value') else c.client_type,
-            "grant_types": [g.value if hasattr(g, 'value') else g for g in c.grant_types],
+            "client_type": c.client_type.value
+            if hasattr(c.client_type, "value")
+            else c.client_type,
+            "grant_types": [g.value if hasattr(g, "value") else g for g in c.grant_types],
             "is_active": c.is_active,
             "created_at": c.created_at.isoformat(),
             "created_at_display": _format_date_display(c.created_at),
         }
         for c in clients
     ]
-    
+
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-    
+
     return tmpl.TemplateResponse(
         request=request,
         name="admin/clients.html",
@@ -217,16 +223,18 @@ async def admin_users_list(
     tmpl = get_templates()
     page_size = 20
     skip = (page - 1) * page_size
-    
+
     include_inactive = status is None or status == "inactive"
-    
+
     if role:
         users = await user_repo.find_by_role(role)
         if search:
             search_lower = search.lower()
             users = [
-                u for u in users
-                if search_lower in u.email.lower() or (u.username and search_lower in u.username.lower())
+                u
+                for u in users
+                if search_lower in u.email.lower()
+                or (u.username and search_lower in u.username.lower())
             ]
         if not include_inactive:
             users = [u for u in users if u.is_active]
@@ -248,7 +256,7 @@ async def admin_users_list(
             include_inactive=include_inactive,
         )
         total = await user_repo.count(include_inactive=include_inactive)
-    
+
     # Filter by status
     if status == "active":
         users = [u for u in users if u.is_active]
@@ -256,34 +264,36 @@ async def admin_users_list(
         users = [u for u in users if not u.is_active]
     elif status == "locked":
         users = [u for u in users if u.credential and u.credential.is_locked()]
-    
+
     # Convert to template data
     users_data = []
     for u in users:
         profile = u.profile
         credential = u.credential
-        
-        users_data.append({
-            "id": str(u.id),
-            "email": u.email,
-            "username": u.username,
-            "full_name": profile.full_name if profile else None,
-            "picture": profile.picture if profile else None,
-            "email_verified": u.email_verified,
-            "is_active": u.is_active,
-            "is_locked": credential.is_locked() if credential else False,
-            "mfa_enabled": credential.mfa_enabled if credential else False,
-            "external_provider": u.external_provider,
-            "roles": [r.role_name for r in u.roles if r.is_active()],
-            "created_at": u.created_at.isoformat(),
-            "created_at_display": _format_date_display(u.created_at),
-        })
-    
+
+        users_data.append(
+            {
+                "id": str(u.id),
+                "email": u.email,
+                "username": u.username,
+                "full_name": profile.full_name if profile else None,
+                "picture": profile.picture if profile else None,
+                "email_verified": u.email_verified,
+                "is_active": u.is_active,
+                "is_locked": credential.is_locked() if credential else False,
+                "mfa_enabled": credential.mfa_enabled if credential else False,
+                "external_provider": u.external_provider,
+                "roles": [r.role_name for r in u.roles if r.is_active()],
+                "created_at": u.created_at.isoformat(),
+                "created_at_display": _format_date_display(u.created_at),
+            }
+        )
+
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-    
+
     # Get available roles for filter dropdown
     available_roles = ["admin", "user", "moderator"]
-    
+
     return tmpl.TemplateResponse(
         request=request,
         name="admin/users.html",

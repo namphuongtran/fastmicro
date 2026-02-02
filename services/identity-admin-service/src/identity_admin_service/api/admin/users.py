@@ -26,14 +26,14 @@ router = APIRouter(prefix="/api/admin/users", tags=["admin-users"])
 
 class UserRole:
     """User role entity."""
-    
+
     def __init__(self, user_id, role_name, expires_at=None):
         self.id = uuid.uuid4()
         self.user_id = user_id
         self.role_name = role_name
         self.assigned_at = now_utc()
         self.expires_at = expires_at
-    
+
     def is_active(self) -> bool:
         """Check if role is currently active."""
         if self.expires_at is None:
@@ -43,7 +43,7 @@ class UserRole:
 
 class UserProfile:
     """User profile entity."""
-    
+
     def __init__(self, user_id):
         self.id = uuid.uuid4()
         self.user_id = user_id
@@ -62,7 +62,7 @@ class UserProfile:
         self.phone_number_verified: bool = False
         self.address: str | None = None
         self.updated_at: datetime = now_utc()
-    
+
     @property
     def full_name(self) -> str | None:
         """Get full name from given and family names."""
@@ -72,7 +72,7 @@ class UserProfile:
 
 class UserCredential:
     """User credential entity."""
-    
+
     def __init__(self, user_id):
         self.id = uuid.uuid4()
         self.user_id = user_id
@@ -83,13 +83,13 @@ class UserCredential:
         self.locked_until: datetime | None = None
         self.mfa_enabled: bool = False
         self.mfa_secret: str | None = None
-    
+
     def is_locked(self) -> bool:
         """Check if account is currently locked."""
         if self.locked_until is None:
             return False
         return now_utc() < self.locked_until
-    
+
     def reset_failed_attempts(self) -> None:
         """Reset failed login attempts and unlock account."""
         self.failed_login_attempts = 0
@@ -98,7 +98,7 @@ class UserCredential:
 
 class User:
     """User entity."""
-    
+
     def __init__(self, email: str, username: str | None = None, email_verified: bool = False):
         self.id = uuid.uuid4()
         self.email = email
@@ -110,7 +110,7 @@ class User:
         self.external_provider: str | None = None
         self.created_at = now_utc()
         self.updated_at = now_utc()
-        
+
         # Related entities
         self.profile = UserProfile(self.id)
         self.credential = UserCredential(self.id)
@@ -193,7 +193,7 @@ def _user_to_response(user: User) -> UserResponse:
     """Convert user entity to response schema."""
     profile = user.profile
     credential = user.credential
-    
+
     return UserResponse(
         id=str(user.id),
         email=user.email,
@@ -264,8 +264,10 @@ async def list_users(
         if search:
             search_lower = search.lower()
             users = [
-                u for u in users
-                if search_lower in u.email.lower() or (u.username and search_lower in u.username.lower())
+                u
+                for u in users
+                if search_lower in u.email.lower()
+                or (u.username and search_lower in u.username.lower())
             ]
         if not include_inactive:
             users = [u for u in users if u.is_active]

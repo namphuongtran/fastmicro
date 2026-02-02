@@ -11,7 +11,7 @@ from httpx import AsyncClient
 async def test_list_clients_empty(client: AsyncClient) -> None:
     """Test listing clients when none exist."""
     response = await client.get("/api/admin/clients")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
@@ -30,7 +30,7 @@ async def test_create_client(
         "/api/admin/clients",
         json=sample_client_data,
     )
-    
+
     assert response.status_code == 201
     data = response.json()
     assert data["client_name"] == sample_client_data["client_name"]
@@ -50,7 +50,7 @@ async def test_create_client_validation_error(client: AsyncClient) -> None:
             "client_type": "invalid_type",
         },
     )
-    
+
     assert response.status_code == 422
 
 
@@ -58,7 +58,7 @@ async def test_create_client_validation_error(client: AsyncClient) -> None:
 async def test_get_client_not_found(client: AsyncClient) -> None:
     """Test getting a non-existent client."""
     response = await client.get(f"/api/admin/clients/{uuid4()}")
-    
+
     assert response.status_code == 404
 
 
@@ -76,13 +76,13 @@ async def test_client_lifecycle(
     assert create_response.status_code == 201
     created_client = create_response.json()
     client_id = created_client["id"]
-    
+
     # Read
     get_response = await client.get(f"/api/admin/clients/{client_id}")
     assert get_response.status_code == 200
     fetched_client = get_response.json()
     assert fetched_client["client_name"] == sample_client_data["client_name"]
-    
+
     # Update
     update_response = await client.patch(
         f"/api/admin/clients/{client_id}",
@@ -91,7 +91,7 @@ async def test_client_lifecycle(
     assert update_response.status_code == 200
     updated_client = update_response.json()
     assert updated_client["client_name"] == "Updated Application"
-    
+
     # Delete
     delete_response = await client.delete(f"/api/admin/clients/{client_id}")
     assert delete_response.status_code == 204
@@ -111,7 +111,7 @@ async def test_regenerate_client_secret(
     assert create_response.status_code == 201
     created_client = create_response.json()
     client_id = created_client["id"]
-    
+
     # Regenerate secret
     regen_response = await client.post(
         f"/api/admin/clients/{client_id}/secrets",
@@ -119,10 +119,10 @@ async def test_regenerate_client_secret(
     )
     assert regen_response.status_code == 201
     new_secret_data = regen_response.json()
-    
+
     # Secret should be returned
     assert "secret" in new_secret_data
-    
+
     # Cleanup
     await client.delete(f"/api/admin/clients/{client_id}")
 
@@ -140,7 +140,7 @@ async def test_client_pagination(
         response = await client.post("/api/admin/clients", json=data)
         assert response.status_code == 201
         client_ids.append(response.json()["id"])
-    
+
     # Test pagination
     response = await client.get("/api/admin/clients?page=1&page_size=2")
     assert response.status_code == 200
@@ -148,7 +148,7 @@ async def test_client_pagination(
     assert len(data["items"]) <= 2
     assert data["page"] == 1
     assert data["page_size"] == 2
-    
+
     # Cleanup
     for cid in client_ids:
         await client.delete(f"/api/admin/clients/{cid}")
@@ -167,20 +167,20 @@ async def test_activate_deactivate_client(
     )
     assert create_response.status_code == 201
     client_id = create_response.json()["id"]
-    
+
     # Deactivate
     deactivate_response = await client.post(
         f"/api/admin/clients/{client_id}/deactivate",
     )
     assert deactivate_response.status_code == 200
     assert deactivate_response.json()["is_active"] is False
-    
+
     # Activate
     activate_response = await client.post(
         f"/api/admin/clients/{client_id}/activate",
     )
     assert activate_response.status_code == 200
     assert activate_response.json()["is_active"] is True
-    
+
     # Cleanup
     await client.delete(f"/api/admin/clients/{client_id}")

@@ -76,14 +76,20 @@ class InMemoryUserRepository:
             return len(self._users)
         return len([u for u in self._users.values() if u.is_active])
 
-    async def search(self, query: str, skip: int = 0, limit: int = 100, include_inactive: bool = False):
+    async def search(
+        self, query: str, skip: int = 0, limit: int = 100, include_inactive: bool = False
+    ):
         """Search users by email or username."""
         query_lower = query.lower()
         results = []
         for user in self._users.values():
             if not include_inactive and not user.is_active:
                 continue
-            if not query or query_lower in user.email.lower() or (user.username and query_lower in user.username.lower()):
+            if (
+                not query
+                or query_lower in user.email.lower()
+                or (user.username and query_lower in user.username.lower())
+            ):
                 results.append(user)
         return results[skip : skip + limit]
 
@@ -143,14 +149,20 @@ class InMemoryClientRepository:
             return len(self._clients)
         return len([c for c in self._clients.values() if c.is_active])
 
-    async def search(self, query: str, skip: int = 0, limit: int = 100, include_inactive: bool = False):
+    async def search(
+        self, query: str, skip: int = 0, limit: int = 100, include_inactive: bool = False
+    ):
         """Search clients by name or client_id."""
         query_lower = query.lower()
         results = []
         for client in self._clients.values():
             if not include_inactive and not client.is_active:
                 continue
-            if not query or query_lower in client.client_id.lower() or query_lower in client.client_name.lower():
+            if (
+                not query
+                or query_lower in client.client_id.lower()
+                or query_lower in client.client_name.lower()
+            ):
                 results.append(client)
         return results[skip : skip + limit]
 

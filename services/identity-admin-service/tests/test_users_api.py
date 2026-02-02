@@ -11,7 +11,7 @@ from httpx import AsyncClient
 async def test_list_users_empty(client: AsyncClient) -> None:
     """Test listing users when none exist."""
     response = await client.get("/api/admin/users")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
@@ -30,7 +30,7 @@ async def test_create_user(
         "/api/admin/users",
         json=sample_user_data,
     )
-    
+
     assert response.status_code == 201
     data = response.json()
     assert data["username"] == sample_user_data["username"]
@@ -49,7 +49,7 @@ async def test_create_user_validation_error(client: AsyncClient) -> None:
             "email": "invalid-email",  # Invalid email
         },
     )
-    
+
     assert response.status_code == 422
 
 
@@ -57,7 +57,7 @@ async def test_create_user_validation_error(client: AsyncClient) -> None:
 async def test_get_user_not_found(client: AsyncClient) -> None:
     """Test getting a non-existent user."""
     response = await client.get(f"/api/admin/users/{uuid4()}")
-    
+
     assert response.status_code == 404
 
 
@@ -75,13 +75,13 @@ async def test_user_lifecycle(
     assert create_response.status_code == 201
     created_user = create_response.json()
     user_id = created_user["id"]
-    
+
     # Read
     get_response = await client.get(f"/api/admin/users/{user_id}")
     assert get_response.status_code == 200
     fetched_user = get_response.json()
     assert fetched_user["username"] == sample_user_data["username"]
-    
+
     # Update
     update_response = await client.patch(
         f"/api/admin/users/{user_id}",
@@ -90,7 +90,7 @@ async def test_user_lifecycle(
     assert update_response.status_code == 200
     updated_user = update_response.json()
     assert updated_user["email"] == "updated@example.com"
-    
+
     # Delete
     delete_response = await client.delete(f"/api/admin/users/{user_id}")
     assert delete_response.status_code == 204
@@ -109,21 +109,21 @@ async def test_activate_deactivate_user(
     )
     assert create_response.status_code == 201
     user_id = create_response.json()["id"]
-    
+
     # Deactivate
     deactivate_response = await client.post(
         f"/api/admin/users/{user_id}/deactivate",
     )
     assert deactivate_response.status_code == 200
     assert deactivate_response.json()["is_active"] is False
-    
+
     # Activate
     activate_response = await client.post(
         f"/api/admin/users/{user_id}/activate",
     )
     assert activate_response.status_code == 200
     assert activate_response.json()["is_active"] is True
-    
+
     # Cleanup
     await client.delete(f"/api/admin/users/{user_id}")
 
@@ -141,21 +141,21 @@ async def test_lock_unlock_user(
     )
     assert create_response.status_code == 201
     user_id = create_response.json()["id"]
-    
+
     # Lock
     lock_response = await client.post(
         f"/api/admin/users/{user_id}/lock",
     )
     assert lock_response.status_code == 200
     assert lock_response.json()["is_locked"] is True
-    
+
     # Unlock
     unlock_response = await client.post(
         f"/api/admin/users/{user_id}/unlock",
     )
     assert unlock_response.status_code == 200
     assert unlock_response.json()["is_locked"] is False
-    
+
     # Cleanup
     await client.delete(f"/api/admin/users/{user_id}")
 
@@ -173,14 +173,14 @@ async def test_reset_password(
     )
     assert create_response.status_code == 201
     user_id = create_response.json()["id"]
-    
+
     # Reset password
     reset_response = await client.post(
         f"/api/admin/users/{user_id}/reset-password",
         json={"new_password": "NewSecureP@ssw0rd!"},
     )
     assert reset_response.status_code == 204
-    
+
     # Cleanup
     await client.delete(f"/api/admin/users/{user_id}")
 
@@ -202,7 +202,7 @@ async def test_user_pagination(
         response = await client.post("/api/admin/users", json=data)
         assert response.status_code == 201
         user_ids.append(response.json()["id"])
-    
+
     # Test pagination
     response = await client.get("/api/admin/users?page=1&page_size=2")
     assert response.status_code == 200
@@ -210,7 +210,7 @@ async def test_user_pagination(
     assert len(data["items"]) <= 2
     assert data["page"] == 1
     assert data["page_size"] == 2
-    
+
     # Cleanup
     for uid in user_ids:
         await client.delete(f"/api/admin/users/{uid}")
@@ -227,25 +227,25 @@ async def test_manage_user_roles(
     create_response = await client.post("/api/admin/users", json=data)
     assert create_response.status_code == 201
     user_id = create_response.json()["id"]
-    
+
     # Add role
     add_role_response = await client.post(
         f"/api/admin/users/{user_id}/roles",
         json={"role_name": "admin"},
     )
     assert add_role_response.status_code == 200
-    
+
     # Verify role added
     get_response = await client.get(f"/api/admin/users/{user_id}")
     assert get_response.status_code == 200
     user = get_response.json()
     assert "admin" in user.get("roles", [])
-    
+
     # Remove role
     remove_role_response = await client.delete(
         f"/api/admin/users/{user_id}/roles/admin",
     )
     assert remove_role_response.status_code == 204
-    
+
     # Cleanup
     await client.delete(f"/api/admin/users/{user_id}")

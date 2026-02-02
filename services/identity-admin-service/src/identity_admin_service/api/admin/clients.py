@@ -27,12 +27,14 @@ router = APIRouter(prefix="/api/admin/clients", tags=["admin-clients"])
 
 class ClientType(str, Enum):
     """OAuth2 client type."""
+
     PUBLIC = "public"
     CONFIDENTIAL = "confidential"
 
 
 class AuthMethod(str, Enum):
     """Token endpoint authentication method."""
+
     CLIENT_SECRET_BASIC = "client_secret_basic"
     CLIENT_SECRET_POST = "client_secret_post"
     NONE = "none"
@@ -41,6 +43,7 @@ class AuthMethod(str, Enum):
 
 class GrantType(str, Enum):
     """OAuth2 grant types."""
+
     AUTHORIZATION_CODE = "authorization_code"
     REFRESH_TOKEN = "refresh_token"
     CLIENT_CREDENTIALS = "client_credentials"
@@ -51,6 +54,7 @@ class GrantType(str, Enum):
 
 class ResponseType(str, Enum):
     """OAuth2 response types."""
+
     CODE = "code"
     TOKEN = "token"
     ID_TOKEN = "id_token"
@@ -111,8 +115,12 @@ class CreateClientRequest(BaseModel):
     require_consent: bool = Field(True, description="Require user consent")
     is_first_party: bool = Field(False, description="First-party app (may skip consent)")
     allowed_cors_origins: list[str] = Field(default=[], description="Allowed CORS origins")
-    access_token_lifetime: int | None = Field(None, ge=60, description="Access token lifetime in seconds")
-    refresh_token_lifetime: int | None = Field(None, ge=60, description="Refresh token lifetime in seconds")
+    access_token_lifetime: int | None = Field(
+        None, ge=60, description="Access token lifetime in seconds"
+    )
+    refresh_token_lifetime: int | None = Field(
+        None, ge=60, description="Refresh token lifetime in seconds"
+    )
 
 
 class UpdateClientRequest(BaseModel):
@@ -221,7 +229,7 @@ class AddScopeRequest(BaseModel):
 
 class ClientSecret:
     """Client secret entity."""
-    
+
     def __init__(self, client_id, secret_hash, description=None, expires_at=None):
         self.id = uuid.uuid4()
         self.client_id = client_id
@@ -234,7 +242,7 @@ class ClientSecret:
 
 class ClientRedirectUri:
     """Client redirect URI entity."""
-    
+
     def __init__(self, client_id, uri, is_default=False):
         self.id = uuid.uuid4()
         self.client_id = client_id
@@ -244,7 +252,7 @@ class ClientRedirectUri:
 
 class ClientScope:
     """Client scope entity."""
-    
+
     def __init__(self, client_id, scope, is_default=False):
         self.id = uuid.uuid4()
         self.client_id = client_id
@@ -254,7 +262,7 @@ class ClientScope:
 
 class Client:
     """OAuth2 Client entity."""
-    
+
     def __init__(
         self,
         client_name,
@@ -305,8 +313,12 @@ def _client_to_response(client: Client) -> ClientResponse:
         client_description=client.client_description,
         client_uri=client.client_uri,
         logo_uri=client.logo_uri,
-        client_type=client.client_type.value if isinstance(client.client_type, Enum) else client.client_type,
-        token_endpoint_auth_method=client.token_endpoint_auth_method.value if isinstance(client.token_endpoint_auth_method, Enum) else client.token_endpoint_auth_method,
+        client_type=client.client_type.value
+        if isinstance(client.client_type, Enum)
+        else client.client_type,
+        token_endpoint_auth_method=client.token_endpoint_auth_method.value
+        if isinstance(client.token_endpoint_auth_method, Enum)
+        else client.token_endpoint_auth_method,
         grant_types=[g.value if isinstance(g, Enum) else g for g in client.grant_types],
         response_types=[r.value if isinstance(r, Enum) else r for r in client.response_types],
         redirect_uris=[ru.uri for ru in client.redirect_uris],
@@ -405,6 +417,7 @@ def _parse_response_types(values: list[str]) -> list[ResponseType]:
 def _hash_secret(plain_secret: str) -> str:
     """Hash a client secret using SHA-256 (simplified for admin service)."""
     import hashlib
+
     return hashlib.sha256(plain_secret.encode()).hexdigest()
 
 
@@ -627,7 +640,11 @@ async def deactivate_client(
     return _client_to_response(updated)
 
 
-@router.post("/{client_uuid}/secrets", response_model=GenerateSecretResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{client_uuid}/secrets",
+    response_model=GenerateSecretResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def generate_client_secret(
     client_uuid: uuid.UUID,
     request: GenerateSecretRequest,
