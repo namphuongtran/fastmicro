@@ -75,30 +75,9 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     needs: build-services
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+    # NOTE: Do NOT define GitHub Actions 'services' here (postgres, redis, etc.)
+    # because docker-compose.yml already defines these infrastructure services.
+    # Having both causes port conflicts (e.g., port 5432 already allocated).
 
     steps:
       - uses: actions/checkout@v4
@@ -114,14 +93,18 @@ jobs:
 
       - name: Start services
         run: |
+          # Start infrastructure services first (database, redis, etc.)
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d \
+            auth-postgresql redis \
+            --wait \
+            --wait-timeout 120
+          
+          # Then start application services
           docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d \
             identity-service identity-admin-service audit-service metastore-service \
             --no-build \
             --wait \
             --wait-timeout 180
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
-          REDIS_URL: redis://localhost:6379
 
       - name: Wait for services to be healthy
         run: |
