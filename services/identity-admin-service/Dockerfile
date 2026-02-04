@@ -25,6 +25,10 @@ WORKDIR /app
 RUN groupadd --gid 1000 appgroup && \
     useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl && rm -rf /var/lib/apt/lists/*
+
 # Copy installed packages and application
 COPY --from=builder /app/services/identity-admin-service/.venv /app/.venv
 COPY --from=builder /app/services/identity-admin-service/src /app/src
@@ -36,16 +40,17 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/src"
 ENV PYTHONUNBUFFERED=1
 ENV APP_ENV=production
+ENV APP_PORT=8000
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
 
 USER appuser
 
-EXPOSE 8081
+EXPOSE 8000
 
-# Health check
+# Health check - use port 8000 (internal container port)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8081/health')" || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["python", "-m", "uvicorn", "identity_admin_service.main:app", "--host", "0.0.0.0", "--port", "8081"]
+CMD ["python", "-m", "uvicorn", "identity_admin_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
