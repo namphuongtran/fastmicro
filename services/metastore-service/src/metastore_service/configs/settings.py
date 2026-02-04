@@ -10,6 +10,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from shared.cache import CacheConfig
@@ -47,25 +48,23 @@ class Settings(BaseSettings):
     port: int = 8000
     workers: int = 1
 
-    # Database settings
-    database_driver: str = "postgresql+asyncpg"
-    database_host: str = "localhost"
-    database_port: int = 5432
-    database_user: str = "postgres"
-    database_password: str = ""
-    database_name: str = "metastore"
+    # Database settings - accepts DATABASE_URL directly from environment
+    database_url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/metastore_db",
+        description="PostgreSQL async connection string",
+    )
     database_pool_size: int = 5
     database_max_overflow: int = 10
     database_pool_timeout: int = 30
     database_pool_recycle: int = 3600
     database_echo: bool = False
 
-    # Redis/Cache settings
+    # Redis/Cache settings - accepts REDIS_URL directly from environment
     redis_enabled: bool = True
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-    redis_password: str | None = None
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis connection string",
+    )
     redis_max_connections: int = 10
 
     # Cache TTL settings
@@ -78,23 +77,6 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = ["*"]
     cors_allow_headers: list[str] = ["*"]
-
-    @property
-    def database_url(self) -> str:
-        """Build async database URL from components."""
-        return (
-            f"{self.database_driver}://"
-            f"{self.database_user}:{self.database_password}@"
-            f"{self.database_host}:{self.database_port}/"
-            f"{self.database_name}"
-        )
-
-    @property
-    def redis_url(self) -> str:
-        """Build Redis URL from components."""
-        if self.redis_password:
-            return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
-        return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
     def get_database_config(self) -> DatabaseConfig:
         """Create DatabaseConfig for AsyncDatabaseManager.
@@ -133,10 +115,6 @@ class Settings(BaseSettings):
             memory_default_ttl=self.cache_memory_ttl,
             redis_enabled=self.redis_enabled,
             redis_url=self.redis_url if self.redis_enabled else None,
-            redis_host=self.redis_host,
-            redis_port=self.redis_port,
-            redis_db=self.redis_db,
-            redis_password=self.redis_password,
             redis_default_ttl=self.cache_redis_ttl,
             redis_max_connections=self.redis_max_connections,
             namespace=self.app_name,

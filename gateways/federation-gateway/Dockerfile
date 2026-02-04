@@ -33,7 +33,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \
     PATH="/app/.venv/bin:$PATH" \
-    APP_ENV=production
+    APP_ENV=production \
+    APP_PORT=8000
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -51,9 +52,9 @@ COPY --from=builder --chown=appuser:appgroup /app/gateways/federation-gateway/sr
 
 USER appuser
 
-EXPOSE 44381
+EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:44381/health || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "federation_gateway.main:app", "--host", "0.0.0.0", "--port", "44381"]
+CMD ["uvicorn", "federation_gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
