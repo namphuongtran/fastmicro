@@ -206,7 +206,7 @@ services:
       APP_ENV: development
       LOG_LEVEL: DEBUG
       CORS_ORIGINS: "http://localhost:3000,http://localhost:8080"
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@auth-postgresql:5432/metastore_db
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@metastore-postgresql:5432/metastore_db
       REDIS_URL: redis://redis:6379/1
       SEQ_URL: http://seq:5341
       KEYCLOAK_URL: http://keycloak:8080
@@ -216,7 +216,7 @@ services:
       - ./shared:/shared:cached
     command: ["uvicorn", "metastore_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
-      auth-postgresql:
+      metastore-postgresql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -231,6 +231,26 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.metastore.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/metadata`)"
       - "traefik.http.services.metastore.loadbalancer.server.port=8000"
+
+  metastore-postgresql:
+    image: postgres:16-alpine
+    container_name: metastore-postgresql
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: metastore_db
+    volumes:
+      - metastore_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ags-core
 
   identity-service:
     build:
@@ -454,5 +474,7 @@ volumes:
     name: ags_grafana_data
   identity_postgres_data:
     name: ags_identity_postgres_data
+  metastore_postgres_data:
+    name: ags_metastore_postgres_data
   identity_rsa_keys:
     name: ags_identity_rsa_keys

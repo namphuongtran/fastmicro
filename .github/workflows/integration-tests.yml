@@ -95,7 +95,7 @@ jobs:
         run: |
           # Start infrastructure services first (database, redis, etc.)
           docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d \
-            auth-postgresql redis \
+            auth-postgresql identity-postgresql metastore-postgresql redis \
             --wait \
             --wait-timeout 120
           
