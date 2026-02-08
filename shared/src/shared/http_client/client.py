@@ -164,6 +164,19 @@ class ServiceClient:
                 ),
             )
 
+    @property
+    def config(self) -> ServiceClientConfig:
+        """Return client configuration."""
+        return self._config
+
+    async def __aenter__(self) -> ServiceClient:
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        """Exit async context manager and close client."""
+        await self.close()
+
     async def close(self) -> None:
         """Close the HTTP client."""
         await self._client.aclose()
