@@ -3,6 +3,7 @@
 Human-facing web endpoints for authentication flows.
 """
 
+import contextlib
 from datetime import datetime
 from typing import Annotated, Any
 from urllib.parse import urlencode
@@ -574,14 +575,11 @@ async def forgot_password_submit(
     )
 
     # Always call the service — it handles non-existent emails gracefully
-    try:
+    with contextlib.suppress(Exception):
         await auth_service.request_password_reset(
             email=email,
             callback_url_template="/reset-password?token={token}",
         )
-    except Exception:
-        # Log but don't reveal to user whether account exists
-        pass
 
     # Always show success message to prevent email enumeration
     return tpl.TemplateResponse(

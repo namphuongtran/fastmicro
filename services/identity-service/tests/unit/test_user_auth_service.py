@@ -9,11 +9,9 @@ from uuid import uuid4
 
 import pytest
 
-from identity_service.application.dtos import LoginResult, RegistrationResult
 from identity_service.application.services.user_auth_service import UserAuthService
 from identity_service.domain.entities.password_reset import PasswordResetToken
 from identity_service.domain.entities.user import User, UserCredential, UserProfile
-
 
 # =============================================================================
 # Fixtures
@@ -159,9 +157,7 @@ def mock_session_service() -> MagicMock:
 def mock_jwt_service() -> MagicMock:
     """Create mock JWT service."""
     svc = MagicMock()
-    svc.create_access_token = MagicMock(
-        return_value=("access_token_value", "jti_123", 3600)
-    )
+    svc.create_access_token = MagicMock(return_value=("access_token_value", "jti_123", 3600))
     svc.create_id_token = MagicMock(return_value="id_token_value")
     svc.create_mfa_token = MagicMock(return_value="mfa_token_value")
     svc.decode_token = MagicMock(return_value=None)

@@ -5,12 +5,11 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from shared.observability import get_structlog_logger
-from shared.utils import now_utc
-
 from identity_service.application.dtos import LoginResult, RegistrationResult
 from identity_service.domain.entities.password_reset import PasswordResetToken
 from identity_service.domain.entities.user import User, UserCredential, UserProfile
+from shared.observability import get_structlog_logger
+from shared.utils import now_utc
 
 if TYPE_CHECKING:
     from identity_service.configs.settings import Settings
@@ -208,8 +207,11 @@ class UserAuthService:
         if not user:
             # Record failed attempt (prevents email enumeration timing attacks)
             self._brute_force.record_attempt(
-                email, ip_address or "unknown", success=False,
-                user_agent=user_agent, failure_reason="user_not_found",
+                email,
+                ip_address or "unknown",
+                success=False,
+                user_agent=user_agent,
+                failure_reason="user_not_found",
             )
             return LoginResult(success=False, error="invalid_credentials")
 
@@ -224,8 +226,11 @@ class UserAuthService:
         ):
             # Record failed attempt
             self._brute_force.record_attempt(
-                email, ip_address or "unknown", success=False,
-                user_agent=user_agent, failure_reason="invalid_password",
+                email,
+                ip_address or "unknown",
+                success=False,
+                user_agent=user_agent,
+                failure_reason="invalid_password",
             )
             user.credential.increment_failed_attempts(
                 max_attempts=self._settings.login_max_attempts,
@@ -276,7 +281,9 @@ class UserAuthService:
         """
         # Reset failed attempts
         self._brute_force.record_attempt(
-            user.email, ip_address or "unknown", success=True,
+            user.email,
+            ip_address or "unknown",
+            success=True,
         )
         if user.credential:
             user.credential.reset_failed_attempts()
@@ -298,7 +305,7 @@ class UserAuthService:
             claims={"roles": user.get_active_roles()} if user.roles else None,
         )
 
-        refresh_token_value: str | None = None
+        _refresh_token_value: str | None = None
         # For direct login, always provide refresh token
         from identity_service.domain.entities import RefreshToken
 
@@ -307,10 +314,10 @@ class UserAuthService:
             user_id=user.id,
             scope="openid profile email offline_access",
         )
-        refresh_token_value = refresh_token.token
+        _refresh_token_value = refresh_token.token
 
-        # Generate ID token
-        id_token = self._jwt_service.create_id_token(
+        # Generate ID token (reserved for future OAuth2 flow)
+        _id_token = self._jwt_service.create_id_token(
             subject=str(user.id),
             client_id="identity-service",
             claims={
@@ -364,16 +371,15 @@ class UserAuthService:
 
         # Validate new password against policy
         policy_result = self._password_policy.validate_password(
-            new_password, user_id=str(user_id),
+            new_password,
+            user_id=str(user_id),
             verify_func=self._password_service.verify_password,
         )
         if not policy_result.is_valid:
             return False, "; ".join(policy_result.errors)
 
         # Ensure new password is different
-        if self._password_service.verify_password(
-            new_password, user.credential.password_hash
-        ):
+        if self._password_service.verify_password(new_password, user.credential.password_hash):
             return False, "New password must be different from current password"
 
         # Hash and update
@@ -460,7 +466,8 @@ class UserAuthService:
 
         # Validate new password
         policy_result = self._password_policy.validate_password(
-            new_password, user_id=str(user.id),
+            new_password,
+            user_id=str(user.id),
             verify_func=self._password_service.verify_password,
         )
         if not policy_result.is_valid:

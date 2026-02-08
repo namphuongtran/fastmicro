@@ -7,13 +7,13 @@ from identity_service.domain.entities.client import (
     ClientSecret,
 )
 from identity_service.domain.entities.consent import Consent, ConsentScope, Session
+from identity_service.domain.entities.password_reset import PasswordResetToken
 from identity_service.domain.entities.token import (
     AuthorizationCode,
     RefreshToken,
     TokenBlacklistEntry,
     TokenInfo,
 )
-from identity_service.domain.entities.password_reset import PasswordResetToken
 from identity_service.domain.entities.user import (
     User,
     UserClaim,

@@ -22,9 +22,7 @@ class PasswordResetToken:
     user_id: uuid.UUID = field(default_factory=uuid.uuid4)
     token: str = field(default_factory=lambda: secrets.token_urlsafe(32))
     email: str = ""
-    expires_at: datetime = field(
-        default_factory=lambda: now_utc() + timedelta(hours=1)
-    )
+    expires_at: datetime = field(default_factory=lambda: now_utc() + timedelta(hours=1))
     is_used: bool = False
     used_at: datetime | None = None
     created_at: datetime = field(default_factory=now_utc)

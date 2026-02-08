@@ -12,7 +12,6 @@ import pytest
 from identity_service.application.services.mfa_service import MFAService
 from identity_service.domain.entities.user import User, UserCredential, UserProfile
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -111,9 +110,7 @@ class TestMFASetup:
     """Tests for MFA setup."""
 
     @pytest.mark.unit
-    async def test_setup_success(
-        self, mfa_service: MFAService, mock_user_repo: AsyncMock
-    ) -> None:
+    async def test_setup_success(self, mfa_service: MFAService, mock_user_repo: AsyncMock) -> None:
         """Successful MFA setup generates secret, URI, and recovery codes."""
         user = _make_user()
         mock_user_repo.get_by_id.return_value = user
@@ -471,9 +468,7 @@ class TestMFAStatus:
     """Tests for MFA status check."""
 
     @pytest.mark.unit
-    async def test_status_enabled(
-        self, mfa_service: MFAService, mock_user_repo: AsyncMock
-    ) -> None:
+    async def test_status_enabled(self, mfa_service: MFAService, mock_user_repo: AsyncMock) -> None:
         """Status returns enabled with recovery code count."""
         user = _make_user(
             mfa_enabled=True,

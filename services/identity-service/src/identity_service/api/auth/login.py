@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 
-from identity_service.api.dependencies import MFAServiceDep, UserAuthServiceDep
+from identity_service.api.dependencies import UserAuthServiceDep
 from identity_service.application.schemas import (
     AuthErrorResponse,
     LoginRequest,
@@ -62,9 +62,7 @@ async def login(
             "invalid_credentials": status.HTTP_401_UNAUTHORIZED,
             "login_disabled": status.HTTP_403_FORBIDDEN,
         }
-        status_code = error_status_map.get(
-            result.error or "", status.HTTP_401_UNAUTHORIZED
-        )
+        status_code = error_status_map.get(result.error or "", status.HTTP_401_UNAUTHORIZED)
 
         return JSONResponse(
             status_code=status_code,

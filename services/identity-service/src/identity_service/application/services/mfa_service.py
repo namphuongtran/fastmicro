@@ -117,9 +117,7 @@ class MFAService:
     # Verify and Enable
     # =========================================================================
 
-    async def verify_and_enable(
-        self, user_id: uuid.UUID, code: str
-    ) -> tuple[bool, str | None]:
+    async def verify_and_enable(self, user_id: uuid.UUID, code: str) -> tuple[bool, str | None]:
         """Verify a TOTP code and enable MFA if valid.
 
         Called after setup to confirm the user has configured their
@@ -288,9 +286,7 @@ class MFAService:
             return False, "MFA is not enabled"
 
         # Verify password
-        if not self._password_service.verify_password(
-            password, user.credential.password_hash
-        ):
+        if not self._password_service.verify_password(password, user.credential.password_hash):
             return False, "Invalid password"
 
         # Verify TOTP
@@ -313,9 +309,7 @@ class MFAService:
     # Status
     # =========================================================================
 
-    async def get_mfa_status(
-        self, user_id: uuid.UUID
-    ) -> tuple[bool, int]:
+    async def get_mfa_status(self, user_id: uuid.UUID) -> tuple[bool, int]:
         """Get MFA status for a user.
 
         Args:

@@ -25,13 +25,14 @@ from shared.observability import (
 )
 from shared.observability.tracing import configure_tracing
 
-
 settings = get_settings()
-configure_structlog(LoggingConfig(
-    service_name=settings.service_name,
-    environment=settings.app_env,
-    log_level=settings.log_level,
-))
+configure_structlog(
+    LoggingConfig(
+        service_name=settings.service_name,
+        environment=settings.app_env,
+        log_level=settings.log_level,
+    )
+)
 logger = get_structlog_logger(__name__)
 
 
@@ -45,9 +46,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     if settings.otel_enabled:
-        configure_tracing(TracingConfig(
-            service_name=settings.service_name,
-        ))
+        configure_tracing(
+            TracingConfig(
+                service_name=settings.service_name,
+            )
+        )
         logger.info("OpenTelemetry tracing initialized")
 
     yield

@@ -13,12 +13,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from .api.v1.auth_controller import router as auth_router
-from .application.services.oauth_service import OAuthService
-from .configs.settings import get_settings
-from .infrastructure.middleware.compress_middleware import setup_compress_middleware
-from .infrastructure.middleware.cors_middleware import setup_cors_middleware
-from .infrastructure.middleware.session_middleware import setup_session_middleware
 from shared.fastapi_utils.exception_handlers import register_exception_handlers
 from shared.fastapi_utils.health_router import create_health_router
 from shared.fastapi_utils.middleware import RequestContextMiddleware
@@ -29,13 +23,22 @@ from shared.observability import (
     get_structlog_logger,
 )
 
+from .api.v1.auth_controller import router as auth_router
+from .application.services.oauth_service import OAuthService
+from .configs.settings import get_settings
+from .infrastructure.middleware.compress_middleware import setup_compress_middleware
+from .infrastructure.middleware.cors_middleware import setup_cors_middleware
+from .infrastructure.middleware.session_middleware import setup_session_middleware
+
 settings_manager = get_settings()
 
-configure_structlog(LoggingConfig(
-    service_name="federation-gateway",
-    environment="development",
-    log_level="DEBUG",
-))
+configure_structlog(
+    LoggingConfig(
+        service_name="federation-gateway",
+        environment="development",
+        log_level="DEBUG",
+    )
+)
 logger = get_structlog_logger(__name__)
 
 
