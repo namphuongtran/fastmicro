@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account - Identity Service{% endblock %}
+
+{% block content %}
+<div class="card register-card">
+    <h1>Create Account</h1>
+    
+    {% if client_name %}
+    <p class="subtitle">Create an account to continue to <strong>{{ client_name }}</strong></p>
+    {% else %}
+    <p class="subtitle">Create your account to get started</p>
+    {% endif %}
+    
+    {% if error %}
+    <div class="alert alert-error">
+        <svg class="alert-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM7 5a1 1 0 012 0v3a1 1 0 01-2 0V5zm1 7a1 1 0 100-2 1 1 0 000 2z"/>
+        </svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+    
+    <form method="POST" action="/register" class="register-form" id="registerForm">
+        {# Preserve OIDC flow params so user can log in after registering #}
+        {% if response_type %}
+        <input type="hidden" name="response_type" value="{{ response_type }}">
+        {% endif %}
+        {% if client_id %}
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        {% endif %}
+        {% if redirect_uri %}
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+        {% endif %}
+        {% if scope %}
+        <input type="hidden" name="scope" value="{{ scope }}">
+        {% endif %}
+        {% if state %}
+        <input type="hidden" name="state" value="{{ state }}">
+        {% endif %}
+        {% if nonce %}
+        <input type="hidden" name="nonce" value="{{ nonce }}">
+        {% endif %}
+        {% if code_challenge %}
+        <input type="hidden" name="code_challenge" value="{{ code_challenge }}">
+        <input type="hidden" name="code_challenge_method" value="{{ code_challenge_method }}">
+        {% endif %}
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="given_name">First name</label>
+                <input 
+                    type="text" 
+                    id="given_name" 
+                    name="given_name"
+                    value="{{ given_name or '' }}"
+                    placeholder="John"
+                    autocomplete="given-name"
+                >
+            </div>
+            <div class="form-group">
+                <label for="family_name">Last name</label>
+                <input 
+                    type="text" 
+                    id="family_name" 
+                    name="family_name"
+                    value="{{ family_name or '' }}"
+                    placeholder="Doe"
+                    autocomplete="family-name"
+                >
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                value="{{ email or '' }}"
+                placeholder="you@example.com"
+                required 
+                autofocus
+                autocomplete="email"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="username">Username <span class="optional">(optional)</span></label>
+            <input 
+                type="text" 
+                id="username" 
+                name="username"
+                value="{{ username or '' }}"
+                placeholder="johndoe"
+                autocomplete="username"
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-with-icon">
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password"
+                    placeholder="At least 8 characters"
+                    required
+                    minlength="8"
+                    autocomplete="new-password"
+                >
+                <button type="button" class="toggle-password" onclick="togglePassword('password', 'eyeIcon1', 'eyeOffIcon1')" aria-label="Toggle password visibility">
+                    <svg id="eyeIcon1" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg id="eyeOffIcon1" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="confirm_password">Confirm password</label>
+            <div class="input-with-icon">
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password"
+                    placeholder="Re-enter your password"
+                    required
+                    minlength="8"
+                    autocomplete="new-password"
+                >
+                <button type="button" class="toggle-password" onclick="togglePassword('confirm_password', 'eyeIcon2', 'eyeOffIcon2')" aria-label="Toggle password visibility">
+                    <svg id="eyeIcon2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg id="eyeOffIcon2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="password-requirements">
+            <p class="requirements-title">Password must:</p>
+            <ul>
+                <li id="req-length" class="requirement">Be at least 8 characters long</li>
+                <li id="req-upper" class="requirement">Contain an uppercase letter</li>
+                <li id="req-lower" class="requirement">Contain a lowercase letter</li>
+                <li id="req-number" class="requirement">Contain a number</li>
+            </ul>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-loading" style="display:none">
+                <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" opacity="0.25"/>
+                    <path d="M12 2a10 10 0 019.95 9" stroke-linecap="round"/>
+                </svg>
+                Creating account...
+            </span>
+        </button>
+    </form>
+    
+    <div class="links">
+        <span>Already have an account?</span>
+        <a href="/login{% if return_query %}?{{ return_query }}{% endif %}">Sign in</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(inputId, eyeId, eyeOffId) {
+    var input = document.getElementById(inputId);
+    var eye = document.getElementById(eyeId);
+    var eyeOff = document.getElementById(eyeOffId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        eye.style.display = 'none';
+        eyeOff.style.display = 'block';
+    } else {
+        input.type = 'password';
+        eye.style.display = 'block';
+        eyeOff.style.display = 'none';
+    }
+}
+
+// Live password validation
+var passwordInput = document.getElementById('password');
+if (passwordInput) {
+    passwordInput.addEventListener('input', function() {
+        var val = this.value;
+        toggleReq('req-length', val.length >= 8);
+        toggleReq('req-upper', /[A-Z]/.test(val));
+        toggleReq('req-lower', /[a-z]/.test(val));
+        toggleReq('req-number', /[0-9]/.test(val));
+    });
+}
+
+function toggleReq(id, met) {
+    var el = document.getElementById(id);
+    if (el) {
+        el.classList.toggle('met', met);
+        el.classList.toggle('unmet', !met);
+    }
+}
+
+// Confirm password match + submit
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    var pw = document.getElementById('password').value;
+    var cpw = document.getElementById('confirm_password').value;
+    if (pw !== cpw) {
+        e.preventDefault();
+        alert('Passwords do not match.');
+        return;
+    }
+    var btn = document.getElementById('submitBtn');
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.btn-loading').style.display = 'inline-flex';
+    btn.disabled = true;
+});
+</script>
+{% endblock %}

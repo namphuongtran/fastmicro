@@ -1,0 +1,166 @@
+[project]
+name = "identity-admin-service"
+version = "0.1.0"
+description = "Internal administration service for Identity Provider management - OAuth2 clients, users, and system configuration"
+authors = [
+    {name = "Nam Tran", email = "nam.tranphuong@outlook.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+keywords = ["identity", "admin", "oauth2", "management", "fastapi", "internal"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Framework :: FastAPI",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+]
+
+dependencies = [
+    # Web Framework
+    "fastapi[standard]>=0.115.0,<1.0.0",
+    "uvicorn[standard]>=0.30.0,<1.0.0",
+    
+    # Security - For password hashing and verification
+    "pwdlib[argon2,bcrypt]>=0.3.0,<1.0.0",
+    "cryptography>=42.0.0",
+    
+    # Database - Shared with identity-service
+    "sqlalchemy[asyncio]>=2.0.0,<3.0.0",
+    "asyncpg>=0.29.0,<1.0.0",
+    "alembic>=1.13.0,<2.0.0",
+    
+    # Validation & Serialization
+    "pydantic>=2.0.0,<3.0.0",
+    "pydantic-settings>=2.10.1,<3.0.0",
+    "email-validator>=2.0.0,<3.0.0",
+    
+    # Templates (Admin UI)
+    "jinja2>=3.1.0,<4.0.0",
+    "python-multipart>=0.0.9",
+    
+    # Observability
+    "structlog>=24.0.0,<25.0.0",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-instrumentation-fastapi>=0.41b0",
+    "prometheus-client>=0.19.0",
+    
+    # HTTP Client (for identity-service communication)
+    "httpx>=0.27.0,<1.0.0",
+
+    # Shared library
+    "shared[observability,database,caching,fastapi]",
+]
+
+# ============================================================================
+# Build System
+# ============================================================================
+
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/identity_admin_service"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["tests/", ".venv/", "__pycache__/"]
+
+# ============================================================================
+# UV Configuration
+# ============================================================================
+
+[tool.uv.sources]
+shared = { path = "../../shared", editable = true }
+
+# ============================================================================
+# Dependency Groups
+# ============================================================================
+
+[dependency-groups]
+dev = [
+    "shared",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.6.0",
+    "faker>=22.0.0",
+    "aiosqlite>=0.19.0",
+]
+
+# ============================================================================
+# Tool Configuration
+# ============================================================================
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["A", "E", "W", "F", "I", "B", "C4", "UP", "SIM"]
+ignore = [
+    "E501",   # Line too long - handled by formatter
+    "B008",   # Function calls in default arguments - FastAPI Depends() pattern
+]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "E402"]
+"tests/**/*.py" = ["S101", "PLR2004", "B017"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["identity_admin_service", "shared"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

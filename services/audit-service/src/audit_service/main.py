@@ -8,80 +8,58 @@ necessary middleware, routers, and lifecycle hooks.
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
 
 from audit_service.api.v1 import audit_controller, health_controller
 from audit_service.configs.settings import get_settings
-from audit_service.infrastructure.middleware import (
-    LoggingMiddleware,
-    RequestIdMiddleware,
+from shared.fastapi_utils.exception_handlers import register_exception_handlers
+from shared.fastapi_utils.middleware import RequestContextMiddleware
+from shared.observability import (
+    LoggingConfig,
+    RequestLoggingMiddleware,
+    TracingConfig,
+    configure_structlog,
+    get_structlog_logger,
 )
-
-# Import shared library components
-try:
-    from shared.exceptions import HTTPException as SharedHTTPException
-    from shared.observability import get_logger, setup_tracing
-except ImportError:
-    # Fallback for standalone development
-    import structlog
-
-    get_logger = structlog.get_logger
-
-    def setup_tracing(_: object) -> None:  # noqa: E731
-        pass
-
-    SharedHTTPException = Exception
-
+from shared.observability.tracing import configure_tracing
 
 settings = get_settings()
-logger = get_logger(__name__)
+configure_structlog(
+    LoggingConfig(
+        service_name=settings.service_name,
+        environment=settings.app_env,
+        log_level=settings.log_level,
+    )
+)
+logger = get_structlog_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """
-    Application lifespan manager.
-
-    Handles startup and shutdown events for the application.
-    """
-    # Startup
+    """Application lifespan manager."""
     logger.info(
         "Starting Audit Service",
         version=app.version,
         environment=settings.app_env,
     )
 
-    # Initialize OpenTelemetry tracing
     if settings.otel_enabled:
-        setup_tracing(settings.service_name)
+        configure_tracing(
+            TracingConfig(
+                service_name=settings.service_name,
+            )
+        )
         logger.info("OpenTelemetry tracing initialized")
-
-    # Initialize database connections
-    # await init_database()
-
-    # Initialize cache
-    # await init_cache()
 
     yield
 
-    # Shutdown
     logger.info("Shutting down Audit Service")
-
-    # Cleanup resources
-    # await close_database()
-    # await close_cache()
 
 
 def create_app() -> FastAPI:
-    """
-    Create and configure the FastAPI application.
-
-    Returns:
-        FastAPI: Configured FastAPI application instance.
-    """
+    """Create and configure the FastAPI application."""
     app = FastAPI(
         title="Audit Service",
         description="Enterprise audit logging service for tracking system events, user actions, and compliance records",
@@ -92,13 +70,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Configure middleware (order matters - first added is outermost)
     configure_middleware(app)
-
-    # Configure exception handlers
-    configure_exception_handlers(app)
-
-    # Include routers
+    register_exception_handlers(app)
     configure_routers(app)
 
     return app
@@ -106,11 +79,7 @@ def create_app() -> FastAPI:
 
 def configure_middleware(app: FastAPI) -> None:
     """Configure application middleware stack."""
-
-    # GZip compression for responses
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-    # CORS configuration
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -118,58 +87,16 @@ def configure_middleware(app: FastAPI) -> None:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # Request ID middleware (for tracing)
-    app.add_middleware(RequestIdMiddleware)
-
-    # Logging middleware
-    app.add_middleware(LoggingMiddleware)
-
-
-def configure_exception_handlers(app: FastAPI) -> None:
-    """Configure global exception handlers."""
-
-    @app.exception_handler(SharedHTTPException)
-    async def shared_http_exception_handler(
-        request: Request, exc: SharedHTTPException
-    ) -> JSONResponse:
-        """Handle shared library HTTP exceptions."""
-        return JSONResponse(
-            status_code=getattr(exc, "status_code", 500),
-            content={
-                "error": getattr(exc, "error_code", "INTERNAL_ERROR"),
-                "message": str(exc),
-                "details": getattr(exc, "details", None),
-            },
-        )
-
-    @app.exception_handler(Exception)
-    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        """Handle unhandled exceptions."""
-        logger.exception(
-            "Unhandled exception",
-            path=request.url.path,
-            method=request.method,
-        )
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "INTERNAL_ERROR",
-                "message": "An unexpected error occurred",
-            },
-        )
+    app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(RequestLoggingMiddleware)
 
 
 def configure_routers(app: FastAPI) -> None:
     """Configure API routers."""
-
-    # Health check endpoints (no prefix)
     app.include_router(
         health_controller.router,
         tags=["Health"],
     )
-
-    # Audit API v1
     app.include_router(
         audit_controller.router,
         prefix="/api/v1/audit",

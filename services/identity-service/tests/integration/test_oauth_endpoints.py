@@ -159,13 +159,17 @@ class TestRevocationEndpoint:
         assert response.status_code in [400, 422]
 
     def test_revoke_invalid_token(self, client: TestClient):
-        """Test revocation with invalid token (no client auth)."""
+        """Test revocation with invalid token.
+
+        Per RFC 7009, the revocation endpoint returns 200 OK whether or not
+        the token was successfully revoked to prevent token scanning attacks.
+        """
         response = client.post(
             "/oauth2/revoke",
             data={"token": "invalid-token"},
         )
-        # Revocation requires client authentication
-        assert response.status_code == 401
+        # Per RFC 7009: return 200 regardless of token validity
+        assert response.status_code == 200
 
 
 class TestUserInfoEndpoint:

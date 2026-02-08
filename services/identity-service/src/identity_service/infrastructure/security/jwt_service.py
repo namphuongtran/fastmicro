@@ -274,6 +274,46 @@ class JWTService:
         except JoseError:
             return None
 
+    def create_mfa_token(
+        self,
+        subject: str,
+        expires_in: int = 300,
+    ) -> str:
+        """Create a short-lived MFA challenge token.
+
+        Used between password verification and MFA code verification
+        to bind the two steps together.
+
+        Args:
+            subject: User ID (subject).
+            expires_in: Token lifetime in seconds (default 5 minutes).
+
+        Returns:
+            Encoded MFA token.
+        """
+        from authlib.jose import jwt
+
+        now = int(time.time())
+        exp = now + expires_in
+
+        payload = {
+            "iss": self._settings.jwt_issuer,
+            "sub": subject,
+            "exp": exp,
+            "iat": now,
+            "type": "mfa",
+            "jti": str(uuid.uuid4()),
+        }
+
+        header = {
+            "alg": self._settings.jwt_algorithm,
+            "typ": "JWT",
+            "kid": self._key_manager.kid,
+        }
+
+        token = jwt.encode(header, payload, self._key_manager.private_key)
+        return token.decode("utf-8")
+
     def get_token_jti(self, token: str) -> str | None:
         """Extract JTI from token without verification.
 

@@ -1,0 +1,173 @@
+# Project configuration for Serena
+# See: https://oraios.github.io/serena/02-usage/050_configuration.html
+
+project_name: "fastmicro"
+
+# Python (primary) for all microservices and shared library.
+# TypeScript for the webshell-service (Next.js/React frontend).
+languages:
+  - python
+  - typescript
+
+encoding: "utf-8"
+
+ignore_all_files_in_gitignore: true
+
+# Additional paths to ignore (gitignore syntax)
+ignored_paths:
+  - "**/__pycache__"
+  - "**/.venv"
+  - "**/.env"
+  - "**/node_modules"
+  - "**/.next"
+  - "**/*.egg-info"
+  - "**/dist"
+  - "**/build"
+  - "**/.mypy_cache"
+  - "**/.pytest_cache"
+  - "**/.ruff_cache"
+  - "**/.coverage"
+  - "**/htmlcov"
+  - ".serena/cache"
+  - "infrastructure/postgres"
+  - "k6"
+
+read_only: false
+
+excluded_tools: []
+included_optional_tools: []
+fixed_tools: []
+
+# base_modes are always active regardless of CLI parameters
+base_modes:
+
+# Default modes: interactive + editing + planning
+default_modes:
+  - interactive
+  - editing
+  - planning
+
+# Initial prompt — shown to the LLM whenever this project is activated.
+# Provides comprehensive context about the project structure, patterns, and conventions.
+initial_prompt: |
+  # FastMicro — Enterprise Python Microservices Platform
+
+  ## Overview
+  FastMicro is a production-ready, enterprise-grade Python microservices monorepo using FastAPI,
+  modern tooling, and cloud-native best practices. Python >=3.12, package manager: uv, build system: hatchling.
+
+  ## Technology Stack
+  | Layer         | Technology                              |
+  |---------------|-----------------------------------------|
+  | Frontend      | Next.js 15, React 19, TypeScript        |
+  | API Gateway   | Traefik 3.x                             |
+  | Backend       | FastAPI, Python 3.12+                   |
+  | Auth          | Keycloak 24+ (external IdP)             |
+  | Databases     | PostgreSQL 17, MongoDB 7                |
+  | Caching       | Redis 8                                 |
+  | Messaging     | RabbitMQ 4                              |
+  | Secrets       | HashiCorp Vault                         |
+  | Metrics       | Prometheus + Grafana                    |
+  | Logging       | Seq (structured JSON), structlog        |
+  | Tracing       | Jaeger via OpenTelemetry                |
+  | CI/CD         | GitHub Actions                          |
+
+  ## Repository Structure
+  ```
+  /                          -- monorepo root
+  ├── shared/                -- enterprise shared library (cross-cutting concerns)
+  ├── services/
+  │   ├── audit-service/     -- centralized audit logging (port 8001)
+  │   ├── identity-service/  -- OAuth 2.0 / OIDC identity provider
+  │   ├── identity-admin-service/ -- internal admin UI for IdP (port 8081)
+  │   ├── metastore-service/ -- metadata & feature flags (port 8002)
+  │   └── webshell-service/  -- Next.js frontend (port 3000)
+  ├── gateways/
+  │   └── federation-gateway/ -- central OIDC auth gateway (port 8000)
+  ├── infrastructure/        -- Helm charts, Terraform, monitoring, scripts
+  ├── docs/                  -- architecture docs, ADRs
+  └── docker-compose.yml     -- local orchestration
+  ```
+
+  ## Architecture (ADR-001: Clean Architecture)
+  All Python services follow Clean Architecture with 4 layers (dependencies flow inward):
+  - API layer (api/): FastAPI routers, DTOs, request/response models
+  - Application layer (application/): Services, use cases, orchestration
+  - Domain layer (domain/): Entities, value objects, repository interfaces, domain events
+  - Infrastructure layer (infrastructure/): Database repos, external integrations, caching
+
+  ## Shared Library (ADR-002) — shared/
+  Enterprise shared library with 16 modules providing cross-cutting concerns:
+
+  | Module              | Purpose                                                    |
+  |---------------------|------------------------------------------------------------|
+  | application/        | BaseService, BaseReadService, BaseWriteService, CRUDService, ServiceContext |
+  | auth/               | API key validation, JWT utilities, password hashing        |
+  | cache/              | CacheBackend protocol, decorators, distributed locking, Redis |
+  | config/             | Pydantic Settings for app, auth, DB, caching, logging, Redis, security |
+  | constants/          | Environment detection, HTTP status codes, regex patterns   |
+  | dbs/                | AbstractRepository, InMemoryRepository, AbstractUnitOfWork, Filter, PageRequest/PageResponse |
+  | ddd/                | Entity, AggregateRoot, EntityId, DomainEvent, EventDispatcher, ValueObject |
+  | exceptions/         | BaseServiceException, HTTP exceptions (400-504), DB/validation exceptions |
+  | extensions/         | retry, cache, rate_limit, timeout decorators; DI Container |
+  | fastapi_utils/      | Exception handlers, health routers, lifespan, middleware   |
+  | http_client/        | Circuit breaker, resilient HTTP client                     |
+  | observability/      | Structured logging, Prometheus metrics, OpenTelemetry tracing, health checks |
+  | proto/              | Protobuf definitions (placeholder)                        |
+  | sqlalchemy_async/   | Async SQLAlchemy session management, base models, AsyncRepository/AsyncCRUDRepository |
+  | utils/              | UTC datetime helpers, JSON serialization, string utils, validators |
+
+  ## Services Detail
+  - audit-service: Centralized audit logging for GDPR/SOC2/HIPAA compliance. FastAPI + SQLAlchemy async + asyncpg.
+  - identity-service: Enterprise IdP — OAuth 2.0 Authorization Code + PKCE, Client Credentials, JWT (RS256), MFA (TOTP). FastAPI + Authlib.
+  - identity-admin-service: Internal-only admin UI for IdP management. FastAPI + Jinja2. Security: VPN, IP whitelist, MFA.
+  - metastore-service: Metadata management with key-value store, feature flags, versioning. FastAPI + DDD.
+  - webshell-service: Web frontend. Next.js 15, React 19, TypeScript, Radix UI, TanStack Query/Table, react-hook-form, zod, next-auth.
+  - federation-gateway: Central OIDC auth gateway. FastAPI + httpx + authlib.
+
+  ## Key Patterns
+  - Repository Pattern: AbstractRepository -> AsyncCRUDRepository (SQLAlchemy) or InMemoryRepository (tests)
+  - Unit of Work: AbstractUnitOfWork with async context manager (commit/rollback)
+  - DDD Building Blocks: Entity, AggregateRoot, EntityId, ValueObject, DomainEvent/EventDispatcher
+  - CQRS-light: BaseReadService / BaseWriteService separation
+  - Dependency Injection: FastAPI Depends() with Annotated types; custom DI Container in shared.extensions
+  - Resilience: Circuit Breaker (CLOSED/OPEN/HALF_OPEN), retry with backoff, timeout, rate limiting, bulkhead
+  - Configuration: Pydantic BaseSettings with env vars, @lru_cache for singleton (avoid unhashable args!)
+  - Observability (ADR-003): structlog JSON logging, OpenTelemetry tracing with @traced, Prometheus metrics with @timed
+  - Health Checks: /health/live (liveness) + /health/ready (readiness) with component checks
+
+  ## Coding Conventions
+  - Linter: ruff (rules: A, E, W, F, I, B, C4, UP, SIM, PTH, RUF), line-length=100
+  - Type checker: mypy strict mode with pydantic plugin
+  - Formatter: ruff format (double quotes, spaces)
+  - Naming: snake_case (functions/variables), PascalCase (classes), UPPER_CASE (constants)
+  - Async: ALL I/O operations must be async
+  - API versioning: /api/v1/ prefix on all routes
+  - Type hints: Required on all function signatures, use Annotated for DI
+  - Docstrings: PEP 257, required for public classes/functions
+
+  ## Testing Conventions
+  - Framework: pytest >=8.0, pytest-asyncio (asyncio_mode = "auto"), pytest-cov, pytest-mock
+  - Structure: tests/unit/, tests/integration/, tests/e2e/ per service
+  - Markers: @pytest.mark.unit, @pytest.mark.integration, @pytest.mark.slow
+  - Coverage: >=80% threshold, branch coverage enabled
+  - Patterns: AsyncMock for repos/services, InMemoryRepository for unit tests, aiosqlite for async DB tests
+  - Frontend: Vitest + Testing Library (unit), Playwright (e2e), MSW (API mocking)
+
+  ## Known Anti-Patterns to AVOID
+  - datetime.utcnow() -> use datetime.now(timezone.utc) instead
+  - @lru_cache on functions with unhashable args (e.g., dicts) -> causes TypeError
+  - Hardcoded file paths -> use pathlib.Path relative to __file__
+  - Manual service instantiation -> use DI Container or FastAPI Depends()
+  - SELECT * in queries -> select only needed columns
+  - Synchronous I/O in async context -> always use async variants
+
+  ## Key File Locations
+  - Shared library source: shared/src/shared/
+  - Shared library tests: shared/tests/
+  - Service source pattern: services/<name>/src/<name_underscore>/
+  - Architecture docs: docs/architecture.md
+  - ADRs: docs/adr/
+  - Docker orchestration: docker-compose.yml
+  - Helm chart: infrastructure/charts/microservice/
+  - Instruction files: .github/instructions/ (python, enterprise patterns, cloud-native, observability, security)

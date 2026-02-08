@@ -20,6 +20,10 @@ volumes:
     name: ags_seq_data
   vault_data:
     name: ags_vault_data
+  kafka_data:
+    name: ags_kafka_data
+  user_postgres_data:
+    name: ags_user_postgres_data
 
 services:
   # Infrastructure
@@ -100,7 +104,9 @@ services:
       - vault_data:/vault/
 
   redis:
-    image: docker.io/bitnami/redis:8.0.3
+    # Use 'latest' as Bitnami uses rolling tags; version 8.0.3 doesn't exist
+    # Current release: 8.4.0-debian-12-r2 (see https://github.com/bitnami/containers/tree/main/bitnami/redis)
+    image: docker.io/bitnami/redis:latest
     container_name: redis
     restart: unless-stopped
     volumes:
@@ -114,14 +120,14 @@ services:
     volumes:
       - redis_insight_data:/data
 
-  eureka:
-    image: steeltoeoss/eureka-server:4.1.1
-    container_name: eureka
+  # Kafka (audit event stream + analytics)
+  kafka:
+    image: bitnami/kafka:3.9
+    container_name: kafka
     restart: unless-stopped
-
-  consul:
-    image: hashicorp/consul:1.21.2
-    container_name: consul
+    hostname: kafka
+    volumes:
+      - kafka_data:/bitnami/kafka
 
   seq:
     image: datalust/seq:2025.2
@@ -152,3 +158,24 @@ services:
       context: .
       dockerfile: ./gateways/federation-gateway/Dockerfile
     restart: unless-stopped    
+
+  user-service:
+    container_name: user-service
+    build:
+      context: .
+      dockerfile: ./services/user-service/Dockerfile
+    restart: unless-stopped
+
+  notification-service:
+    container_name: notification-service
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
+    restart: unless-stopped
+
+  worker-service:
+    container_name: worker-service
+    build:
+      context: .
+      dockerfile: ./services/worker-service/Dockerfile
+    restart: unless-stopped

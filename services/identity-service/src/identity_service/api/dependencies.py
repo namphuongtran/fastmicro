@@ -6,11 +6,12 @@ See: https://fastapi.tiangolo.com/tutorial/dependencies/
 
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends
 
-from identity_service.application.services import OAuth2Service
+from identity_service.application.services import MFAService, OAuth2Service, UserAuthService
 from identity_service.configs import Settings, get_settings
 
 if TYPE_CHECKING:
@@ -73,37 +74,75 @@ class InMemoryUserRepository:
 
 
 class InMemoryClientRepository:
-    """In-memory client repository for development/testing."""
+    """In-memory client repository for development/testing.
+
+    Provides a functional in-memory implementation for OAuth2 client storage.
+    Used during development and testing before database persistence is implemented.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the in-memory storage."""
+        self._clients: dict[str, any] = {}  # Keyed by client_id (OAuth2 public identifier)
+        self._clients_by_uuid: dict[str, any] = {}  # Keyed by internal UUID
 
     async def get_by_id(self, client_id):
-        return None
+        """Get client by internal UUID."""
+        return self._clients_by_uuid.get(str(client_id))
 
-    async def get_by_client_id(self, client_id):
-        return None
+    async def get_by_client_id(self, client_id: str):
+        """Get client by OAuth2 client_id (public identifier)."""
+        return self._clients.get(client_id)
 
     async def create(self, client):
+        """Create a new client."""
+        self._clients[client.client_id] = client
+        self._clients_by_uuid[str(client.id)] = client
         return client
 
     async def update(self, client):
+        """Update an existing client."""
+        self._clients[client.client_id] = client
+        self._clients_by_uuid[str(client.id)] = client
         return client
 
     async def delete(self, client_id):
-        return True
-
-    async def exists_by_client_id(self, client_id):
+        """Delete a client by UUID."""
+        client = self._clients_by_uuid.get(str(client_id))
+        if client:
+            client.is_active = False
+            return True
         return False
 
+    async def exists_by_client_id(self, client_id: str) -> bool:
+        """Check if client exists by OAuth2 client_id."""
+        return client_id in self._clients
+
     async def list_active(self, skip=0, limit=100):
-        return []
+        """List all active clients."""
+        active = [c for c in self._clients.values() if c.is_active]
+        return active[skip : skip + limit]
 
     async def list_by_owner(self, owner_id, skip=0, limit=100):
-        return []
+        """List clients by owner."""
+        owned = [c for c in self._clients.values() if c.created_by == owner_id]
+        return owned[skip : skip + limit]
 
     async def count(self, include_inactive=False):
-        return 0
+        """Count total clients."""
+        if include_inactive:
+            return len(self._clients)
+        return len([c for c in self._clients.values() if c.is_active])
 
     async def search(self, query, skip=0, limit=100, include_inactive=False):
-        return []
+        """Search clients by name or client_id."""
+        query_lower = query.lower()
+        results = []
+        for client in self._clients.values():
+            if not include_inactive and not client.is_active:
+                continue
+            if query_lower in client.client_id.lower() or query_lower in client.client_name.lower():
+                results.append(client)
+        return results[skip : skip + limit]
 
 
 class InMemoryAuthCodeRepository:
@@ -347,3 +386,153 @@ async def get_oauth2_service(
 
 # OAuth2 service dependency - primary service for authentication/authorization
 OAuth2ServiceDep = Annotated[OAuth2Service, Depends(get_oauth2_service)]
+
+
+def get_client_repository() -> InMemoryClientRepository:
+    """Get the client repository singleton.
+
+    Returns:
+        Client repository instance for OAuth2 client management.
+    """
+    return _client_repo
+
+
+def get_user_repository() -> InMemoryUserRepository:
+    """Get the user repository singleton.
+
+    Returns:
+        User repository instance for user management.
+    """
+    return _user_repo
+
+
+# =============================================================================
+# Password Reset Repository (In-Memory)
+# =============================================================================
+
+
+class InMemoryPasswordResetRepository:
+    """In-memory password reset token repository."""
+
+    def __init__(self) -> None:
+        self._tokens: dict[str, any] = {}
+
+    async def save(self, reset_token):
+        self._tokens[reset_token.token] = reset_token
+
+    async def get_by_token(self, token: str):
+        return self._tokens.get(token)
+
+    async def mark_as_used(self, token: str):
+        if token in self._tokens:
+            self._tokens[token].consume()
+            return True
+        return False
+
+    async def delete_expired(self):
+        expired = [k for k, v in self._tokens.items() if not v.is_valid()]
+        for k in expired:
+            del self._tokens[k]
+        return len(expired)
+
+    async def delete_for_user(self, user_id):
+        to_delete = [k for k, v in self._tokens.items() if v.user_id == user_id]
+        for k in to_delete:
+            del self._tokens[k]
+        return len(to_delete)
+
+
+_reset_repo = InMemoryPasswordResetRepository()
+
+
+# =============================================================================
+# Auth Services
+# =============================================================================
+
+
+async def get_user_auth_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> UserAuthService:
+    """Get UserAuthService instance with all dependencies wired.
+
+    Returns:
+        UserAuthService for registration, login, and password operations.
+    """
+    from identity_service.infrastructure.security import (
+        get_brute_force_protection_service,
+        get_jwt_service,
+        get_password_policy_service,
+        get_password_service,
+        get_session_management_service,
+    )
+
+    return UserAuthService(
+        settings=settings,
+        user_repository=_user_repo,
+        password_reset_repository=_reset_repo,
+        password_service=get_password_service(settings),
+        password_policy_service=get_password_policy_service(settings),
+        brute_force_service=get_brute_force_protection_service(settings),
+        session_service=get_session_management_service(),
+        jwt_service=get_jwt_service(settings),
+    )
+
+
+async def get_mfa_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> MFAService:
+    """Get MFAService instance with all dependencies wired.
+
+    Returns:
+        MFAService for TOTP setup, verification, and recovery.
+    """
+    from identity_service.infrastructure.security import (
+        get_jwt_service,
+        get_password_service,
+    )
+
+    return MFAService(
+        settings=settings,
+        user_repository=_user_repo,
+        password_service=get_password_service(settings),
+        jwt_service=get_jwt_service(settings),
+    )
+
+
+# Annotated type aliases for auth services
+UserAuthServiceDep = Annotated[UserAuthService, Depends(get_user_auth_service)]
+MFAServiceDep = Annotated[MFAService, Depends(get_mfa_service)]
+
+
+# =============================================================================
+# Current User (JWT-based authentication)
+# =============================================================================
+
+
+async def get_current_user_id(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> uuid.UUID:
+    """Extract user ID from JWT bearer token.
+
+    This is a simplified stub that returns a placeholder UUID.
+    In production, this would extract and validate the JWT from
+    the Authorization header.
+
+    Returns:
+        Authenticated user's UUID.
+
+    Raises:
+        HTTPException: If not authenticated.
+    """
+    # TODO: Replace with actual JWT extraction from Authorization header
+    # For now, a placeholder to allow compilation
+    from fastapi import HTTPException
+
+    raise HTTPException(
+        status_code=401,
+        detail="Authentication required",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+CurrentUserIdDep = Annotated[uuid.UUID, Depends(get_current_user_id)]

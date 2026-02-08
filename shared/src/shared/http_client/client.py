@@ -9,7 +9,7 @@ This module provides an async HTTP client for microservice communication:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Self
+from typing import Any
 from uuid import uuid4
 
 import httpx
@@ -83,6 +83,10 @@ class ServiceClientConfig:
     headers: dict[str, str] = field(default_factory=dict)
     auto_correlation_id: bool = False
     correlation_id_header: str = "X-Correlation-ID"
+    # Circuit Breaker settings
+    circuit_breaker_enabled: bool = True
+    cb_failure_threshold: int = 5
+    cb_recovery_timeout: float = 30.0
 
 
 @dataclass
@@ -144,18 +148,33 @@ class ServiceClient:
             timeout=config.timeout,
             headers=config.headers,
         )
+        # Initialize circuit breaker if enabled
+        from shared.http_client.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
+
+        self._circuit_breaker: CircuitBreaker | None = None
+        if config.circuit_breaker_enabled:
+            # Create a simple name from the base url if explicit name not provided
+            # ideally config would have a service_name field
+            name = config.base_url.replace("https://", "").replace("http://", "").split("/")[0]
+            self._circuit_breaker = CircuitBreaker(
+                name=name,
+                config=CircuitBreakerConfig(
+                    failure_threshold=config.cb_failure_threshold,
+                    recovery_timeout=config.cb_recovery_timeout,
+                ),
+            )
 
     @property
     def config(self) -> ServiceClientConfig:
-        """Get client configuration."""
+        """Return client configuration."""
         return self._config
 
-    async def __aenter__(self) -> Self:
-        """Enter async context."""
+    async def __aenter__(self) -> ServiceClient:
+        """Enter async context manager."""
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
-        """Exit async context."""
+    async def __aexit__(self, *args: object) -> None:
+        """Exit async context manager and close client."""
         await self.close()
 
     async def close(self) -> None:
@@ -326,7 +345,7 @@ class ServiceClient:
         headers: dict[str, str] | None = None,
         correlation_id: str | None = None,
     ) -> ServiceResponse:
-        """Make HTTP request with retry logic.
+        """Make HTTP request with retry logic and circuit breaker.
 
         Args:
             method: HTTP method.
@@ -341,7 +360,8 @@ class ServiceClient:
             ServiceResponse with status, data, and headers.
 
         Raises:
-            ServiceUnavailableError: When max retries exceeded.
+            ServiceUnavailableError: When max retries exceeded or circuit open.
+            HTTPClientError: For other client errors.
         """
         # Prepare headers
         request_headers = dict(headers or {})
@@ -352,7 +372,7 @@ class ServiceClient:
         elif self._config.auto_correlation_id:
             request_headers[self._config.correlation_id_header] = str(uuid4())
 
-        async def make_request() -> httpx.Response:
+        async def make_request() -> ServiceResponse:
             response = await self._client.request(
                 method,
                 path,
@@ -362,7 +382,8 @@ class ServiceClient:
                 headers=request_headers,
             )
 
-            # Retry on 5xx errors
+            # Raise HTTPStatusError for 5xx to trigger retries/circuit breaker
+            # We explicitly want to retry on server errors
             if response.status_code >= 500:
                 raise httpx.HTTPStatusError(
                     f"Server error: {response.status_code}",
@@ -370,35 +391,82 @@ class ServiceClient:
                     response=response,
                 )
 
-            return response
+            return self._parse_response(response)
 
+        # 1. Wrap with Circuit Breaker (Fail Fast)
+        # If the circuit is OPEN, this will raise CircuitOpenError immediately.
+        # We generally do NOT want to retry CircuitOpenError, as we want to save the system.
         try:
-            async for attempt in AsyncRetrying(
-                stop=stop_after_attempt(self._config.max_retries),
-                wait=wait_exponential(
-                    multiplier=self._config.retry_backoff,
-                    max=self._config.retry_backoff_max,
-                ),
-                retry=retry_if_exception_type(
-                    (
-                        httpx.TimeoutException,
-                        httpx.ConnectError,
-                        httpx.HTTPStatusError,
-                    )
-                ),
-                reraise=True,
-            ):
-                with attempt:
-                    response = await make_request()
-                    return self._parse_response(response)
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            if self._circuit_breaker:
+                from shared.http_client.circuit_breaker import CircuitOpenError
+
+                async def cb_wrapper():
+                    # 2. Wrap with Retries (Try Again)
+                    # We retry network errors and 5xx errors INSIDE the circuit breaker.
+                    # This means if retries fail, it counts as a failure for the circuit.
+                    async for attempt in AsyncRetrying(
+                        stop=stop_after_attempt(self._config.max_retries),
+                        wait=wait_exponential(
+                            multiplier=self._config.retry_backoff,
+                            max=self._config.retry_backoff_max,
+                        ),
+                        retry=retry_if_exception_type(
+                            (
+                                httpx.TimeoutException,
+                                httpx.ConnectError,
+                                httpx.ReadTimeout,
+                                httpx.WriteTimeout,
+                                httpx.HTTPStatusError,  # Retries on 5xx
+                            )
+                        ),
+                        reraise=True,
+                    ):
+                        with attempt:
+                            return await make_request()
+
+                try:
+                    return await self._circuit_breaker.call(cb_wrapper)
+                except CircuitOpenError as e:
+                    # Map to our standard exception
+                    raise ServiceUnavailableError(
+                        f"Circuit open for {self._config.base_url}: {e}"
+                    ) from e
+
+            else:
+                # No circuit breaker, just standard retries
+                async for attempt in AsyncRetrying(
+                    stop=stop_after_attempt(self._config.max_retries),
+                    wait=wait_exponential(
+                        multiplier=self._config.retry_backoff,
+                        max=self._config.retry_backoff_max,
+                    ),
+                    retry=retry_if_exception_type(
+                        (
+                            httpx.TimeoutException,
+                            httpx.ConnectError,
+                            httpx.ReadTimeout,
+                            httpx.WriteTimeout,
+                            httpx.HTTPStatusError,
+                        )
+                    ),
+                    reraise=True,
+                ):
+                    with attempt:
+                        return await make_request()
+
+        except (
+            httpx.TimeoutException,
+            httpx.ConnectError,
+            httpx.ReadTimeout,
+            httpx.WriteTimeout,
+        ) as e:
             raise ServiceUnavailableError(f"Max retries exceeded for {method} {path}: {e}") from e
         except httpx.HTTPStatusError as e:
-            # Return the error response instead of raising
+            # If we exhausted retries on 5xx, we parse the error response
             return self._parse_response(e.response)
 
-        # This should not be reached, but satisfy type checker
-        raise ServiceUnavailableError(f"Request failed for {method} {path}")
+        # Should not be reached
+        raise ServiceUnavailableError("Unknown error occurred")
 
     def _parse_response(self, response: httpx.Response) -> ServiceResponse:
         """Parse HTTP response into ServiceResponse.

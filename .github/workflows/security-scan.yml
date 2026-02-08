@@ -27,6 +27,8 @@ jobs:
         service:
           - shared
           - services/audit-service
+          - services/identity-service
+          - services/identity-admin-service
           - services/metastore-service
           - gateways/federation-gateway
     steps:

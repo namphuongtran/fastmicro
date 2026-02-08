@@ -48,17 +48,18 @@ class Settings(BaseSettings):
         description="Allowed CORS origins",
     )
 
-    # Database Settings
+    # Database Settings (MongoDB — append-heavy audit store)
     database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/audit_db",
-        description="PostgreSQL connection string",
+        default="mongodb://admin:admin@localhost:27017/audit_db?authSource=admin",
+        description="MongoDB connection string for audit event storage",
     )
-    database_pool_size: int = Field(default=5, ge=1, le=100, description="Database pool size")
-    database_max_overflow: int = Field(
-        default=10, ge=0, le=100, description="Database max overflow"
+    database_name: str = Field(
+        default="audit_db",
+        description="MongoDB database name",
     )
-    database_pool_timeout: int = Field(
-        default=30, ge=1, description="Database pool timeout in seconds"
+    audit_collection: str = Field(
+        default="audit_events",
+        description="MongoDB collection name for audit events",
     )
 
     # Redis Settings

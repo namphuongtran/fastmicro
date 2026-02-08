@@ -1,0 +1,14 @@
+mode: mainline
+branches:
+  main:
+    regex: ^main$
+    tag: ''
+    increment: Patch
+  feature:
+    regex: ^feature[/-]
+    tag: alpha
+    increment: Minor
+  hotfix:
+    regex: ^hotfix[/-]
+    tag: beta
+    increment: Patch

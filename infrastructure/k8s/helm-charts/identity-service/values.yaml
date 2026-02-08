@@ -1,0 +1,36 @@
+# Values for identity-service
+microservice:
+  image:
+    repository: fastmicro/identity-service
+    tag: latest
+
+  service:
+    port: 80
+    targetPort: 8003
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8003
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8003
+
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8003
+
+  replicas: 1
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+  env:
+    - name: LOG_LEVEL
+      value: "INFO"

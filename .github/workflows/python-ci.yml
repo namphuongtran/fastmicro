@@ -60,6 +60,8 @@ jobs:
               - 'services/audit-service/**'
             identity-service:
               - 'services/identity-service/**'
+            identity-admin-service:
+              - 'services/identity-admin-service/**'
             metastore-service:
               - 'services/metastore-service/**'
             federation-gateway:
@@ -74,6 +76,9 @@ jobs:
           fi
           if [ "${{ steps.filter.outputs.identity-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
             services+=("identity-service")
+          fi
+          if [ "${{ steps.filter.outputs.identity-admin-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
+            services+=("identity-admin-service")
           fi
           if [ "${{ steps.filter.outputs.metastore-service }}" == "true" ] || [ "${{ steps.filter.outputs.shared }}" == "true" ]; then
             services+=("metastore-service")
@@ -146,6 +151,8 @@ jobs:
             path: services/audit-service
           - name: identity-service
             path: services/identity-service
+          - name: identity-admin-service
+            path: services/identity-admin-service
           - name: metastore-service
             path: services/metastore-service
           - name: federation-gateway
@@ -204,6 +211,9 @@ jobs:
           - name: identity-service
             dockerfile: services/identity-service/Dockerfile
             context: .
+          - name: identity-admin-service
+            dockerfile: services/identity-admin-service/Dockerfile
+            context: .
           - name: metastore-service
             dockerfile: services/metastore-service/Dockerfile
             context: .
@@ -254,7 +264,7 @@ jobs:
     if: github.event_name == 'push'
     strategy:
       matrix:
-        service: [audit-service, identity-service, metastore-service, federation-gateway]
+        service: [audit-service, identity-service, identity-admin-service, metastore-service, federation-gateway]
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

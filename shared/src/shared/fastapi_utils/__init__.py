@@ -31,6 +31,10 @@ Example:
     >>> register_exception_handlers(app)
 """
 
+from shared.fastapi_utils.dependencies import (
+    ServiceContextDep,
+    get_service_context,
+)
 from shared.fastapi_utils.exception_handlers import (
     generic_exception_handler,
     http_exception_handler,
@@ -66,6 +70,9 @@ __all__ = [
     "RequestContextMiddleware",
     "get_request_context",
     "get_correlation_id",
+    # Dependencies
+    "get_service_context",
+    "ServiceContextDep",
     # Exception handlers
     "register_exception_handlers",
     "http_exception_handler",

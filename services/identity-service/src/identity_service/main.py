@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from identity_service import __version__
-from identity_service.api import health_router, oauth_router
+from identity_service.api import auth_router, health_router, oauth_router
 from identity_service.api.web import router as web_router
 from identity_service.api.web import routes as web_routes
 from identity_service.configs import get_settings
@@ -47,7 +47,9 @@ logger = get_structlog_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler.
 
-    Handles startup and shutdown events.
+    Handles startup and shutdown events including:
+    - RSA key initialization for JWT signing
+    - Default OAuth2 client seeding
     """
     settings = get_settings()
 
@@ -67,6 +69,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         settings.jwt_public_key_path,
     )
     logger.info("RSA keys initialized", kid=key_manager.kid)
+
+    # Seed default OAuth2 clients
+    from identity_service.api.dependencies import get_client_repository
+
+    try:
+        from scripts.seed_clients import seed_default_clients
+
+        client_repo = get_client_repository()
+        await seed_default_clients(client_repo)
+        logger.info("Default OAuth2 clients seeded")
+    except Exception as e:
+        logger.warning("Failed to seed default clients", error=str(e))
 
     yield
 
@@ -150,7 +164,11 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health_router)
     app.include_router(oauth_router)
+    app.include_router(auth_router)
     app.include_router(web_router)
+
+    # NOTE: Admin functionality has been moved to identity-admin-service
+    # for security isolation. Admin API is no longer exposed from this service.
 
     return app
 

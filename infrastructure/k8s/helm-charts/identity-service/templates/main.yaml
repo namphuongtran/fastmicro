@@ -1,0 +1,10 @@
+{{- $ctx := dict "Values" .Values.microservice "Release" .Release "Chart" .Chart "Template" .Template -}}
+{{- include "microservice.serviceAccount" $ctx }}
+---
+{{- include "microservice.deployment" $ctx }}
+---
+{{- include "microservice.service" $ctx }}
+---
+{{- include "microservice.hpa" $ctx }}
+---
+{{- include "microservice.pdb" $ctx }}

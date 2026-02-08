@@ -1,6 +1,9 @@
 # =============================================================================
 # Release Workflow - Semantic Versioning and Changelog Generation
 # =============================================================================
+# This workflow creates GitHub releases based on conventional commits.
+# It does NOT publish to npm (this is a Python monorepo).
+# =============================================================================
 
 name: Release
 
@@ -12,7 +15,7 @@ on:
       dry_run:
         description: 'Dry run (no actual release)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 permissions:
@@ -37,12 +40,41 @@ jobs:
 
       - name: Install semantic-release
         run: |
-          npm install -g semantic-release @semantic-release/changelog @semantic-release/git
+          npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github @semantic-release/commit-analyzer @semantic-release/release-notes-generator
 
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Create a minimal package.json for semantic-release (not for npm publishing)
+          cat > package.json << 'EOF'
+          {
+            "name": "fastmicro",
+            "version": "0.0.0-development",
+            "private": true,
+            "description": "FastMicro - Enterprise Python Microservices Platform",
+            "repository": {
+              "type": "git",
+              "url": "https://github.com/${{ github.repository }}.git"
+            },
+            "release": {
+              "branches": ["main"],
+              "plugins": [
+                "@semantic-release/commit-analyzer",
+                "@semantic-release/release-notes-generator",
+                ["@semantic-release/changelog", {
+                  "changelogFile": "CHANGELOG.md"
+                }],
+                ["@semantic-release/git", {
+                  "assets": ["CHANGELOG.md"],
+                  "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+                }],
+                "@semantic-release/github"
+              ]
+            }
+          }
+          EOF
+          
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             npx semantic-release --dry-run
           else

@@ -25,6 +25,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.dashboard.service=api@internal"
+    networks:
+      - ags-core
 
   auth-postgresql:
     ports:
@@ -38,6 +40,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ags-core
 
   mongodb:
     ports:
@@ -50,6 +54,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ags-core
 
   rabbitmq:
     ports:
@@ -63,6 +69,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ags-core
 
   redis:
     ports:
@@ -74,10 +82,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ags-core
 
   redis-insight:
     ports:
       - "5540:5540"
+    networks:
+      - ags-core
 
   vault:
     ports:
@@ -87,6 +99,8 @@ services:
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     cap_add:
       - IPC_LOCK
+    networks:
+      - ags-core
 
   seq:
     ports:
@@ -94,11 +108,15 @@ services:
       - "8081:80"  # Web UI
     environment:
       ACCEPT_EULA: "Y"
+    networks:
+      - ags-core
 
   smtp-server:
     ports:
       - "1025:1025"  # SMTP
       - "8025:8025"  # Web UI
+    networks:
+      - ags-core
 
   keycloak:
     ports:
@@ -120,15 +138,30 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    networks:
+      - ags-core
 
-  eureka:
+  kafka:
     ports:
-      - "8761:8761"
-
-  consul:
-    ports:
-      - "8500:8500"  # HTTP API/UI
-      - "8600:8600/udp"  # DNS
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      KAFKA_CFG_NODE_ID: "0"
+      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ags-core
 
   # ---------------------------------------------------------------------------
   # Gateway Services - Development Overrides
@@ -141,15 +174,27 @@ services:
       APP_ENV: development
       LOG_LEVEL: DEBUG
       DEBUG: "true"
+      OIDC_ISSUER_URL: https://keycloak:8443/realms/master
+      OIDC_CLIENT_ID: federation-gateway
+      OIDC_CLIENT_SECRET: change-me-in-production
+      OIDC_REDIRECT_URI: http://localhost:8000/api/v1/auth/callback
     volumes:
       - ./gateways/federation-gateway/src:/app/src:cached
       - ./shared:/shared:cached
     command: ["uvicorn", "federation_gateway.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      keycloak:
+        condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - ags-core
 
   # ---------------------------------------------------------------------------
   # Application Services
@@ -166,7 +211,7 @@ services:
     environment:
       APP_ENV: development
       LOG_LEVEL: DEBUG
-      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080"
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:8080"]'
       DATABASE_URL: mongodb://admin:admin@mongodb:27017/audit_db?authSource=admin
       REDIS_URL: redis://redis:6379/0
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
@@ -205,8 +250,8 @@ services:
     environment:
       APP_ENV: development
       LOG_LEVEL: DEBUG
-      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080"
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@auth-postgresql:5432/metastore_db
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:8080"]'
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@metastore-postgresql:5432/metastore_db
       REDIS_URL: redis://redis:6379/1
       SEQ_URL: http://seq:5341
       KEYCLOAK_URL: http://keycloak:8080
@@ -216,7 +261,7 @@ services:
       - ./shared:/shared:cached
     command: ["uvicorn", "metastore_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
-      auth-postgresql:
+      metastore-postgresql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -232,6 +277,26 @@ services:
       - "traefik.http.routers.metastore.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/metadata`)"
       - "traefik.http.services.metastore.loadbalancer.server.port=8000"
 
+  metastore-postgresql:
+    image: postgres:16-alpine
+    container_name: metastore-postgresql
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: metastore_db
+    volumes:
+      - metastore_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ags-core
+
   identity-service:
     build:
       context: .
@@ -244,7 +309,7 @@ services:
       APP_ENV: development
       APP_PORT: "8000"
       LOG_LEVEL: DEBUG
-      CORS_ORIGINS: "http://localhost:3000,http://localhost:8080,http://app.localhost"
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:8080","http://app.localhost"]'
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@identity-postgresql:5432/identity_db
       REDIS_URL: redis://redis:6379/2
       JWT_ISSUER: http://localhost:8003
@@ -276,6 +341,163 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.identity.rule=Host(`identity.localhost`) || (Host(`api.localhost`) && PathPrefix(`/oauth2`, `/.well-known`))"
       - "traefik.http.services.identity.loadbalancer.server.port=8000"
+
+  identity-admin-service:
+    build:
+      context: .
+      dockerfile: ./services/identity-admin-service/Dockerfile
+    container_name: identity-admin-service
+    restart: unless-stopped
+    ports:
+      - "8007:8000"
+    environment:
+      APP_ENV: development
+      APP_PORT: "8000"
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@identity-postgresql:5432/identity_db
+      REDIS_URL: redis://redis:6379/2
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      SEQ_URL: http://seq:5341
+    volumes:
+      - ./services/identity-admin-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "identity_admin_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      identity-postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.identity-admin.rule=Host(`api.localhost`) && PathPrefix(`/admin/identity`)"
+      - "traefik.http.services.identity-admin.loadbalancer.server.port=8000"
+
+  # ---------------------------------------------------------------------------
+  # New Phase-0 Services
+  # ---------------------------------------------------------------------------
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./services/user-service/Dockerfile
+    container_name: user-service
+    restart: unless-stopped
+    ports:
+      - "8006:8000"
+    environment:
+      APP_ENV: development
+      USER_SERVICE_LOG_LEVEL: DEBUG
+      USER_SERVICE_DATABASE_URL: postgresql+asyncpg://postgres:postgres@user-postgresql:5432/user_db
+      USER_SERVICE_REDIS_URL: redis://redis:6379/3
+      USER_SERVICE_RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      USER_SERVICE_OTLP_ENDPOINT: http://jaeger:4317
+    volumes:
+      - ./services/user-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "user_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      user-postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.users.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/users`)"
+      - "traefik.http.services.users.loadbalancer.server.port=8000"
+
+  user-postgresql:
+    image: postgres:17-alpine
+    container_name: user-postgresql
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user_db
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ags-core
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8004:8000"
+    environment:
+      APP_ENV: development
+      NOTIFICATION_SERVICE_LOG_LEVEL: DEBUG
+      NOTIFICATION_SERVICE_REDIS_URL: redis://redis:6379/4
+      NOTIFICATION_SERVICE_RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      NOTIFICATION_SERVICE_SMTP_HOST: smtp-server
+      NOTIFICATION_SERVICE_SMTP_PORT: "1025"
+      NOTIFICATION_SERVICE_SMTP_USE_TLS: "false"
+      NOTIFICATION_SERVICE_OTLP_ENDPOINT: http://jaeger:4317
+    volumes:
+      - ./services/notification-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    command: ["uvicorn", "notification_service.main:create_app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--factory"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ags-core
+
+  worker-service:
+    build:
+      context: .
+      dockerfile: ./services/worker-service/Dockerfile
+    container_name: worker-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: development
+      WORKER_SERVICE_LOG_LEVEL: DEBUG
+      WORKER_SERVICE_REDIS_URL: redis://redis:6379/5
+      WORKER_SERVICE_RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      WORKER_SERVICE_DATABASE_URL: postgresql+asyncpg://postgres:postgres@user-postgresql:5432/user_db
+      WORKER_SERVICE_OTLP_ENDPOINT: http://jaeger:4317
+    volumes:
+      - ./services/worker-service/src:/app/src:cached
+      - ./shared:/shared:cached
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ags-core
 
   identity-postgresql:
     image: postgres:16-alpine
@@ -314,6 +536,14 @@ services:
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://api.localhost
       NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8180
+      # NextAuth configuration
+      AUTH_SECRET: "dev-secret-change-me-in-production-32chars!!"
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_TRUST_HOST: "true"
+      # Identity Service URLs (internal for server-side, external for browser)
+      IDENTITY_SERVICE_INTERNAL_URL: http://identity-service:8000
+      IDENTITY_SERVICE_URL: http://localhost:8003
+      OAUTH_CLIENT_ID: webshell-frontend
     volumes:
       - ./services/webshell-service/src:/app/src:cached
       - ./services/webshell-service/public:/app/public:cached
@@ -417,5 +647,9 @@ volumes:
     name: ags_grafana_data
   identity_postgres_data:
     name: ags_identity_postgres_data
+  metastore_postgres_data:
+    name: ags_metastore_postgres_data
+  user_postgres_data:
+    name: ags_user_postgres_data
   identity_rsa_keys:
     name: ags_identity_rsa_keys
