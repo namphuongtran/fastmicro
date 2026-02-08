@@ -1,18 +1,20 @@
-"""Web routes for login and consent pages.
+"""Web routes for login, consent, logout, and password management pages.
 
 Human-facing web endpoints for authentication flows.
 """
 
 from datetime import datetime
 from typing import Annotated, Any
+from urllib.parse import urlencode
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Form, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from identity_service.api.dependencies import get_oauth2_service
+from identity_service.api.dependencies import get_oauth2_service, get_user_auth_service
 from identity_service.application.services.oauth2_service import OAuth2Service
+from identity_service.application.services.user_auth_service import UserAuthService
 
 router = APIRouter(tags=["web"])
 
@@ -66,6 +68,36 @@ def _clear_session(response: Response, session_id: str | None) -> None:
     response.delete_cookie("session_id")
 
 
+def _build_oidc_query(
+    response_type: str | None = None,
+    client_id: str | None = None,
+    redirect_uri: str | None = None,
+    scope: str | None = None,
+    state: str | None = None,
+    nonce: str | None = None,
+    code_challenge: str | None = None,
+    code_challenge_method: str | None = None,
+) -> str:
+    """Build URL query string preserving OIDC flow parameters."""
+    params: dict[str, str] = {}
+    if response_type:
+        params["response_type"] = response_type
+    if client_id:
+        params["client_id"] = client_id
+    if redirect_uri:
+        params["redirect_uri"] = redirect_uri
+    if scope:
+        params["scope"] = scope
+    if state:
+        params["state"] = state
+    if nonce:
+        params["nonce"] = nonce
+    if code_challenge:
+        params["code_challenge"] = code_challenge
+        params["code_challenge_method"] = code_challenge_method or "plain"
+    return urlencode(params)
+
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(
     request: Request,
@@ -113,6 +145,26 @@ async def login_page(
         # In production, fetch from client repository
         client_name = client_id  # Simplified
 
+    # Build return query for links (forgot password, register)
+    return_query = _build_oidc_query(
+        response_type=response_type,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+        nonce=nonce,
+        code_challenge=code_challenge,
+        code_challenge_method=code_challenge_method,
+    )
+
+    # External identity providers (extend this list for Google, Microsoft, etc.)
+    external_providers: list[dict[str, str]] = []
+    # Uncomment when external providers are configured:
+    # external_providers.append({
+    #     "scheme": "google",
+    #     "display_name": "Google",
+    # })
+
     return tpl.TemplateResponse(
         "login.html",
         {
@@ -129,6 +181,9 @@ async def login_page(
             "login_hint": login_hint or "",
             "client_name": client_name,
             "error": error,
+            "success": request.query_params.get("success"),
+            "return_query": return_query,
+            "external_providers": external_providers,
         },
     )
 
@@ -156,6 +211,16 @@ async def login_submit(
     result = await oauth2_service.login(email, password)
 
     if not result.success:
+        return_query = _build_oidc_query(
+            response_type=response_type,
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            scope=scope,
+            state=state,
+            nonce=nonce,
+            code_challenge=code_challenge,
+            code_challenge_method=code_challenge_method,
+        )
         return tpl.TemplateResponse(
             "login.html",
             {
@@ -172,6 +237,9 @@ async def login_submit(
                 "login_hint": email,
                 "client_name": client_id,
                 "error": result.error_description or "Invalid credentials",
+                "success": None,
+                "return_query": return_query,
+                "external_providers": [],
             },
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
@@ -420,16 +488,220 @@ async def _process_consent_allow(
 @router.get("/logout", response_class=HTMLResponse)
 async def logout(
     request: Request,
-    post_logout_redirect: str | None = None,
+    post_logout_redirect_uri: str | None = None,
+    client_id: str | None = None,
 ) -> Response:
-    """Handle logout."""
+    """Handle logout — show confirmation page."""
+    tpl = get_templates()
     session_id = request.cookies.get("session_id")
 
-    redirect_url = post_logout_redirect or "/"
-    response = RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+    # Get client name before clearing session
+    client_name = client_id or None  # In production, fetch from client repository
+
+    response = tpl.TemplateResponse(
+        "logout.html",
+        {
+            "request": request,
+            "year": _get_year(),
+            "client_name": client_name,
+            "post_logout_redirect_uri": post_logout_redirect_uri,
+        },
+    )
     _clear_session(response, session_id)
 
     return response
+
+
+# ---------------------------------------------------------------------------
+# Forgot / Reset Password
+# ---------------------------------------------------------------------------
+
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(
+    request: Request,
+    response_type: str | None = None,
+    client_id: str | None = None,
+    redirect_uri: str | None = None,
+    scope: str | None = None,
+    state: str | None = None,
+) -> HTMLResponse:
+    """Render forgot password page."""
+    tpl = get_templates()
+    return_query = _build_oidc_query(
+        response_type=response_type,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+    )
+    return tpl.TemplateResponse(
+        "forgot-password.html",
+        {
+            "request": request,
+            "year": _get_year(),
+            "submitted": False,
+            "error": None,
+            "return_query": return_query,
+            "response_type": response_type or "",
+            "client_id": client_id or "",
+            "redirect_uri": redirect_uri or "",
+            "scope": scope or "",
+            "state": state or "",
+        },
+    )
+
+
+@router.post("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_submit(
+    request: Request,
+    email: Annotated[str, Form()],
+    response_type: Annotated[str, Form()] = "",
+    client_id: Annotated[str, Form()] = "",
+    redirect_uri: Annotated[str, Form()] = "",
+    scope: Annotated[str, Form()] = "",
+    state: Annotated[str, Form()] = "",
+    auth_service: UserAuthService = Depends(get_user_auth_service),
+) -> HTMLResponse:
+    """Handle forgot password form submission."""
+    tpl = get_templates()
+    return_query = _build_oidc_query(
+        response_type=response_type,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+    )
+
+    # Always call the service — it handles non-existent emails gracefully
+    try:
+        await auth_service.request_password_reset(
+            email=email,
+            callback_url_template="/reset-password?token={token}",
+        )
+    except Exception:
+        # Log but don't reveal to user whether account exists
+        pass
+
+    # Always show success message to prevent email enumeration
+    return tpl.TemplateResponse(
+        "forgot-password.html",
+        {
+            "request": request,
+            "year": _get_year(),
+            "submitted": True,
+            "email": email,
+            "return_query": return_query,
+        },
+    )
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page(
+    request: Request,
+    token: str | None = None,
+    response_type: str | None = None,
+    client_id: str | None = None,
+    redirect_uri: str | None = None,
+    scope: str | None = None,
+    state: str | None = None,
+) -> HTMLResponse:
+    """Render reset password page."""
+    tpl = get_templates()
+    return_query = _build_oidc_query(
+        response_type=response_type,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+    )
+
+    if not token:
+        return tpl.TemplateResponse(
+            "reset-password.html",
+            {
+                "request": request,
+                "year": _get_year(),
+                "invalid_token": True,
+                "return_query": return_query,
+            },
+        )
+
+    return tpl.TemplateResponse(
+        "reset-password.html",
+        {
+            "request": request,
+            "year": _get_year(),
+            "token": token,
+            "error": None,
+            "success": False,
+            "invalid_token": False,
+            "return_query": return_query,
+        },
+    )
+
+
+@router.post("/reset-password", response_class=HTMLResponse)
+async def reset_password_submit(
+    request: Request,
+    token: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    confirm_password: Annotated[str, Form()],
+    auth_service: UserAuthService = Depends(get_user_auth_service),
+) -> HTMLResponse:
+    """Handle reset password form submission."""
+    tpl = get_templates()
+    return_query = ""
+
+    if password != confirm_password:
+        return tpl.TemplateResponse(
+            "reset-password.html",
+            {
+                "request": request,
+                "year": _get_year(),
+                "token": token,
+                "error": "Passwords do not match.",
+                "success": False,
+                "invalid_token": False,
+                "return_query": return_query,
+            },
+        )
+
+    try:
+        success, error = await auth_service.reset_password(
+            token=token,
+            new_password=password,
+        )
+    except Exception:
+        success = False
+        error = "An unexpected error occurred. Please try again."
+
+    if not success:
+        # Could be expired/invalid token or password policy failure
+        is_invalid = error and ("expired" in error.lower() or "invalid" in error.lower())
+        return tpl.TemplateResponse(
+            "reset-password.html",
+            {
+                "request": request,
+                "year": _get_year(),
+                "token": token,
+                "error": error or "Failed to reset password.",
+                "success": False,
+                "invalid_token": is_invalid,
+                "return_query": return_query,
+            },
+        )
+
+    return tpl.TemplateResponse(
+        "reset-password.html",
+        {
+            "request": request,
+            "year": _get_year(),
+            "success": True,
+            "invalid_token": False,
+            "return_query": return_query,
+        },
+    )
 
 
 @router.get("/error", response_class=HTMLResponse)
@@ -452,3 +724,155 @@ async def error_page(
             "return_url": None,
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(
+    request: Request,
+    response_type: str | None = None,
+    client_id: str | None = None,
+    redirect_uri: str | None = None,
+    scope: str | None = None,
+    state: str | None = None,
+    nonce: str | None = None,
+    code_challenge: str | None = None,
+    code_challenge_method: str | None = None,
+) -> HTMLResponse:
+    """Render registration page."""
+    tpl = get_templates()
+    return_query = _build_oidc_query(
+        response_type=response_type,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+        nonce=nonce,
+        code_challenge=code_challenge,
+        code_challenge_method=code_challenge_method,
+    )
+    client_name = client_id if client_id else None
+
+    return tpl.TemplateResponse(
+        "register.html",
+        {
+            "request": request,
+            "year": _get_year(),
+            "error": None,
+            "return_query": return_query,
+            "client_name": client_name,
+            "response_type": response_type or "",
+            "client_id": client_id or "",
+            "redirect_uri": redirect_uri or "",
+            "scope": scope or "",
+            "state": state or "",
+            "nonce": nonce or "",
+            "code_challenge": code_challenge or "",
+            "code_challenge_method": code_challenge_method or "",
+            "email": "",
+            "username": "",
+            "given_name": "",
+            "family_name": "",
+        },
+    )
+
+
+@router.post("/register", response_class=HTMLResponse)
+async def register_submit(
+    request: Request,
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    confirm_password: Annotated[str, Form()],
+    given_name: Annotated[str, Form()] = "",
+    family_name: Annotated[str, Form()] = "",
+    username: Annotated[str, Form()] = "",
+    response_type: Annotated[str, Form()] = "",
+    client_id: Annotated[str, Form()] = "",
+    redirect_uri: Annotated[str, Form()] = "",
+    scope: Annotated[str, Form()] = "",
+    state: Annotated[str, Form()] = "",
+    nonce: Annotated[str, Form()] = "",
+    code_challenge: Annotated[str, Form()] = "",
+    code_challenge_method: Annotated[str, Form()] = "",
+    auth_service: UserAuthService = Depends(get_user_auth_service),
+) -> Response:
+    """Handle registration form submission."""
+    tpl = get_templates()
+    return_query = _build_oidc_query(
+        response_type=response_type,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+        nonce=nonce,
+        code_challenge=code_challenge,
+        code_challenge_method=code_challenge_method,
+    )
+
+    # Client-side validates this, but double-check server-side
+    if password != confirm_password:
+        return tpl.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "year": _get_year(),
+                "error": "Passwords do not match.",
+                "return_query": return_query,
+                "client_name": client_id or None,
+                "response_type": response_type,
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "scope": scope,
+                "state": state,
+                "nonce": nonce,
+                "code_challenge": code_challenge,
+                "code_challenge_method": code_challenge_method,
+                "email": email,
+                "username": username,
+                "given_name": given_name,
+                "family_name": family_name,
+            },
+        )
+
+    result = await auth_service.register(
+        email=email,
+        password=password,
+        username=username or None,
+        given_name=given_name or None,
+        family_name=family_name or None,
+    )
+
+    if not result.success:
+        error_msg = "; ".join(result.errors) if result.errors else "Registration failed."
+        return tpl.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "year": _get_year(),
+                "error": error_msg,
+                "return_query": return_query,
+                "client_name": client_id or None,
+                "response_type": response_type,
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "scope": scope,
+                "state": state,
+                "nonce": nonce,
+                "code_challenge": code_challenge,
+                "code_challenge_method": code_challenge_method,
+                "email": email,
+                "username": username,
+                "given_name": given_name,
+                "family_name": family_name,
+            },
+        )
+
+    # Registration successful — redirect to login with success message
+    login_url = "/login?success=Account+created+successfully.+Please+sign+in."
+    if return_query:
+        login_url += "&" + return_query
+    return RedirectResponse(url=login_url, status_code=status.HTTP_302_FOUND)

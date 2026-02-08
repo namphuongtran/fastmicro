@@ -13,6 +13,7 @@ from identity_service.domain.entities.token import (
     TokenBlacklistEntry,
     TokenInfo,
 )
+from identity_service.domain.entities.password_reset import PasswordResetToken
 from identity_service.domain.entities.user import (
     User,
     UserClaim,
@@ -38,6 +39,8 @@ __all__ = [
     "RefreshToken",
     "TokenInfo",
     "TokenBlacklistEntry",
+    # Password reset
+    "PasswordResetToken",
     # Consent entities
     "Consent",
     "ConsentScope",

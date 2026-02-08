@@ -10,6 +10,9 @@ from identity_service.domain.repositories.token_repository import (
     RefreshTokenRepository,
     TokenBlacklistRepository,
 )
+from identity_service.domain.repositories.password_reset_repository import (
+    PasswordResetRepository,
+)
 from identity_service.domain.repositories.user_repository import UserRepository
 
 __all__ = [
@@ -20,4 +23,5 @@ __all__ = [
     "TokenBlacklistRepository",
     "ConsentRepository",
     "SessionRepository",
+    "PasswordResetRepository",
 ]

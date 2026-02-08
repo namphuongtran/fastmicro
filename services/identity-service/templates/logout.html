@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Signed Out - Identity Service{% endblock %}
+
+{% block content %}
+<div class="card logout-card">
+    <div class="logout-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--success-color, #059669)" stroke-width="1.5">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+    </div>
+
+    <h1>You have been signed out</h1>
+    <p class="subtitle">You have successfully signed out of your account.</p>
+
+    {% if client_name %}
+    <p class="logout-detail">You have been signed out of <strong>{{ client_name }}</strong>.</p>
+    {% endif %}
+
+    <div class="logout-actions">
+        {% if post_logout_redirect_uri %}
+        <a href="{{ post_logout_redirect_uri }}" class="btn btn-primary btn-block">
+            Return to {{ client_name or 'Application' }}
+        </a>
+        {% endif %}
+
+        <a href="/login" class="btn btn-outline btn-block">
+            Sign in again
+        </a>
+    </div>
+
+    {% if post_logout_redirect_uri %}
+    <p class="auto-redirect-notice" id="redirectNotice">
+        You will be redirected automatically in <span id="countdown">5</span> seconds...
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if post_logout_redirect_uri %}
+<script>
+(function() {
+    var seconds = 5;
+    var countdownEl = document.getElementById('countdown');
+    var redirectUrl = "{{ post_logout_redirect_uri }}";
+    var timer = setInterval(function() {
+        seconds--;
+        countdownEl.textContent = seconds;
+        if (seconds <= 0) {
+            clearInterval(timer);
+            window.location.href = redirectUrl;
+        }
+    }, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

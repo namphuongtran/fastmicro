@@ -37,6 +37,10 @@ from shared.fastapi_utils.exception_handlers import (
     register_exception_handlers,
     validation_exception_handler,
 )
+from shared.fastapi_utils.dependencies import (
+    ServiceContextDep,
+    get_service_context,
+)
 from shared.fastapi_utils.health_router import (
     DetailedHealthResponse,
     HealthResponse,
@@ -66,6 +70,9 @@ __all__ = [
     "RequestContextMiddleware",
     "get_request_context",
     "get_correlation_id",
+    # Dependencies
+    "get_service_context",
+    "ServiceContextDep",
     # Exception handlers
     "register_exception_handlers",
     "http_exception_handler",

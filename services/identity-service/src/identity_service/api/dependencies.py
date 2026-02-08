@@ -6,11 +6,12 @@ See: https://fastapi.tiangolo.com/tutorial/dependencies/
 
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends
 
-from identity_service.application.services import OAuth2Service
+from identity_service.application.services import MFAService, OAuth2Service, UserAuthService
 from identity_service.configs import Settings, get_settings
 
 if TYPE_CHECKING:
@@ -403,3 +404,135 @@ def get_user_repository() -> InMemoryUserRepository:
         User repository instance for user management.
     """
     return _user_repo
+
+
+# =============================================================================
+# Password Reset Repository (In-Memory)
+# =============================================================================
+
+
+class InMemoryPasswordResetRepository:
+    """In-memory password reset token repository."""
+
+    def __init__(self) -> None:
+        self._tokens: dict[str, any] = {}
+
+    async def save(self, reset_token):
+        self._tokens[reset_token.token] = reset_token
+
+    async def get_by_token(self, token: str):
+        return self._tokens.get(token)
+
+    async def mark_as_used(self, token: str):
+        if token in self._tokens:
+            self._tokens[token].consume()
+            return True
+        return False
+
+    async def delete_expired(self):
+        expired = [k for k, v in self._tokens.items() if not v.is_valid()]
+        for k in expired:
+            del self._tokens[k]
+        return len(expired)
+
+    async def delete_for_user(self, user_id):
+        to_delete = [k for k, v in self._tokens.items() if v.user_id == user_id]
+        for k in to_delete:
+            del self._tokens[k]
+        return len(to_delete)
+
+
+_reset_repo = InMemoryPasswordResetRepository()
+
+
+# =============================================================================
+# Auth Services
+# =============================================================================
+
+
+async def get_user_auth_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> UserAuthService:
+    """Get UserAuthService instance with all dependencies wired.
+
+    Returns:
+        UserAuthService for registration, login, and password operations.
+    """
+    from identity_service.infrastructure.security import (
+        get_brute_force_protection_service,
+        get_jwt_service,
+        get_password_policy_service,
+        get_password_service,
+        get_session_management_service,
+    )
+
+    return UserAuthService(
+        settings=settings,
+        user_repository=_user_repo,
+        password_reset_repository=_reset_repo,
+        password_service=get_password_service(settings),
+        password_policy_service=get_password_policy_service(settings),
+        brute_force_service=get_brute_force_protection_service(settings),
+        session_service=get_session_management_service(),
+        jwt_service=get_jwt_service(settings),
+    )
+
+
+async def get_mfa_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> MFAService:
+    """Get MFAService instance with all dependencies wired.
+
+    Returns:
+        MFAService for TOTP setup, verification, and recovery.
+    """
+    from identity_service.infrastructure.security import (
+        get_jwt_service,
+        get_password_service,
+    )
+
+    return MFAService(
+        settings=settings,
+        user_repository=_user_repo,
+        password_service=get_password_service(settings),
+        jwt_service=get_jwt_service(settings),
+    )
+
+
+# Annotated type aliases for auth services
+UserAuthServiceDep = Annotated[UserAuthService, Depends(get_user_auth_service)]
+MFAServiceDep = Annotated[MFAService, Depends(get_mfa_service)]
+
+
+# =============================================================================
+# Current User (JWT-based authentication)
+# =============================================================================
+
+
+async def get_current_user_id(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> uuid.UUID:
+    """Extract user ID from JWT bearer token.
+
+    This is a simplified stub that returns a placeholder UUID.
+    In production, this would extract and validate the JWT from
+    the Authorization header.
+
+    Returns:
+        Authenticated user's UUID.
+
+    Raises:
+        HTTPException: If not authenticated.
+    """
+    # TODO: Replace with actual JWT extraction from Authorization header
+    # For now, a placeholder to allow compilation
+    from fastapi import HTTPException
+
+    raise HTTPException(
+        status_code=401,
+        detail="Authentication required",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+CurrentUserIdDep = Annotated[uuid.UUID, Depends(get_current_user_id)]

@@ -10,13 +10,19 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
-// Dynamic import for devtools to avoid SSR issues
+// Dynamic import for devtools with ssr: false to avoid SSR QueryClient errors
 const ReactQueryDevtools =
   process.env.NODE_ENV === "development"
-    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require("@tanstack/react-query-devtools").ReactQueryDevtools
+    ? dynamic(
+        () =>
+          import("@tanstack/react-query-devtools").then((mod) => ({
+            default: mod.ReactQueryDevtools,
+          })),
+        { ssr: false },
+      )
     : () => null;
 
 interface QueryProviderProps {

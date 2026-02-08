@@ -13,8 +13,9 @@ COPY services/identity-admin-service /app/services/identity-admin-service
 
 WORKDIR /app/services/identity-admin-service
 
-# Install dependencies
-RUN uv sync --frozen --no-dev
+# Install into /app/.venv so shebangs are correct after COPY to runtime stage
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+RUN uv sync --frozen --no-dev --no-editable
 
 # Production image
 FROM python:3.12-slim
@@ -30,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages and application
-COPY --from=builder /app/services/identity-admin-service/.venv /app/.venv
+COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/services/identity-admin-service/src /app/src
 COPY --from=builder /app/services/identity-admin-service/templates /app/templates
 COPY --from=builder /app/services/identity-admin-service/static /app/static

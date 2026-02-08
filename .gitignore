@@ -11,9 +11,6 @@
 *.swo
 *~
 
-# Serena
-.serena/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

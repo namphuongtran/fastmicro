@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from identity_service import __version__
-from identity_service.api import health_router, oauth_router
+from identity_service.api import auth_router, health_router, oauth_router
 from identity_service.api.web import router as web_router
 from identity_service.api.web import routes as web_routes
 from identity_service.configs import get_settings
@@ -164,6 +164,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health_router)
     app.include_router(oauth_router)
+    app.include_router(auth_router)
     app.include_router(web_router)
 
     # NOTE: Admin functionality has been moved to identity-admin-service

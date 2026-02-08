@@ -1,8 +1,12 @@
 /**
- * NextAuth.js v5 configuration for Identity Service OIDC integration.
+ * NextAuth.js v5 configuration for Identity Service OAuth 2.0 integration.
  *
- * This module configures OAuth 2.0/OIDC authentication with the custom
+ * This module configures OAuth 2.0 authentication with the custom
  * Identity Service, including PKCE, token refresh, and session management.
+ *
+ * Uses separate internal/external URLs for Docker compatibility:
+ * - Internal URL (server-side): token exchange, userinfo, JWKS (container network)
+ * - External URL (browser-side): authorization redirects (host network)
  *
  * @module libs/auth
  */
@@ -11,8 +15,13 @@ import NextAuth from "next-auth";
 import type { NextAuthConfig, Profile, User } from "next-auth";
 
 // Environment configuration
+// External URL: used for browser redirects and issuer validation
 const IDENTITY_SERVICE_URL =
   process.env.IDENTITY_SERVICE_URL || "http://localhost:8003";
+// Internal URL: used for server-to-server calls (token, userinfo, JWKS)
+// Falls back to external URL for non-Docker (local dev) environments
+const IDENTITY_SERVICE_INTERNAL_URL =
+  process.env.IDENTITY_SERVICE_INTERNAL_URL || IDENTITY_SERVICE_URL;
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || "webshell-frontend";
 
 /**
@@ -23,7 +32,8 @@ const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || "webshell-frontend";
  */
 async function refreshAccessToken(token: Record<string, unknown>): Promise<Record<string, unknown>> {
   try {
-    const response = await fetch(`${IDENTITY_SERVICE_URL}/oauth2/token`, {
+    // Use internal URL for server-to-server token refresh
+    const response = await fetch(`${IDENTITY_SERVICE_INTERNAL_URL}/oauth2/token`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -57,39 +67,50 @@ async function refreshAccessToken(token: Record<string, unknown>): Promise<Recor
 }
 
 /**
- * NextAuth.js configuration for Identity Service OIDC.
+ * NextAuth.js configuration for Identity Service OAuth 2.0.
+ *
+ * Uses type "oauth" (not "oidc") with manual endpoint config to support
+ * Docker's split internal/external URL architecture. OIDC auto-discovery
+ * doesn't work in Docker because the discovery document returns external
+ * URLs but server-side calls need internal Docker network URLs.
  */
 export const authConfig: NextAuthConfig = {
   providers: [
     {
       id: "identity-service",
       name: "Identity Service",
-      type: "oidc",
+      type: "oauth",
 
-      // OIDC Discovery - auto-configures endpoints from .well-known
+      // Issuer for token validation (matches identity-service's reported issuer)
       issuer: IDENTITY_SERVICE_URL,
-      wellKnown: `${IDENTITY_SERVICE_URL}/.well-known/openid-configuration`,
 
       // Client configuration (PUBLIC client - no secret)
       clientId: OAUTH_CLIENT_ID,
       clientSecret: "", // Empty for public clients
 
-      // Authorization parameters
+      // Browser-side: authorization redirect uses EXTERNAL URL
       authorization: {
+        url: `${IDENTITY_SERVICE_URL}/oauth2/authorize`,
         params: {
           scope: "openid profile email offline_access",
           response_type: "code",
         },
       },
 
-      // Token endpoint configuration for public clients
+      // Server-side: token exchange uses INTERNAL URL (Docker network)
       token: {
+        url: `${IDENTITY_SERVICE_INTERNAL_URL}/oauth2/token`,
         params: {
           client_id: OAUTH_CLIENT_ID,
         },
       },
 
-      // Map OIDC claims to NextAuth user
+      // Server-side: userinfo uses INTERNAL URL (Docker network)
+      userinfo: {
+        url: `${IDENTITY_SERVICE_INTERNAL_URL}/oauth2/userinfo`,
+      },
+
+      // Map OAuth claims to NextAuth user
       profile(profile: Profile): User {
         return {
           id: profile.sub!,

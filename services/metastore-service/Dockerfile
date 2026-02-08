@@ -18,8 +18,9 @@ COPY services/metastore-service /app/services/metastore-service
 
 WORKDIR /app/services/metastore-service
 
-# Install dependencies (frozen allows minor lock differences)
-RUN uv sync --frozen --no-dev
+# Install into /app/.venv so shebangs are correct after COPY to runtime stage
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+RUN uv sync --frozen --no-dev --no-editable
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
@@ -45,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 WORKDIR /app
 
 # Copy virtual environment and application from builder
-COPY --from=builder --chown=appuser:appgroup /app/services/metastore-service/.venv /app/.venv
+COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
 COPY --from=builder --chown=appuser:appgroup /app/services/metastore-service/src ./src/
 
 USER appuser

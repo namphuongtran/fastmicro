@@ -8,15 +8,68 @@
     
     {% if client_name %}
     <p class="subtitle">Sign in to continue to <strong>{{ client_name }}</strong></p>
+    {% else %}
+    <p class="subtitle">Sign in to your account</p>
     {% endif %}
     
     {% if error %}
     <div class="alert alert-error">
-        {{ error }}
+        <svg class="alert-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM7 5a1 1 0 012 0v3a1 1 0 01-2 0V5zm1 7a1 1 0 100-2 1 1 0 000 2z"/>
+        </svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    {% if success %}
+    <div class="alert alert-success">
+        <svg class="alert-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.7 5.3a1 1 0 00-1.4-1.4L7 8.18 5.7 6.88a1 1 0 00-1.4 1.42l2 2a1 1 0 001.4 0l4-4z"/>
+        </svg>
+        <span>{{ success }}</span>
+    </div>
+    {% endif %}
+
+    {# External Identity Providers #}
+    {% if external_providers and external_providers | length > 0 %}
+    <div class="external-providers">
+        {% for provider in external_providers %}
+        <a href="/external/login/{{ provider.scheme }}?{{ return_query }}" 
+           class="btn btn-social btn-{{ provider.scheme }}">
+            {% if provider.scheme == 'google' %}
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            {% elif provider.scheme == 'microsoft' %}
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="#F25022" d="M1 1h10v10H1z"/>
+                <path fill="#00A4EF" d="M1 13h10v10H1z"/>
+                <path fill="#7FBA00" d="M13 1h10v10H13z"/>
+                <path fill="#FFB900" d="M13 13h10v10H13z"/>
+            </svg>
+            {% elif provider.scheme == 'github' %}
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.43 9.8 8.21 11.39.6.11.79-.26.79-.58v-2.23c-3.34.73-4.03-1.41-4.03-1.41-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.73.08-.73 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 016.02 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.48 5.92.42.36.81 1.1.81 2.22v3.29c0 .32.18.7.8.58C20.57 21.8 24 17.31 24 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            {% else %}
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            {% endif %}
+            <span>Continue with {{ provider.display_name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="divider">
+        <span>or sign in with email</span>
     </div>
     {% endif %}
     
-    <form method="POST" action="/login" class="login-form">
+    <form method="POST" action="/login" class="login-form" id="loginForm">
         <input type="hidden" name="response_type" value="{{ response_type }}">
         <input type="hidden" name="client_id" value="{{ client_id }}">
         <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
@@ -40,18 +93,35 @@
                 placeholder="you@example.com"
                 required 
                 autofocus
+                autocomplete="email"
             >
         </div>
         
         <div class="form-group">
-            <label for="password">Password</label>
-            <input 
-                type="password" 
-                id="password" 
-                name="password"
-                placeholder="Enter your password"
-                required
-            >
+            <label for="password">
+                Password
+                <a href="/forgot-password{% if client_id %}?{{ return_query }}{% endif %}" class="label-link">Forgot password?</a>
+            </label>
+            <div class="input-with-icon">
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                    autocomplete="current-password"
+                >
+                <button type="button" class="toggle-password" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+                    <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg id="eyeOffIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         
         <div class="form-group checkbox">
@@ -59,15 +129,47 @@
             <label for="remember">Remember me</label>
         </div>
         
-        <button type="submit" class="btn btn-primary btn-block">
-            Sign In
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-loading" style="display:none">
+                <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" opacity="0.25"/>
+                    <path d="M12 2a10 10 0 019.95 9" stroke-linecap="round"/>
+                </svg>
+                Signing in...
+            </span>
         </button>
     </form>
     
     <div class="links">
-        <a href="/forgot-password">Forgot password?</a>
-        <span class="separator">•</span>
-        <a href="/register">Create an account</a>
+        <span>Don't have an account?</span>
+        <a href="/register{% if client_id %}?{{ return_query }}{% endif %}">Create an account</a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePasswordVisibility() {
+    const input = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    const eyeOffIcon = document.getElementById('eyeOffIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        eyeIcon.style.display = 'none';
+        eyeOffIcon.style.display = 'block';
+    } else {
+        input.type = 'password';
+        eyeIcon.style.display = 'block';
+        eyeOffIcon.style.display = 'none';
+    }
+}
+
+document.getElementById('loginForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.btn-loading').style.display = 'inline-flex';
+    btn.disabled = true;
+});
+</script>
 {% endblock %}
