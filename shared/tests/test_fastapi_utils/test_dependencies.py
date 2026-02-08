@@ -9,9 +9,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from shared.application.base_service import ServiceContext
-from shared.fastapi_utils.dependencies import ServiceContextDep, get_service_context
-
+from shared.fastapi_utils.dependencies import ServiceContextDep
 
 # ---- app fixture ----
 
@@ -150,9 +148,8 @@ class TestGetServiceContext:
         with patch(
             "shared.fastapi_utils.dependencies.get_request_context",
             return_value=req_ctx,
-        ):
-            with TestClient(app) as c:
-                resp = c.get("/ctx")
+        ), TestClient(app) as c:
+            resp = c.get("/ctx")
 
         assert resp.status_code == 200
         assert resp.json()["metadata"]["request_id"] == "req-777"

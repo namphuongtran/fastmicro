@@ -31,15 +31,15 @@ Example:
     >>> register_exception_handlers(app)
 """
 
+from shared.fastapi_utils.dependencies import (
+    ServiceContextDep,
+    get_service_context,
+)
 from shared.fastapi_utils.exception_handlers import (
     generic_exception_handler,
     http_exception_handler,
     register_exception_handlers,
     validation_exception_handler,
-)
-from shared.fastapi_utils.dependencies import (
-    ServiceContextDep,
-    get_service_context,
 )
 from shared.fastapi_utils.health_router import (
     DetailedHealthResponse,

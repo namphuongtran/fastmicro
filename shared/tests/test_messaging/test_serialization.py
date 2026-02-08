@@ -10,7 +10,6 @@ import pytest
 from shared.ddd.events import DomainEvent
 from shared.messaging.serialization import EventEnvelope, EventSerializer
 
-
 # ---- test fixtures ----
 
 @dataclass

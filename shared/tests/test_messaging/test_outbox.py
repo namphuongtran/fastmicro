@@ -13,7 +13,6 @@ from shared.ddd.events import DomainEvent
 from shared.messaging.outbox import OutboxBase, OutboxEntry, OutboxRelay, OutboxRepository
 from shared.messaging.serialization import EventSerializer
 
-
 # ---- test fixtures ----
 
 @dataclass

@@ -1,6 +1,5 @@
 """Tests for shared.messaging.config — RabbitMQ and Kafka settings."""
 
-import pytest
 
 from shared.messaging.config import KafkaSettings, RabbitMQSettings
 

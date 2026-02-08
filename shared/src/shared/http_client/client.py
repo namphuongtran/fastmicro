@@ -9,7 +9,7 @@ This module provides an async HTTP client for microservice communication:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Self
+from typing import Any
 from uuid import uuid4
 
 import httpx
@@ -150,7 +150,7 @@ class ServiceClient:
         )
         # Initialize circuit breaker if enabled
         from shared.http_client.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
-        
+
         self._circuit_breaker: CircuitBreaker | None = None
         if config.circuit_breaker_enabled:
             # Create a simple name from the base url if explicit name not provided
@@ -377,7 +377,7 @@ class ServiceClient:
                     request=response.request,
                     response=response,
                 )
-            
+
             return self._parse_response(response)
 
         # 1. Wrap with Circuit Breaker (Fail Fast)
@@ -386,7 +386,7 @@ class ServiceClient:
         try:
             if self._circuit_breaker:
                 from shared.http_client.circuit_breaker import CircuitOpenError
-                
+
                 async def cb_wrapper():
                     # 2. Wrap with Retries (Try Again)
                     # We retry network errors and 5xx errors INSIDE the circuit breaker.
@@ -410,13 +410,13 @@ class ServiceClient:
                     ):
                         with attempt:
                             return await make_request()
-                
+
                 try:
                     return await self._circuit_breaker.call(cb_wrapper)
                 except CircuitOpenError as e:
                     # Map to our standard exception
                     raise ServiceUnavailableError(f"Circuit open for {self._config.base_url}: {e}") from e
-                    
+
             else:
                 # No circuit breaker, just standard retries
                 async for attempt in AsyncRetrying(
@@ -444,7 +444,7 @@ class ServiceClient:
         except httpx.HTTPStatusError as e:
             # If we exhausted retries on 5xx, we parse the error response
             return self._parse_response(e.response)
-        
+
         # Should not be reached
         raise ServiceUnavailableError("Unknown error occurred")
 

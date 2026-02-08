@@ -32,7 +32,6 @@ import json
 import logging
 from datetime import UTC, datetime
 from typing import Any
-from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
