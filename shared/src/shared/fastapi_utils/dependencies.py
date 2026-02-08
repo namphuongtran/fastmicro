@@ -69,9 +69,7 @@ async def get_service_context(
             permissions = user_state.get("permissions", [])
         else:
             # Support user objects with attributes
-            user_id = getattr(user_state, "sub", None) or getattr(
-                user_state, "user_id", None
-            )
+            user_id = getattr(user_state, "sub", None) or getattr(user_state, "user_id", None)
             roles = getattr(user_state, "roles", [])
             permissions = getattr(user_state, "permissions", [])
 

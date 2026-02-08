@@ -76,7 +76,10 @@ class OutboxEntry(OutboxBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_id: Mapped[str] = mapped_column(
-        String(36), unique=True, nullable=False, index=True,
+        String(36),
+        unique=True,
+        nullable=False,
+        index=True,
     )
     event_type: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     aggregate_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -92,7 +95,8 @@ class OutboxEntry(OutboxBase):
     )
     published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
     published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)

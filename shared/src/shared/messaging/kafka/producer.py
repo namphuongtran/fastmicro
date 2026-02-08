@@ -79,9 +79,7 @@ class KafkaEventProducer:
             if self._settings.sasl_username:
                 kwargs["sasl_plain_username"] = self._settings.sasl_username
             if self._settings.sasl_password:
-                kwargs["sasl_plain_password"] = (
-                    self._settings.sasl_password.get_secret_value()
-                )
+                kwargs["sasl_plain_password"] = self._settings.sasl_password.get_secret_value()
 
         self._producer = AIOKafkaProducer(**kwargs)
         await self._producer.start()

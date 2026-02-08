@@ -1,6 +1,5 @@
 """Tests for shared.messaging.config — RabbitMQ and Kafka settings."""
 
-
 from shared.messaging.config import KafkaSettings, RabbitMQSettings
 
 
@@ -63,9 +62,7 @@ class TestKafkaSettings:
 
     def test_bootstrap_servers_list_multiple(self):
         """Test parsing multiple bootstrap servers."""
-        settings = KafkaSettings(
-            bootstrap_servers="broker1:9092, broker2:9092, broker3:9092"
-        )
+        settings = KafkaSettings(bootstrap_servers="broker1:9092, broker2:9092, broker3:9092")
         assert settings.bootstrap_servers_list == [
             "broker1:9092",
             "broker2:9092",

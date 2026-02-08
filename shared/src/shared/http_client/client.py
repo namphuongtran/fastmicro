@@ -161,7 +161,7 @@ class ServiceClient:
                 config=CircuitBreakerConfig(
                     failure_threshold=config.cb_failure_threshold,
                     recovery_timeout=config.cb_recovery_timeout,
-                )
+                ),
             )
 
     async def close(self) -> None:
@@ -403,7 +403,7 @@ class ServiceClient:
                                 httpx.ConnectError,
                                 httpx.ReadTimeout,
                                 httpx.WriteTimeout,
-                                httpx.HTTPStatusError, # Retries on 5xx
+                                httpx.HTTPStatusError,  # Retries on 5xx
                             )
                         ),
                         reraise=True,
@@ -415,7 +415,9 @@ class ServiceClient:
                     return await self._circuit_breaker.call(cb_wrapper)
                 except CircuitOpenError as e:
                     # Map to our standard exception
-                    raise ServiceUnavailableError(f"Circuit open for {self._config.base_url}: {e}") from e
+                    raise ServiceUnavailableError(
+                        f"Circuit open for {self._config.base_url}: {e}"
+                    ) from e
 
             else:
                 # No circuit breaker, just standard retries
@@ -439,7 +441,12 @@ class ServiceClient:
                     with attempt:
                         return await make_request()
 
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+        except (
+            httpx.TimeoutException,
+            httpx.ConnectError,
+            httpx.ReadTimeout,
+            httpx.WriteTimeout,
+        ) as e:
             raise ServiceUnavailableError(f"Max retries exceeded for {method} {path}: {e}") from e
         except httpx.HTTPStatusError as e:
             # If we exhausted retries on 5xx, we parse the error response

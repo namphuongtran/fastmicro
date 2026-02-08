@@ -15,6 +15,7 @@ from shared.messaging.serialization import EventSerializer
 
 # ---- test fixtures ----
 
+
 @dataclass
 class ItemCreated(DomainEvent):
     """Test domain event."""
@@ -43,6 +44,7 @@ async def session(engine) -> AsyncSession:
 
 # ---- OutboxEntry.from_domain_event ----
 
+
 class TestOutboxEntryCreation:
     """Tests for OutboxEntry.from_domain_event."""
 
@@ -68,9 +70,7 @@ class TestOutboxEntryCreation:
     def test_from_domain_event_custom_routing_key(self):
         """Custom routing key should override derived key."""
         event = ItemCreated(item_id="item-2")
-        entry = OutboxEntry.from_domain_event(
-            event, routing_key="custom.routing.key"
-        )
+        entry = OutboxEntry.from_domain_event(event, routing_key="custom.routing.key")
         assert entry.routing_key == "custom.routing.key"
 
     def test_from_domain_event_payload_is_valid_json(self):
@@ -84,6 +84,7 @@ class TestOutboxEntryCreation:
 
 
 # ---- OutboxRepository ----
+
 
 class TestOutboxRepository:
     """Tests for OutboxRepository CRUD operations."""
@@ -163,6 +164,7 @@ class TestOutboxRepository:
 
 # ---- OutboxRelay ----
 
+
 class TestOutboxRelay:
     """Tests for OutboxRelay processing loop."""
 
@@ -191,9 +193,7 @@ class TestOutboxRelay:
         assert len(remaining) == 0
 
     @pytest.mark.asyncio
-    async def test_process_pending_handles_publish_failure(
-        self, session: AsyncSession
-    ):
+    async def test_process_pending_handles_publish_failure(self, session: AsyncSession):
         """Relay should mark entries as failed when publishing raises."""
         repo = OutboxRepository(session)
         publisher = AsyncMock()

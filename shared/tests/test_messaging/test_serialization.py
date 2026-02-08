@@ -12,6 +12,7 @@ from shared.messaging.serialization import EventEnvelope, EventSerializer
 
 # ---- test fixtures ----
 
+
 @dataclass
 class OrderPlaced(DomainEvent):
     """Test domain event."""
@@ -28,6 +29,7 @@ class PaymentReceived(DomainEvent):
 
 
 # ---- EventEnvelope tests ----
+
 
 class TestEventEnvelope:
     """Tests for EventEnvelope data class."""
@@ -49,6 +51,7 @@ class TestEventEnvelope:
 
 
 # ---- EventSerializer tests ----
+
 
 class TestEventSerializer:
     """Tests for EventSerializer round-trip serialization."""
@@ -104,9 +107,7 @@ class TestEventSerializer:
         assert envelope.event_type == "OrderPlaced"
         assert envelope.source == "order-service"
 
-    def test_deserialize_unregistered_event_returns_none(
-        self, serializer: EventSerializer
-    ):
+    def test_deserialize_unregistered_event_returns_none(self, serializer: EventSerializer):
         """Unregistered event type should return None event with envelope."""
         event = PaymentReceived(payment_id="pay-1")
         # Serialize via a fresh serializer that knows PaymentReceived

@@ -13,6 +13,7 @@ from shared.fastapi_utils.dependencies import ServiceContextDep
 
 # ---- app fixture ----
 
+
 @pytest.fixture
 def app() -> FastAPI:
     """Build a minimal FastAPI app with a route using ServiceContext."""
@@ -38,6 +39,7 @@ def client(app: FastAPI) -> TestClient:
 
 
 # ---- Tests ----
+
 
 class TestGetServiceContext:
     """Tests for get_service_context dependency."""
@@ -145,10 +147,13 @@ class TestGetServiceContext:
 
         req_ctx = RequestContext(request_id="req-777", correlation_id="c-1")
 
-        with patch(
-            "shared.fastapi_utils.dependencies.get_request_context",
-            return_value=req_ctx,
-        ), TestClient(app) as c:
+        with (
+            patch(
+                "shared.fastapi_utils.dependencies.get_request_context",
+                return_value=req_ctx,
+            ),
+            TestClient(app) as c,
+        ):
             resp = c.get("/ctx")
 
         assert resp.status_code == 200
