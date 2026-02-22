@@ -106,7 +106,7 @@ def transactional(
                 rest_args = args
 
             if uow is not None and uow.is_active:
-                # Nested call — use savepoint
+                # Nested call - use savepoint
                 async with uow.begin_nested():
                     result = await method(self, uow, *rest_args, **kwargs)
                 return result
