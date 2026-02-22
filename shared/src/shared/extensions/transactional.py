@@ -37,9 +37,10 @@ from __future__ import annotations
 import functools
 import logging
 from collections.abc import Callable, Coroutine
-from typing import Any, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
-from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
+if TYPE_CHECKING:
+    from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,8 @@ def transactional(
     ) -> Callable[..., Coroutine[Any, Any, R]]:
         @functools.wraps(method)
         async def wrapper(self: Any, *args: Any, **kwargs: Any) -> R:
+            from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
+
             # Check if a UoW was already provided and is active
             uow: SqlAlchemyUnitOfWork | None = None
             if args and isinstance(args[0], SqlAlchemyUnitOfWork):
@@ -127,6 +130,8 @@ def transactional(
 
 def _make_uow(service: Any) -> SqlAlchemyUnitOfWork:
     """Construct a ``SqlAlchemyUnitOfWork`` from the service instance."""
+    from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
+
     if hasattr(service, "_uow_factory"):
         return service._uow_factory()
     if hasattr(service, "_db"):

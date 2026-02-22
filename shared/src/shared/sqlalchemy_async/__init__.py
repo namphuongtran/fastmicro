@@ -31,7 +31,7 @@ Example:
     ...     page = await repo.paginate(PageRequest(page=1, size=10))
 """
 
-# Re-export from shared.dbs for convenience
+# Re-export from shared.dbs for convenience (always available)
 from shared.dbs.repository import (
     Filter,
     FilterOperator,
@@ -40,42 +40,51 @@ from shared.dbs.repository import (
     PageRequest,
     PageResponse,
 )
-from shared.sqlalchemy_async.database import (
-    AsyncDatabaseManager,
-    DatabaseConfig,
-    get_async_session,
-)
-from shared.sqlalchemy_async.instrumentation import (
-    SQLAlchemyInstrumentationConfig,
-    configure_sqlalchemy_instrumentation,
-    instrument_engine,
-    reset_sqlalchemy_instrumentation,
-    uninstrument_engine,
-)
-from shared.sqlalchemy_async.migrations import (
-    AlembicMigrationConfig,
-    create_alembic_config,
-    generate_migration_scaffold,
-    get_current_revision,
-    run_downgrade,
-    run_upgrade_to_head,
-    stamp_head,
-)
-from shared.sqlalchemy_async.models import (
-    AuditMixin,
-    FullAuditMixin,
-    SoftDeleteMixin,
-    TenantAuditMixin,
-    TenantMixin,
-    TimestampMixin,
-    UUIDPrimaryKeyMixin,
-    VersionMixin,
-)
-from shared.sqlalchemy_async.repository import (
-    AsyncCRUDRepository,
-    AsyncRepository,
-)
-from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
+
+# SQLAlchemy-dependent imports - guarded so the package can be imported
+# even when sqlalchemy is not installed (e.g. lightweight services that
+# only use the shared library's non-DB utilities).
+try:
+    from shared.sqlalchemy_async.database import (
+        AsyncDatabaseManager,
+        DatabaseConfig,
+        get_async_session,
+    )
+    from shared.sqlalchemy_async.instrumentation import (
+        SQLAlchemyInstrumentationConfig,
+        configure_sqlalchemy_instrumentation,
+        instrument_engine,
+        reset_sqlalchemy_instrumentation,
+        uninstrument_engine,
+    )
+    from shared.sqlalchemy_async.migrations import (
+        AlembicMigrationConfig,
+        create_alembic_config,
+        generate_migration_scaffold,
+        get_current_revision,
+        run_downgrade,
+        run_upgrade_to_head,
+        stamp_head,
+    )
+    from shared.sqlalchemy_async.models import (
+        AuditMixin,
+        FullAuditMixin,
+        SoftDeleteMixin,
+        TenantAuditMixin,
+        TenantMixin,
+        TimestampMixin,
+        UUIDPrimaryKeyMixin,
+        VersionMixin,
+    )
+    from shared.sqlalchemy_async.repository import (
+        AsyncCRUDRepository,
+        AsyncRepository,
+    )
+    from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
+
+    _HAS_SQLALCHEMY = True
+except ImportError:  # pragma: no cover
+    _HAS_SQLALCHEMY = False
 
 __all__ = [
     # Database management
