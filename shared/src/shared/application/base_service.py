@@ -36,8 +36,16 @@ UpdateDTO = TypeVar("UpdateDTO")
 ResponseDTO = TypeVar("ResponseDTO")
 
 
-class ServiceError(Exception):
-    """Base exception for service layer errors."""
+from shared.exceptions.base import BaseServiceException, ErrorSeverity
+
+
+class ServiceError(BaseServiceException):
+    """Base exception for application / service-layer errors.
+
+    Extends :class:`BaseServiceException` so that the FastAPI exception
+    handler middleware can translate these into structured JSON responses
+    automatically.
+    """
 
     def __init__(
         self,
@@ -45,10 +53,14 @@ class ServiceError(Exception):
         code: str | None = None,
         details: dict[str, Any] | None = None,
     ) -> None:
-        super().__init__(message)
-        self.message = message
+        super().__init__(
+            message=message,
+            error_code=code or "SERVICE_ERROR",
+            details=details,
+            severity=ErrorSeverity.ERROR,
+        )
+        # Keep backward-compatible attributes
         self.code = code or "SERVICE_ERROR"
-        self.details = details or {}
 
 
 class NotFoundError(ServiceError):
@@ -487,55 +499,102 @@ class CRUDService(BaseReadService[T, ID], BaseWriteService[T, ID]):
         """
         ...
 
-
-class PaginatedResult(Generic[T]):
-    """Result container for paginated queries.
-
-    Attributes:
-        items: List of items in current page
-        total: Total number of items
-        page: Current page number (1-based)
-        page_size: Number of items per page
-        total_pages: Total number of pages
-    """
-
-    def __init__(
+    async def list(
         self,
-        items: list[T],
-        total: int,
-        page: int,
-        page_size: int,
-    ) -> None:
-        self.items = items
-        self.total = total
-        self.page = page
-        self.page_size = page_size
+        *,
+        page: int = 1,
+        size: int = 20,
+        filters: list[Any] | None = None,
+        order_by: list[Any] | None = None,
+        context: ServiceContext | None = None,
+    ) -> PageResponse[T]:
+        """List entities with pagination, filtering and ordering.
 
-    @property
-    def total_pages(self) -> int:
-        """Calculate total pages."""
-        if self.page_size <= 0:
-            return 0
-        return (self.total + self.page_size - 1) // self.page_size
+        Default implementation delegates to the repository's
+        ``find_paginated`` (InMemoryRepository) or ``paginate``
+        (AsyncCRUDRepository).  Override for custom behaviour.
 
-    @property
-    def has_next(self) -> bool:
-        """Check if there's a next page."""
-        return self.page < self.total_pages
+        Args:
+            page: Page number (1-based).
+            size: Items per page.
+            filters: Optional list of ``Filter`` instances.
+            order_by: Optional list of ``OrderBy`` instances.
+            context: Service context.
 
-    @property
-    def has_previous(self) -> bool:
-        """Check if there's a previous page."""
-        return self.page > 1
+        Returns:
+            Paginated response containing items and metadata.
+        """
+        from shared.dbs.repository import PageRequest
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary."""
-        return {
-            "items": self.items,
-            "total": self.total,
-            "page": self.page,
-            "page_size": self.page_size,
-            "total_pages": self.total_pages,
-            "has_next": self.has_next,
-            "has_previous": self.has_previous,
-        }
+        repo = self._repository  # type: ignore[attr-defined]
+        page_request = PageRequest(page=page, size=size)
+
+        # Support both InMemoryRepository.find_paginated and
+        # AsyncCRUDRepository.paginate
+        if hasattr(repo, "paginate"):
+            return await repo.paginate(page_request, filters=filters, order_by=order_by)
+        if hasattr(repo, "find_paginated"):
+            return await repo.find_paginated(page_request, filters=filters, order_by=order_by)
+
+        # Fallback: manual pagination from get_all
+        all_items = await repo.get_all()
+        start = page_request.offset
+        end = start + size
+        return PageResponse(
+            items=all_items[start:end],
+            total=len(all_items),
+            page=page,
+            size=size,
+        )
+
+    async def search(
+        self,
+        *,
+        filters: list[Any] | None = None,
+        order_by: list[Any] | None = None,
+        limit: int | None = None,
+        context: ServiceContext | None = None,
+    ) -> list[T]:
+        """Search entities without pagination.
+
+        Args:
+            filters: Optional list of ``Filter`` instances.
+            order_by: Optional list of ``OrderBy`` instances.
+            limit: Maximum number of results.
+            context: Service context.
+
+        Returns:
+            List of matching entities.
+        """
+        repo = self._repository  # type: ignore[attr-defined]
+
+        # AsyncCRUDRepository
+        if hasattr(repo, "find_with_filters"):
+            return await repo.find_with_filters(
+                filters=filters,
+                order_by=order_by,
+                limit=limit,
+            )
+        # InMemoryRepository
+        if hasattr(repo, "find"):
+            results = await repo.find(filters=filters, order_by=order_by)
+            if limit is not None:
+                return results[:limit]
+            return results
+
+        # Fallback
+        return await repo.get_all()
+
+
+# ---------------------------------------------------------------------------
+# PaginatedResult — thin backward-compatible alias for PageResponse
+# ---------------------------------------------------------------------------
+# ``PageResponse`` in ``shared.dbs.repository`` is the canonical paginated
+# container.  ``PaginatedResult`` is kept as an alias so existing service
+# code that imports it from ``shared.application`` keeps working.
+#
+# New code should import ``PageResponse`` directly from shared.dbs.
+# ---------------------------------------------------------------------------
+from shared.dbs.repository import PageResponse
+
+PaginatedResult = PageResponse

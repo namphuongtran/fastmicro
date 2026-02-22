@@ -10,7 +10,10 @@ import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from shared.dbs.specification import Specification
 
 T = TypeVar("T")
 
@@ -201,6 +204,62 @@ class AbstractRepository(ABC, Generic[T]):
             Number of entities.
         """
         ...
+
+    async def find_by_specification(
+        self,
+        spec: Specification[T],
+        order_by: list[OrderBy] | None = None,
+    ) -> list[T]:
+        """Find entities matching a :class:`Specification`.
+
+        The default implementation converts the specification to
+        :class:`Filter` objects and delegates to the repository's
+        filter-based query.  Subclasses may override for more
+        efficient evaluation (e.g. pushing to SQL WHERE clauses).
+
+        If the specification cannot be converted to filters
+        (e.g. OR / NOT), it falls back to in-memory evaluation
+        via ``spec.is_satisfied_by()``.
+
+        Args:
+            spec: The specification to match.
+            order_by: Optional ordering.
+
+        Returns:
+            List of matching entities.
+        """
+        if spec.can_convert_to_filters():
+            filters = spec.to_filters()
+            all_entities = await self.get_all()
+            result = all_entities
+            for f in filters:
+                result = [e for e in result if self._default_filter_match(e, f)]
+            return result
+        # Fallback: fetch all and filter in memory
+        all_entities = await self.get_all()
+        return [e for e in all_entities if spec.is_satisfied_by(e)]
+
+    @staticmethod
+    def _default_filter_match(entity: T, f: Filter) -> bool:
+        """Minimal filter matching used by the default find_by_specification."""
+        value = getattr(entity, f.field, None)
+        if f.operator == FilterOperator.EQ:
+            return value == f.value  # type: ignore[no-any-return]
+        if f.operator == FilterOperator.NE:
+            return value != f.value  # type: ignore[no-any-return]
+        if f.operator in (FilterOperator.GT,):
+            return value is not None and value > f.value  # type: ignore[no-any-return]
+        if f.operator in (FilterOperator.GE, FilterOperator.GTE):
+            return value is not None and value >= f.value  # type: ignore[no-any-return]
+        if f.operator in (FilterOperator.LT,):
+            return value is not None and value < f.value  # type: ignore[no-any-return]
+        if f.operator in (FilterOperator.LE, FilterOperator.LTE):
+            return value is not None and value <= f.value  # type: ignore[no-any-return]
+        if f.operator == FilterOperator.IN:
+            return value in f.value  # type: ignore[no-any-return]
+        if f.operator == FilterOperator.NOT_IN:
+            return value not in f.value  # type: ignore[no-any-return]
+        return False
 
 
 class InMemoryRepository(AbstractRepository[T]):
@@ -406,6 +465,28 @@ class InMemoryRepository(AbstractRepository[T]):
     async def clear(self) -> None:
         """Remove all entities."""
         self._storage.clear()
+
+    async def find_by_specification(
+        self,
+        spec: Specification[T],
+        order_by: list[OrderBy] | None = None,
+    ) -> list[T]:
+        """Find entities matching a specification.
+
+        For the in-memory repository, always uses in-memory evaluation
+        which supports all specification types including OR and NOT.
+
+        Args:
+            spec: The specification to match.
+            order_by: Optional ordering.
+
+        Returns:
+            List of matching entities.
+        """
+        result = [e for e in self._storage.values() if spec.is_satisfied_by(e)]
+        if order_by:
+            result = self._apply_ordering(result, order_by)
+        return result
 
 
 __all__ = [

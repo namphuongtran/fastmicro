@@ -55,6 +55,16 @@ from shared.observability.metrics import (
     get_metrics_registry,
     timed,
 )
+from shared.observability.prometheus_bridge import (
+    InMemoryMetricsBackend,
+    MetricsBackend,
+    PrometheusMetricsBackend,
+    create_metrics_backend,
+    create_prometheus_asgi_app,
+    get_metrics_backend,
+    reset_metrics_backend,
+    set_metrics_backend,
+)
 from shared.observability.middleware import (
     RequestLoggingConfig,
     RequestLoggingMiddleware,
@@ -139,6 +149,15 @@ __all__ = [
     "get_metrics_registry",
     "configure_metrics",
     "timed",
+    # Prometheus bridge
+    "MetricsBackend",
+    "InMemoryMetricsBackend",
+    "PrometheusMetricsBackend",
+    "create_metrics_backend",
+    "get_metrics_backend",
+    "set_metrics_backend",
+    "reset_metrics_backend",
+    "create_prometheus_asgi_app",
     # Health
     "HealthStatus",
     "HealthCheckResult",

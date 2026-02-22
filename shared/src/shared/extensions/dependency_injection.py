@@ -197,6 +197,38 @@ class Container:
         """
         return interface in self._registrations
 
+    # ------------------------------------------------------------------
+    # ContainerProtocol compliance
+    # ------------------------------------------------------------------
+
+    async def resolve_async(self, interface: type[T]) -> T:
+        """Resolve a dependency (async-compatible).
+
+        This simply delegates to the synchronous :meth:`resolve` since
+        the lightweight container is fully synchronous, but satisfies
+        the :class:`ContainerProtocol` interface.
+
+        Args:
+            interface: The type to resolve.
+
+        Returns:
+            Instance of the requested type.
+        """
+        return self.resolve(interface)
+
+    def resolve_sync(self, interface: type[T]) -> T:
+        """Resolve a dependency synchronously.
+
+        Alias for :meth:`resolve`; satisfies :class:`ContainerProtocol`.
+
+        Args:
+            interface: The type to resolve.
+
+        Returns:
+            Instance of the requested type.
+        """
+        return self.resolve(interface)
+
     def clear(self) -> None:
         """Clear all registrations."""
         with self._lock:

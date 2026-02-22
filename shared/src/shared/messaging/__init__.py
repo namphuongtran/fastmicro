@@ -20,6 +20,7 @@ Example:
 from __future__ import annotations
 
 from shared.messaging.config import KafkaSettings, RabbitMQSettings
+from shared.messaging.event_bridge import EventOutboxBridge
 from shared.messaging.kafka import KafkaEventConsumer, KafkaEventProducer
 from shared.messaging.rabbitmq import RabbitMQConsumer, RabbitMQPublisher
 from shared.messaging.serialization import EventEnvelope, EventSerializer
@@ -36,6 +37,8 @@ __all__ = [
     # Serialization
     "EventSerializer",
     "EventEnvelope",
+    # Event Bridge
+    "EventOutboxBridge",
     # RabbitMQ
     "RabbitMQPublisher",
     "RabbitMQConsumer",

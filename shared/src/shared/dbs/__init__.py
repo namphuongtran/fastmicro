@@ -18,6 +18,16 @@ from shared.dbs.repository import (
     PageRequest,
     PageResponse,
 )
+from shared.dbs.specification import (
+    AlwaysFalse,
+    AlwaysTrue,
+    AndSpecification,
+    Attr,
+    AttributeSpec,
+    NotSpecification,
+    OrSpecification,
+    Specification,
+)
 from shared.dbs.unit_of_work import (
     AbstractUnitOfWork,
     InMemoryUnitOfWork,
@@ -36,4 +46,13 @@ __all__ = [
     # Unit of Work
     "AbstractUnitOfWork",
     "InMemoryUnitOfWork",
+    # Specification Pattern
+    "Specification",
+    "AndSpecification",
+    "OrSpecification",
+    "NotSpecification",
+    "AttributeSpec",
+    "Attr",
+    "AlwaysTrue",
+    "AlwaysFalse",
 ]

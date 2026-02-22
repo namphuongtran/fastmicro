@@ -33,6 +33,7 @@ from shared.application import (
     ConflictError,
     CRUDService,
     NotFoundError,
+    PaginatedResult,
     ServiceContext,
     ServiceError,
 )
@@ -105,7 +106,51 @@ from shared.extensions import (
     retry,
     singleton,
     timeout,
+    transactional,
     validate_args,
+)
+
+# Phase 2: Cloud-Native Primitives
+from shared.audit import (
+    AuditAction,
+    AuditEvent,
+    AuditLogger,
+    AuditQuery,
+    InMemoryAuditLogger,
+    audit_log,
+)
+from shared.feature_flags import (
+    FeatureFlag,
+    FeatureFlagProvider,
+    FeatureFlagService,
+    InMemoryFlagProvider,
+    feature_enabled,
+)
+from shared.idempotency import (
+    IdempotencyRecord,
+    IdempotencyStore,
+    InMemoryIdempotencyStore,
+    idempotent,
+)
+from shared.notifications import (
+    InMemoryNotificationChannel,
+    Notification,
+    NotificationChannel,
+    NotificationPriority,
+    NotificationResult,
+    NotificationService,
+    NotificationStatus,
+)
+from shared.tasks import (
+    PeriodicTask,
+    Task,
+    TaskContext,
+    TaskMiddleware,
+    TaskPriority,
+    TaskResult,
+    TaskRunner,
+    TaskState,
+    TaskStatus,
 )
 from shared.observability import (
     CorrelationIdFilter,
@@ -117,9 +162,13 @@ from shared.observability import (
     # Health
     HealthStatus,
     Histogram,
+    # Prometheus bridge
+    InMemoryMetricsBackend,
     # Logging
     JSONFormatter,
+    MetricsBackend,
     MetricsRegistry,
+    PrometheusMetricsBackend,
     Span,
     # Tracing
     SpanKind,
@@ -130,6 +179,8 @@ from shared.observability import (
     configure_metrics,
     configure_tracing,
     create_health_check,
+    create_metrics_backend,
+    create_prometheus_asgi_app,
     create_span,
     extract_context,
     generate_correlation_id,
@@ -137,14 +188,63 @@ from shared.observability import (
     get_current_span,
     get_health_status,
     get_logger,
+    get_metrics_backend,
     get_metrics_registry,
     get_trace_id,
     inject_context,
     register_health_check,
+    reset_metrics_backend,
     set_correlation_id,
+    set_metrics_backend,
     timed,
     traced,
     with_context,
+)
+# Proto / gRPC utilities
+from shared.proto import (
+    GrpcServiceConfig,
+    ProtobufSerializer,
+    grpc_status_to_http,
+    http_status_to_grpc,
+    pydantic_to_struct,
+    struct_to_dict,
+)
+
+# Phase 4: Advanced Enterprise Patterns
+# CQRS / Mediator
+from shared.cqrs import (
+    Command,
+    CommandBus,
+    CommandHandler,
+    LoggingBehavior,
+    Mediator,
+    PipelineBehavior,
+    Query,
+    QueryBus,
+    QueryHandler,
+    TimingBehavior,
+    ValidationBehavior,
+)
+
+# Specification Pattern (also available via shared.dbs)
+from shared.dbs import (
+    AlwaysFalse,
+    AlwaysTrue,
+    AndSpecification,
+    Attr,
+    AttributeSpec,
+    NotSpecification,
+    OrSpecification,
+    Specification,
+)
+
+# Dishka DI Integration (optional)
+from shared.extensions import (
+    DishkaContainerAdapter,
+    DishkaFastAPIMiddleware,
+    create_dishka_fastapi_middleware,
+    dishka_dependency,
+    is_dishka_available,
 )
 from shared.utils import (
     CustomJSONEncoder,
@@ -248,6 +348,15 @@ __all__ = [
     "get_metrics_registry",
     "configure_metrics",
     "timed",
+    # Observability - Prometheus Bridge
+    "MetricsBackend",
+    "InMemoryMetricsBackend",
+    "PrometheusMetricsBackend",
+    "create_metrics_backend",
+    "get_metrics_backend",
+    "set_metrics_backend",
+    "reset_metrics_backend",
+    "create_prometheus_asgi_app",
     # Observability - Health
     "HealthStatus",
     "HealthCheckResult",
@@ -296,6 +405,7 @@ __all__ = [
     "log_calls",
     "validate_args",
     "singleton",
+    "transactional",
     # Extensions - Dependency Injection
     "Container",
     "Scope",
@@ -321,4 +431,76 @@ __all__ = [
     "ServiceError",
     "ServiceValidationError",
     "ConflictError",
+    "NotFoundError",
+    "PaginatedResult",
+    # Audit Trail
+    "AuditAction",
+    "AuditEvent",
+    "AuditLogger",
+    "AuditQuery",
+    "InMemoryAuditLogger",
+    "audit_log",
+    # Feature Flags
+    "FeatureFlag",
+    "FeatureFlagProvider",
+    "FeatureFlagService",
+    "InMemoryFlagProvider",
+    "feature_enabled",
+    # Idempotency
+    "IdempotencyRecord",
+    "IdempotencyStore",
+    "InMemoryIdempotencyStore",
+    "idempotent",
+    # Notifications
+    "Notification",
+    "NotificationChannel",
+    "NotificationPriority",
+    "NotificationResult",
+    "NotificationService",
+    "NotificationStatus",
+    "InMemoryNotificationChannel",
+    # Background Tasks
+    "Task",
+    "PeriodicTask",
+    "TaskRunner",
+    "TaskContext",
+    "TaskResult",
+    "TaskStatus",
+    "TaskState",
+    "TaskPriority",
+    "TaskMiddleware",
+    # Proto / gRPC Utilities
+    "ProtobufSerializer",
+    "pydantic_to_struct",
+    "struct_to_dict",
+    "grpc_status_to_http",
+    "http_status_to_grpc",
+    "GrpcServiceConfig",
+    # CQRS / Mediator
+    "Command",
+    "CommandHandler",
+    "CommandBus",
+    "Query",
+    "QueryHandler",
+    "QueryBus",
+    "Mediator",
+    "PipelineBehavior",
+    "LoggingBehavior",
+    "TimingBehavior",
+    "ValidationBehavior",
+    # Specification Pattern
+    "Specification",
+    "AndSpecification",
+    "OrSpecification",
+    "NotSpecification",
+    "AttributeSpec",
+    "Attr",
+    "AlwaysTrue",
+    "AlwaysFalse",
+    # Dishka DI Integration (optional)
+    "is_dishka_available",
+    "DishkaContainerAdapter",
+    "DishkaFastAPIMiddleware",
+    "create_dishka_fastapi_middleware",
+    "dishka_dependency",
 ]

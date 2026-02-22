@@ -59,6 +59,23 @@ from shared.sqlalchemy_async.repository import (
     AsyncCRUDRepository,
     AsyncRepository,
 )
+from shared.sqlalchemy_async.instrumentation import (
+    SQLAlchemyInstrumentationConfig,
+    configure_sqlalchemy_instrumentation,
+    instrument_engine,
+    reset_sqlalchemy_instrumentation,
+    uninstrument_engine,
+)
+from shared.sqlalchemy_async.migrations import (
+    AlembicMigrationConfig,
+    create_alembic_config,
+    generate_migration_scaffold,
+    get_current_revision,
+    run_downgrade,
+    run_upgrade_to_head,
+    stamp_head,
+)
+from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
 
 __all__ = [
     # Database management
@@ -68,6 +85,22 @@ __all__ = [
     # Repository pattern
     "AsyncRepository",
     "AsyncCRUDRepository",
+    # Unit of Work
+    "SqlAlchemyUnitOfWork",
+    # Instrumentation
+    "SQLAlchemyInstrumentationConfig",
+    "configure_sqlalchemy_instrumentation",
+    "instrument_engine",
+    "uninstrument_engine",
+    "reset_sqlalchemy_instrumentation",
+    # Migrations
+    "AlembicMigrationConfig",
+    "create_alembic_config",
+    "generate_migration_scaffold",
+    "get_current_revision",
+    "run_upgrade_to_head",
+    "run_downgrade",
+    "stamp_head",
     # Model mixins
     "TimestampMixin",
     "SoftDeleteMixin",
