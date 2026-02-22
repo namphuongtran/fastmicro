@@ -12,14 +12,22 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class CacheBackend(str, Enum):
-    """Supported cache backends."""
+class CacheBackendType(str, Enum):
+    """Supported cache backend types for configuration.
+
+    Renamed from ``CacheBackend`` to avoid conflict with the
+    ``CacheBackend`` *protocol* in ``shared.cache.base``.
+    """
 
     REDIS = "redis"
     MEMCACHED = "memcached"
     MEMORY = "memory"
     DATABASE = "database"
     NONE = "none"
+
+
+# Backward-compatible alias — prefer CacheBackendType in new code
+CacheBackend = CacheBackendType
 
 
 class CacheStrategy(str, Enum):
@@ -216,7 +224,7 @@ class CachingSettings(BaseSettings):
     Example:
         >>> settings = CachingSettings()
         >>> print(settings.backend)
-        CacheBackend.REDIS
+        CacheBackendType.REDIS
     """
 
     model_config = SettingsConfigDict(
@@ -229,8 +237,8 @@ class CachingSettings(BaseSettings):
 
     # General settings
     enabled: bool = Field(default=True, description="Enable caching")
-    backend: CacheBackend = Field(
-        default=CacheBackend.REDIS,
+    backend: CacheBackendType = Field(
+        default=CacheBackendType.REDIS,
         description="Cache backend type",
     )
     default_ttl: int = Field(

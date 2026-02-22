@@ -25,6 +25,7 @@ from shared.config.base import (
 )
 from shared.config.caching import (
     CacheBackend,
+    CacheBackendType,
     CacheClusterSettings,
     CacheStrategy,
     CacheWarmingSettings,

@@ -60,6 +60,16 @@ from shared.observability.middleware import (
     RequestLoggingMiddleware,
     get_correlation_id_from_request,
 )
+from shared.observability.prometheus_bridge import (
+    InMemoryMetricsBackend,
+    MetricsBackend,
+    PrometheusMetricsBackend,
+    create_metrics_backend,
+    create_prometheus_asgi_app,
+    get_metrics_backend,
+    reset_metrics_backend,
+    set_metrics_backend,
+)
 
 # Structlog-based logging (recommended)
 from shared.observability.structlog_config import (
@@ -139,6 +149,15 @@ __all__ = [
     "get_metrics_registry",
     "configure_metrics",
     "timed",
+    # Prometheus bridge
+    "MetricsBackend",
+    "InMemoryMetricsBackend",
+    "PrometheusMetricsBackend",
+    "create_metrics_backend",
+    "get_metrics_backend",
+    "set_metrics_backend",
+    "reset_metrics_backend",
+    "create_prometheus_asgi_app",
     # Health
     "HealthStatus",
     "HealthCheckResult",

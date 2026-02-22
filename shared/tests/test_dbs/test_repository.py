@@ -362,3 +362,80 @@ class TestInMemoryRepository:
         await repo.clear()
 
         assert await repo.count() == 0
+
+
+# ======================================================================
+# TestFindBySpecification
+# ======================================================================
+
+
+class TestFindBySpecification:
+    """Tests for AbstractRepository.find_by_specification."""
+
+    @pytest.fixture
+    def repo(self) -> InMemoryRepository[SampleEntity]:
+        return InMemoryRepository[SampleEntity](id_field="id")
+
+    @pytest.mark.asyncio
+    async def test_and_specification(self, repo: InMemoryRepository[SampleEntity]) -> None:
+        """AND specification combines two attribute specs."""
+        from shared.dbs.specification import Attr
+
+        await repo.add(SampleEntity(id="1", name="Alice", age=30))
+        await repo.add(SampleEntity(id="2", name="Bob", age=30))
+        await repo.add(SampleEntity(id="3", name="Alice", age=25))
+
+        spec = Attr("name", "Alice") & Attr("age", 30)
+        results = await repo.find_by_specification(spec)
+        assert len(results) == 1
+        assert results[0].id == "1"
+
+    @pytest.mark.asyncio
+    async def test_or_specification(self, repo: InMemoryRepository[SampleEntity]) -> None:
+        """OR specification uses in-memory evaluation in InMemoryRepository."""
+        from shared.dbs.specification import Attr
+
+        await repo.add(SampleEntity(id="1", name="Alice", age=30))
+        await repo.add(SampleEntity(id="2", name="Bob", age=25))
+        await repo.add(SampleEntity(id="3", name="Charlie", age=40))
+
+        spec = Attr("name", "Alice") | Attr("name", "Bob")
+        results = await repo.find_by_specification(spec)
+        assert len(results) == 2
+        names = {r.name for r in results}
+        assert names == {"Alice", "Bob"}
+
+    @pytest.mark.asyncio
+    async def test_not_specification(self, repo: InMemoryRepository[SampleEntity]) -> None:
+        from shared.dbs.specification import Attr
+
+        await repo.add(SampleEntity(id="1", name="Alice", age=30))
+        await repo.add(SampleEntity(id="2", name="Bob", age=25))
+
+        spec = ~Attr("name", "Alice")
+        results = await repo.find_by_specification(spec)
+        assert len(results) == 1
+        assert results[0].name == "Bob"
+
+    @pytest.mark.asyncio
+    async def test_with_ordering(self, repo: InMemoryRepository[SampleEntity]) -> None:
+        from shared.dbs.specification import Attr
+
+        await repo.add(SampleEntity(id="1", name="Charlie", age=40))
+        await repo.add(SampleEntity(id="2", name="Alice", age=30))
+        await repo.add(SampleEntity(id="3", name="Bob", age=25))
+
+        spec = Attr("age", 20, "gt")
+        results = await repo.find_by_specification(
+            spec, order_by=[OrderBy(field="age", direction=OrderDirection.ASC)]
+        )
+        assert [r.name for r in results] == ["Bob", "Alice", "Charlie"]
+
+    @pytest.mark.asyncio
+    async def test_empty_result(self, repo: InMemoryRepository[SampleEntity]) -> None:
+        from shared.dbs.specification import Attr
+
+        await repo.add(SampleEntity(id="1", name="Alice", age=30))
+        spec = Attr("name", "Nobody")
+        results = await repo.find_by_specification(spec)
+        assert results == []
