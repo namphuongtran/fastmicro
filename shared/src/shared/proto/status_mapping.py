@@ -16,16 +16,16 @@ from typing import Any
 # Maps gRPC status code integers to HTTP status codes.
 # Reference: https://grpc.github.io/grpc/core/md_doc_statuscodes.html
 _GRPC_TO_HTTP: dict[int, int] = {
-    0: 200,   # OK → OK
-    1: 499,   # CANCELLED → Client Closed Request
-    2: 500,   # UNKNOWN → Internal Server Error
-    3: 400,   # INVALID_ARGUMENT → Bad Request
-    4: 504,   # DEADLINE_EXCEEDED → Gateway Timeout
-    5: 404,   # NOT_FOUND → Not Found
-    6: 409,   # ALREADY_EXISTS → Conflict
-    7: 403,   # PERMISSION_DENIED → Forbidden
-    8: 429,   # RESOURCE_EXHAUSTED → Too Many Requests
-    9: 400,   # FAILED_PRECONDITION → Bad Request
+    0: 200,  # OK → OK
+    1: 499,  # CANCELLED → Client Closed Request
+    2: 500,  # UNKNOWN → Internal Server Error
+    3: 400,  # INVALID_ARGUMENT → Bad Request
+    4: 504,  # DEADLINE_EXCEEDED → Gateway Timeout
+    5: 404,  # NOT_FOUND → Not Found
+    6: 409,  # ALREADY_EXISTS → Conflict
+    7: 403,  # PERMISSION_DENIED → Forbidden
+    8: 429,  # RESOURCE_EXHAUSTED → Too Many Requests
+    9: 400,  # FAILED_PRECONDITION → Bad Request
     10: 409,  # ABORTED → Conflict
     11: 400,  # OUT_OF_RANGE → Bad Request
     12: 501,  # UNIMPLEMENTED → Not Implemented
@@ -37,18 +37,18 @@ _GRPC_TO_HTTP: dict[int, int] = {
 
 # Reverse: HTTP → gRPC (most common mappings)
 _HTTP_TO_GRPC: dict[int, int] = {
-    200: 0,   # OK
-    400: 3,   # Bad Request → INVALID_ARGUMENT
+    200: 0,  # OK
+    400: 3,  # Bad Request → INVALID_ARGUMENT
     401: 16,  # Unauthorized → UNAUTHENTICATED
-    403: 7,   # Forbidden → PERMISSION_DENIED
-    404: 5,   # Not Found → NOT_FOUND
-    409: 6,   # Conflict → ALREADY_EXISTS
-    429: 8,   # Too Many Requests → RESOURCE_EXHAUSTED
-    499: 1,   # Client Closed → CANCELLED
+    403: 7,  # Forbidden → PERMISSION_DENIED
+    404: 5,  # Not Found → NOT_FOUND
+    409: 6,  # Conflict → ALREADY_EXISTS
+    429: 8,  # Too Many Requests → RESOURCE_EXHAUSTED
+    499: 1,  # Client Closed → CANCELLED
     500: 13,  # Internal → INTERNAL
     501: 12,  # Not Implemented → UNIMPLEMENTED
     503: 14,  # Service Unavailable → UNAVAILABLE
-    504: 4,   # Gateway Timeout → DEADLINE_EXCEEDED
+    504: 4,  # Gateway Timeout → DEADLINE_EXCEEDED
 }
 
 

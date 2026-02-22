@@ -193,7 +193,9 @@ class TaskRunner:
             max_attempts=task.max_attempts,
         )
         task.state.status = TaskStatus.RUNNING
-        result = TaskResult(task_id=ctx.task_id, status=TaskStatus.RUNNING, started_at=ctx.started_at)
+        result = TaskResult(
+            task_id=ctx.task_id, status=TaskStatus.RUNNING, started_at=ctx.started_at
+        )
 
         for attempt in range(1, task.max_attempts + 1):
             ctx.attempt = attempt

@@ -148,8 +148,7 @@ class DishkaContainerAdapter:
         result = self._container.get(interface)
         if inspect.isawaitable(result):
             raise TypeError(
-                "Cannot resolve synchronously from an async container. "
-                "Use resolve_async() instead."
+                "Cannot resolve synchronously from an async container. Use resolve_async() instead."
             )
         return result
 

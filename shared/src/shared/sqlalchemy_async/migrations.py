@@ -98,8 +98,7 @@ def create_alembic_config(
         from alembic.config import Config as _AlembicConfig
     except ImportError as exc:
         raise ImportError(
-            "alembic is required for migration utilities. "
-            "Install it with: pip install alembic"
+            "alembic is required for migration utilities. Install it with: pip install alembic"
         ) from exc
 
     alembic_cfg = _AlembicConfig()
@@ -131,8 +130,7 @@ async def run_upgrade_to_head(
         from alembic import command as alembic_command
     except ImportError as exc:
         raise ImportError(
-            "alembic is required for migration utilities. "
-            "Install it with: pip install alembic"
+            "alembic is required for migration utilities. Install it with: pip install alembic"
         ) from exc
 
     alembic_cfg = create_alembic_config(config)
@@ -155,8 +153,7 @@ async def run_downgrade(
         from alembic import command as alembic_command
     except ImportError as exc:
         raise ImportError(
-            "alembic is required for migration utilities. "
-            "Install it with: pip install alembic"
+            "alembic is required for migration utilities. Install it with: pip install alembic"
         ) from exc
 
     alembic_cfg = create_alembic_config(config)
@@ -177,8 +174,7 @@ def stamp_head(config: AlembicMigrationConfig) -> None:
         from alembic import command as alembic_command
     except ImportError as exc:
         raise ImportError(
-            "alembic is required for migration utilities. "
-            "Install it with: pip install alembic"
+            "alembic is required for migration utilities. Install it with: pip install alembic"
         ) from exc
 
     alembic_cfg = create_alembic_config(config)
@@ -200,8 +196,7 @@ def get_current_revision(config: AlembicMigrationConfig) -> str | None:
         from sqlalchemy import create_engine
     except ImportError as exc:
         raise ImportError(
-            "alembic is required for migration utilities. "
-            "Install it with: pip install alembic"
+            "alembic is required for migration utilities. Install it with: pip install alembic"
         ) from exc
 
     sync_url = _async_url_to_sync(config.database_url)

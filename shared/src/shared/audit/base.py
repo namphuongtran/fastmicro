@@ -74,7 +74,9 @@ class AuditEvent:
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a plain dictionary (for JSON logging or persistence)."""
-        action_value = self.action.value if isinstance(self.action, AuditAction) else str(self.action)
+        action_value = (
+            self.action.value if isinstance(self.action, AuditAction) else str(self.action)
+        )
         return {
             "event_id": self.event_id,
             "action": action_value,

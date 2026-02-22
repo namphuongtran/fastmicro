@@ -88,7 +88,8 @@ class _PrometheusBackendIsolated(PrometheusMetricsBackend):
                     full_name,
                     description,
                     labelnames=labels or [],
-                    buckets=buckets or (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, float("inf")),
+                    buckets=buckets
+                    or (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, float("inf")),
                     registry=self._isolated_registry,
                 )
             return self._metrics[full_name]

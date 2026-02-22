@@ -321,8 +321,7 @@ class AttributeSpec(Specification[Any]):
             return _OP_MAP[self.operator]
         except KeyError:
             raise ValueError(
-                f"Unknown operator '{self.operator}'. "
-                f"Valid operators: {', '.join(sorted(_OP_MAP))}"
+                f"Unknown operator '{self.operator}'. Valid operators: {', '.join(sorted(_OP_MAP))}"
             ) from None
 
     # ------------------------------------------------------------------

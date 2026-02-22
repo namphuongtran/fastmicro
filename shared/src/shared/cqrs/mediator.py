@@ -58,9 +58,7 @@ class Mediator:
         self._query_bus = QueryBus()
         self._behaviors: list[PipelineBehavior] = list(behaviors or [])
         self._pipeline_version: int = 0
-        self._event_handlers: dict[
-            type[DomainEvent], list[DomainEventHandler[Any]]
-        ] = {}
+        self._event_handlers: dict[type[DomainEvent], list[DomainEventHandler[Any]]] = {}
 
     # ------------------------------------------------------------------
     # Pipeline behaviors
@@ -160,9 +158,7 @@ class Mediator:
         elif isinstance(request, Query):
             inner = self._query_bus.dispatch
         else:
-            raise TypeError(
-                f"Expected Command or Query, got {type(request).__name__}"
-            )
+            raise TypeError(f"Expected Command or Query, got {type(request).__name__}")
 
         # Build the pipeline from the inside out, filtering by applies_to.
         handler = inner
@@ -214,6 +210,7 @@ class Mediator:
 # ------------------------------------------------------------------
 # Internal helpers
 # ------------------------------------------------------------------
+
 
 def _wrap(
     behavior: PipelineBehavior,

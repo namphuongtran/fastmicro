@@ -20,6 +20,7 @@ from shared.tasks import (
 
 # ── Fixtures ───────────────────────────────────────────────────────
 
+
 class _CounterMiddleware(TaskMiddleware):
     """Test middleware that counts before/after calls."""
 
@@ -37,6 +38,7 @@ class _CounterMiddleware(TaskMiddleware):
 
 
 # ── Unit Tests ─────────────────────────────────────────────────────
+
 
 @pytest.mark.unit
 class TestTaskDataClasses:

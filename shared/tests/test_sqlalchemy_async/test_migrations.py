@@ -126,8 +126,10 @@ class TestRunDowngrade:
     @pytest.mark.asyncio
     async def test_default_revision(self):
         cfg = AlembicMigrationConfig(database_url="sqlite:///:memory:")
-        with patch("shared.sqlalchemy_async.migrations.create_alembic_config"), \
-                patch("alembic.command.downgrade") as mock_downgrade:
+        with (
+            patch("shared.sqlalchemy_async.migrations.create_alembic_config"),
+            patch("alembic.command.downgrade") as mock_downgrade,
+        ):
             await run_downgrade(cfg)
             mock_downgrade.assert_called_once()
             assert mock_downgrade.call_args[0][1] == "-1"

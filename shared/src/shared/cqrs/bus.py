@@ -54,9 +54,7 @@ class MessageBus(Generic[M, H]):
         """
         with self._lock:
             if message_type in self._handlers:
-                raise ValueError(
-                    f"A handler is already registered for {message_type.__name__}"
-                )
+                raise ValueError(f"A handler is already registered for {message_type.__name__}")
             new = dict(self._handlers)
             new[message_type] = handler
             self._handlers = new
@@ -69,9 +67,7 @@ class MessageBus(Generic[M, H]):
         """
         with self._lock:
             if message_type not in self._handlers:
-                raise KeyError(
-                    f"No handler registered for {message_type.__name__}"
-                )
+                raise KeyError(f"No handler registered for {message_type.__name__}")
             new = dict(self._handlers)
             del new[message_type]
             self._handlers = new
@@ -88,9 +84,7 @@ class MessageBus(Generic[M, H]):
         """
         handler = self._handlers.get(type(message))
         if handler is None:
-            raise KeyError(
-                f"No handler registered for {type(message).__name__}"
-            )
+            raise KeyError(f"No handler registered for {type(message).__name__}")
         return await handler.handle(message)  # type: ignore[union-attr]
 
     # ------------------------------------------------------------------

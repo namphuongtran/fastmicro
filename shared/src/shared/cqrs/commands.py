@@ -37,7 +37,10 @@ class Command(Generic[R]):
     """
 
     metadata: dict[str, Any] = field(
-        default_factory=dict, compare=False, repr=False, kw_only=True,
+        default_factory=dict,
+        compare=False,
+        repr=False,
+        kw_only=True,
     )
 
 
