@@ -1,3 +1,13 @@
+## [1.0.1](https://github.com/namphuongtran/fastmicro/compare/v1.0.0...v1.0.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* guard sqlalchemy imports to prevent ModuleNotFoundError in services without sqlalchemy ([460f075](https://github.com/namphuongtran/fastmicro/commit/460f075b8d80133a74c7a21b6fa32adf633a3443))
+* replace em dash with ASCII hyphen in transactional.py comment ([84d44a6](https://github.com/namphuongtran/fastmicro/commit/84d44a6bf60eec3aafe3634bc6b312602d8fbec3))
+* resolve 48 ruff lint violations and add AGENTS.md lint rules ([d50d30b](https://github.com/namphuongtran/fastmicro/commit/d50d30b5aa0c1fec915a8f9e2dd2b994e65bd329))
+* resolve all 21 architecture review issues (P0/P1/P2) ([d06efc6](https://github.com/namphuongtran/fastmicro/commit/d06efc61cfc1359f05ee9f3e8201109e00d4f263))
+
 # 1.0.0 (2026-02-08)
 
 
