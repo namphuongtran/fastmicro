@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import pytest
 
 from shared.dbs import (
-    Filter,
     FilterOperator,
 )
 from shared.dbs.specification import (

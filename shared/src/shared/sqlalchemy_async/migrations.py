@@ -3,13 +3,13 @@
 Provides helpers for integrating Alembic database migrations into
 async microservices:
 
-* **AlembicConfig** – dataclass holding migration paths and DB URL.
-* **create_alembic_config** – builds an ``alembic.config.Config`` from the
+* **AlembicConfig** - dataclass holding migration paths and DB URL.
+* **create_alembic_config** - builds an ``alembic.config.Config`` from the
   dataclass (avoids manual ``alembic.ini`` file management).
-* **run_migrations_online** – async helper to run migrations inside an
+* **run_migrations_online** - async helper to run migrations inside an
   ``AsyncEngine`` connection (suitable for ``env.py``).
-* **stamp_head / current_revision** – programmatic helpers for CI/CD scripts.
-* **generate_migration_env** – generates a ready-to-use ``env.py`` template.
+* **stamp_head / current_revision** - programmatic helpers for CI/CD scripts.
+* **generate_migration_env** - generates a ready-to-use ``env.py`` template.
 
 Usage from application startup::
 
@@ -196,7 +196,6 @@ def get_current_revision(config: AlembicMigrationConfig) -> str | None:
         Current revision string, or ``None`` if no migrations have been applied.
     """
     try:
-        from alembic import command as alembic_command
         from alembic.runtime.migration import MigrationContext
         from sqlalchemy import create_engine
     except ImportError as exc:

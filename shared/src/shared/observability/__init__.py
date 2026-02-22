@@ -55,6 +55,11 @@ from shared.observability.metrics import (
     get_metrics_registry,
     timed,
 )
+from shared.observability.middleware import (
+    RequestLoggingConfig,
+    RequestLoggingMiddleware,
+    get_correlation_id_from_request,
+)
 from shared.observability.prometheus_bridge import (
     InMemoryMetricsBackend,
     MetricsBackend,
@@ -64,11 +69,6 @@ from shared.observability.prometheus_bridge import (
     get_metrics_backend,
     reset_metrics_backend,
     set_metrics_backend,
-)
-from shared.observability.middleware import (
-    RequestLoggingConfig,
-    RequestLoggingMiddleware,
-    get_correlation_id_from_request,
 )
 
 # Structlog-based logging (recommended)

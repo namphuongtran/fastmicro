@@ -7,8 +7,8 @@ in-memory backend remains zero-dependency.
 
 Two backends are provided:
 
-* **InMemoryMetricsBackend** (default) – lightweight, no external deps.
-* **PrometheusMetricsBackend** – delegates to ``prometheus_client``.
+* **InMemoryMetricsBackend** (default) - lightweight, no external deps.
+* **PrometheusMetricsBackend** - delegates to ``prometheus_client``.
 
 Usage::
 
@@ -32,13 +32,9 @@ Usage::
 
 from __future__ import annotations
 
-import time
 from abc import ABC, abstractmethod
-from collections.abc import Generator
-from contextlib import contextmanager
 from threading import Lock
 from typing import Protocol, runtime_checkable
-
 
 # ---------------------------------------------------------------------------
 # Abstract metric types (backend-agnostic)

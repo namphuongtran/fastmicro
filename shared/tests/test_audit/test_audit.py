@@ -127,7 +127,7 @@ class TestInMemoryAuditLogger:
 
     async def test_query_limit_offset(self):
         logger = InMemoryAuditLogger()
-        for i in range(10):
+        for _ in range(10):
             await logger.log(
                 AuditEvent(action=AuditAction.READ, actor_id="u", resource_type="A")
             )

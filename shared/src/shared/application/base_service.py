@@ -36,7 +36,7 @@ UpdateDTO = TypeVar("UpdateDTO")
 ResponseDTO = TypeVar("ResponseDTO")
 
 
-from shared.exceptions.base import BaseServiceException, ErrorSeverity
+from shared.exceptions.base import BaseServiceException, ErrorSeverity  # noqa: E402
 
 
 class ServiceError(BaseServiceException):
@@ -595,6 +595,6 @@ class CRUDService(BaseReadService[T, ID], BaseWriteService[T, ID]):
 #
 # New code should import ``PageResponse`` directly from shared.dbs.
 # ---------------------------------------------------------------------------
-from shared.dbs.repository import PageResponse
+from shared.dbs.repository import PageResponse  # noqa: E402
 
 PaginatedResult = PageResponse

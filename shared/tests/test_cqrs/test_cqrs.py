@@ -279,9 +279,9 @@ class TestPipelineBehaviors:
     async def test_logging_behavior_error(self, caplog: pytest.LogCaptureFixture) -> None:
         m = Mediator(behaviors=[LoggingBehavior()])
         m.register_command_handler(CreateItem, FailingHandler())
-        with caplog.at_level(logging.DEBUG, logger="shared.cqrs.pipeline"):
-            with pytest.raises(RuntimeError, match="boom"):
-                await m.send(CreateItem(name="x"))
+        with caplog.at_level(logging.DEBUG, logger="shared.cqrs.pipeline"), \
+                pytest.raises(RuntimeError, match="boom"):
+            await m.send(CreateItem(name="x"))
         assert "Failed CreateItem" in caplog.text
 
     async def test_timing_behavior_fast(self, caplog: pytest.LogCaptureFixture) -> None:

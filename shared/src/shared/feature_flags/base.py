@@ -16,7 +16,7 @@ class FeatureFlag:
         enabled: Global on/off switch.
         description: Human-readable explanation of what the flag controls.
         rollout_percentage: Percentage of users/requests that see the feature
-            (0–100).  Only evaluated when ``enabled=True``.
+            (0-100).  Only evaluated when ``enabled=True``.
         allowed_users: Explicit user IDs that always get the feature.
         denied_users: Explicit user IDs that never get the feature.
         metadata: Arbitrary key-value data (owner, ticket, etc.).

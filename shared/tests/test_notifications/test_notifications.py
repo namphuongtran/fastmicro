@@ -9,7 +9,6 @@ from shared.notifications import (
     Notification,
     NotificationChannel,
     NotificationPriority,
-    NotificationResult,
     NotificationService,
     NotificationStatus,
 )

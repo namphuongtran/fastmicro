@@ -8,7 +8,6 @@ protocol that backends must satisfy.
 from __future__ import annotations
 
 import enum
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable

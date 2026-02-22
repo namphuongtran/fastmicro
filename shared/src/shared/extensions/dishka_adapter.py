@@ -1,4 +1,4 @@
-"""Dishka DI adapter – optional bridge to the Dishka async DI framework.
+"""Dishka DI adapter - optional bridge to the Dishka async DI framework.
 
 This module provides integration between the shared library's
 :class:`~shared.extensions.dependency_injection.Container` and the
@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import inspect
 import threading
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 

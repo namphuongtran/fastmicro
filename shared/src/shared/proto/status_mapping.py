@@ -56,7 +56,7 @@ def grpc_status_to_http(grpc_code: int) -> int:
     """Map a gRPC status code to the corresponding HTTP status code.
 
     Args:
-        grpc_code: gRPC status code (0–16).
+        grpc_code: gRPC status code (0-16).
 
     Returns:
         HTTP status code.
@@ -106,7 +106,7 @@ class GrpcServiceConfig:
         options: Additional gRPC channel options.
     """
 
-    host: str = "0.0.0.0"  # noqa: S104
+    host: str = "0.0.0.0"
     port: int = 50051
     max_workers: int = 10
     max_message_length: int = 4 * 1024 * 1024  # 4 MB

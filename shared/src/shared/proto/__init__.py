@@ -2,10 +2,10 @@
 
 This module provides helpers for building gRPC-based microservices:
 
-* **ProtobufSerializer** – serialize / deserialize Pydantic models to/from
+* **ProtobufSerializer** - serialize / deserialize Pydantic models to/from
   ``google.protobuf.Struct`` and JSON transport format.
-* **GrpcServiceConfig** – configuration dataclass for server/client settings.
-* **grpc_status_to_http** / **http_status_to_grpc** – status code mapping.
+* **GrpcServiceConfig** - configuration dataclass for server/client settings.
+* **grpc_status_to_http** / **http_status_to_grpc** - status code mapping.
 
 .. note::
    Requires the ``grpc`` extras: ``pip install shared[grpc]``

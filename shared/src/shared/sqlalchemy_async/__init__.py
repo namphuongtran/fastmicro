@@ -45,20 +45,6 @@ from shared.sqlalchemy_async.database import (
     DatabaseConfig,
     get_async_session,
 )
-from shared.sqlalchemy_async.models import (
-    AuditMixin,
-    FullAuditMixin,
-    SoftDeleteMixin,
-    TenantAuditMixin,
-    TenantMixin,
-    TimestampMixin,
-    UUIDPrimaryKeyMixin,
-    VersionMixin,
-)
-from shared.sqlalchemy_async.repository import (
-    AsyncCRUDRepository,
-    AsyncRepository,
-)
 from shared.sqlalchemy_async.instrumentation import (
     SQLAlchemyInstrumentationConfig,
     configure_sqlalchemy_instrumentation,
@@ -74,6 +60,20 @@ from shared.sqlalchemy_async.migrations import (
     run_downgrade,
     run_upgrade_to_head,
     stamp_head,
+)
+from shared.sqlalchemy_async.models import (
+    AuditMixin,
+    FullAuditMixin,
+    SoftDeleteMixin,
+    TenantAuditMixin,
+    TenantMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+    VersionMixin,
+)
+from shared.sqlalchemy_async.repository import (
+    AsyncCRUDRepository,
+    AsyncRepository,
 )
 from shared.sqlalchemy_async.unit_of_work import SqlAlchemyUnitOfWork
 

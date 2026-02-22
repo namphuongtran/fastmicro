@@ -7,7 +7,7 @@ background work units with structured context and results.
 from __future__ import annotations
 
 import enum
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import UTC, datetime

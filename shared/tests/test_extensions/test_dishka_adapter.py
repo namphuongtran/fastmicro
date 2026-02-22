@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+# We need to reset the cached availability between tests
+import shared.extensions.dishka_adapter as _mod
 from shared.extensions.dishka_adapter import (
     DishkaContainerAdapter,
     DishkaFastAPIMiddleware,
@@ -15,9 +17,6 @@ from shared.extensions.dishka_adapter import (
     dishka_dependency,
     is_dishka_available,
 )
-
-# We need to reset the cached availability between tests
-import shared.extensions.dishka_adapter as _mod
 
 
 @pytest.fixture(autouse=True)
@@ -47,7 +46,6 @@ class TestAvailabilityCheck:
         with patch.dict("sys.modules", {"dishka": None}):
             _mod._dishka_available = None
             # Force a fresh import check
-            import importlib
 
             with patch("builtins.__import__", side_effect=ImportError):
                 _mod._dishka_available = None

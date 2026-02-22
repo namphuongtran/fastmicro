@@ -18,7 +18,6 @@ from shared.tasks import (
     TaskStatus,
 )
 
-
 # ── Fixtures ───────────────────────────────────────────────────────
 
 class _CounterMiddleware(TaskMiddleware):

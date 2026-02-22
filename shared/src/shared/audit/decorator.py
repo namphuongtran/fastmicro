@@ -78,7 +78,7 @@ def audit_log(
             # Resolve audit logger from self._audit
             audit_logger: AuditLogger | None = None
             if args and hasattr(args[0], "_audit"):
-                audit_logger = getattr(args[0], "_audit")
+                audit_logger = args[0]._audit
 
             if audit_logger is None:
                 logger.warning(

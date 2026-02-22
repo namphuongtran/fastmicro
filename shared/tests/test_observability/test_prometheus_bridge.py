@@ -14,7 +14,6 @@ from shared.observability.prometheus_bridge import (
     set_metrics_backend,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -35,7 +34,7 @@ def memory_backend() -> InMemoryMetricsBackend:
 
 @pytest.fixture()
 def prom_backend() -> PrometheusMetricsBackend:
-    """Prometheus backend – uses a fresh CollectorRegistry per test."""
+    """Prometheus backend - uses a fresh CollectorRegistry per test."""
     import prometheus_client
 
     # Use an isolated registry so tests don't interfere with each other
@@ -237,7 +236,7 @@ class TestFactory:
 
     def test_create_auto(self):
         backend = create_metrics_backend(backend="auto")
-        # Should succeed either way – prometheus_client is installed in dev
+        # Should succeed either way - prometheus_client is installed in dev
         assert isinstance(backend, MetricsBackend)
 
     def test_create_memory(self):

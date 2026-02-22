@@ -23,7 +23,7 @@ import asyncio
 import functools
 import logging
 import random
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -273,7 +273,7 @@ class TaskRunner:
             await self._execute_task(task)
 
         while self._running:
-            jitter = random.uniform(0, task.jitter_seconds) if task.jitter_seconds else 0.0  # noqa: S311
+            jitter = random.uniform(0, task.jitter_seconds) if task.jitter_seconds else 0.0
             try:
                 await asyncio.sleep(task.interval_seconds + jitter)
             except asyncio.CancelledError:

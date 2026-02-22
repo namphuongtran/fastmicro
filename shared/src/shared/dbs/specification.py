@@ -350,7 +350,7 @@ class AttributeSpec(Specification[Any]):
 # ======================================================================
 
 
-def Attr(  # noqa: N802 — capitalised for readability at call-site
+def Attr(
     field: str,
     value: Any = None,
     op: FilterOperator | str = FilterOperator.EQ,

@@ -40,18 +40,54 @@ from shared.application import (
 from shared.application import (
     ValidationError as ServiceValidationError,
 )
+
+# Phase 2: Cloud-Native Primitives
+from shared.audit import (
+    AuditAction,
+    AuditEvent,
+    AuditLogger,
+    AuditQuery,
+    InMemoryAuditLogger,
+    audit_log,
+)
 from shared.constants import Environment, HTTPStatus, Patterns
+
+# Phase 4: Advanced Enterprise Patterns
+# CQRS / Mediator
+from shared.cqrs import (
+    Command,
+    CommandBus,
+    CommandHandler,
+    LoggingBehavior,
+    Mediator,
+    PipelineBehavior,
+    Query,
+    QueryBus,
+    QueryHandler,
+    TimingBehavior,
+    ValidationBehavior,
+)
+
+# Specification Pattern (also available via shared.dbs)
 from shared.dbs import (
     AbstractRepository,
     AbstractUnitOfWork,
+    AlwaysFalse,
+    AlwaysTrue,
+    AndSpecification,
+    Attr,
+    AttributeSpec,
     Filter,
     FilterOperator,
     InMemoryRepository,
     InMemoryUnitOfWork,
+    NotSpecification,
     OrderBy,
     OrderDirection,
+    OrSpecification,
     PageRequest,
     PageResponse,
+    Specification,
 )
 
 # DDD Building Blocks
@@ -89,15 +125,22 @@ from shared.exceptions import (
     UnprocessableEntityException,
     ValidationException,
 )
+
+# Dishka DI Integration (optional)
 from shared.extensions import (
     # Dependency Injection
     Container,
     Depends,
+    DishkaContainerAdapter,
+    DishkaFastAPIMiddleware,
     Scope,
     cache,
+    create_dishka_fastapi_middleware,
     deprecated,
+    dishka_dependency,
     get_container,
     inject,
+    is_dishka_available,
     log_calls,
     rate_limit,
     register,
@@ -108,16 +151,6 @@ from shared.extensions import (
     timeout,
     transactional,
     validate_args,
-)
-
-# Phase 2: Cloud-Native Primitives
-from shared.audit import (
-    AuditAction,
-    AuditEvent,
-    AuditLogger,
-    AuditQuery,
-    InMemoryAuditLogger,
-    audit_log,
 )
 from shared.feature_flags import (
     FeatureFlag,
@@ -140,17 +173,6 @@ from shared.notifications import (
     NotificationResult,
     NotificationService,
     NotificationStatus,
-)
-from shared.tasks import (
-    PeriodicTask,
-    Task,
-    TaskContext,
-    TaskMiddleware,
-    TaskPriority,
-    TaskResult,
-    TaskRunner,
-    TaskState,
-    TaskStatus,
 )
 from shared.observability import (
     CorrelationIdFilter,
@@ -200,6 +222,7 @@ from shared.observability import (
     traced,
     with_context,
 )
+
 # Proto / gRPC utilities
 from shared.proto import (
     GrpcServiceConfig,
@@ -209,42 +232,16 @@ from shared.proto import (
     pydantic_to_struct,
     struct_to_dict,
 )
-
-# Phase 4: Advanced Enterprise Patterns
-# CQRS / Mediator
-from shared.cqrs import (
-    Command,
-    CommandBus,
-    CommandHandler,
-    LoggingBehavior,
-    Mediator,
-    PipelineBehavior,
-    Query,
-    QueryBus,
-    QueryHandler,
-    TimingBehavior,
-    ValidationBehavior,
-)
-
-# Specification Pattern (also available via shared.dbs)
-from shared.dbs import (
-    AlwaysFalse,
-    AlwaysTrue,
-    AndSpecification,
-    Attr,
-    AttributeSpec,
-    NotSpecification,
-    OrSpecification,
-    Specification,
-)
-
-# Dishka DI Integration (optional)
-from shared.extensions import (
-    DishkaContainerAdapter,
-    DishkaFastAPIMiddleware,
-    create_dishka_fastapi_middleware,
-    dishka_dependency,
-    is_dishka_available,
+from shared.tasks import (
+    PeriodicTask,
+    Task,
+    TaskContext,
+    TaskMiddleware,
+    TaskPriority,
+    TaskResult,
+    TaskRunner,
+    TaskState,
+    TaskStatus,
 )
 from shared.utils import (
     CustomJSONEncoder,
