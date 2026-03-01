@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO")
 
     # Database - Shared with identity-service
-    database_url: str = Field(
+    database_url: SecretStr = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/identity_db"
     )
     database_pool_size: int = Field(default=5)
@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     allowed_admin_ips: str = Field(default="*")  # Comma-separated IPs or *
     cors_origins: list[str] = Field(default=["http://localhost:8081"])
     cors_allow_credentials: bool = Field(default=True)
+
+    # Observability - OpenTelemetry
+    otel_enabled: bool = Field(default=False)
+    otel_service_name: str = Field(default="identity-admin-service")
+    otel_exporter_endpoint: str = Field(default="http://localhost:4317")
 
     @property
     def is_development(self) -> bool:

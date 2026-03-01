@@ -4,9 +4,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -18,11 +17,15 @@ from identity_admin_service.configs import get_settings
 from identity_admin_service.middleware import IPWhitelistMiddleware
 
 # Shared observability
+from shared.fastapi_utils import RequestContextMiddleware, register_exception_handlers
 from shared.observability import (
     LoggingConfig,
     RequestLoggingConfig,
     RequestLoggingMiddleware,
+    TracingConfig,
     configure_structlog,
+    configure_tracing,
+    create_prometheus_asgi_app,
     get_structlog_logger,
 )
 
@@ -63,6 +66,42 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         identity_service_url=settings.identity_service_url,
     )
 
+    # Initialize database connection pool (shared identity database)
+    from identity_admin_service.database import dispose_db, init_db_manager
+
+    db_manager = init_db_manager(
+        database_url=settings.database_url.get_secret_value(),
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_max_overflow,
+        echo=settings.database_echo,
+    )
+    logger.info("Database connection pool initialized")
+
+    # Verify database connectivity
+    if await db_manager.health_check():
+        logger.info("Database health check passed")
+    else:
+        logger.warning("Database health check failed - service may not function correctly")
+
+    # Register health checks (after DB is initialized)
+    from identity_admin_service.api.health import register_health_checks
+
+    register_health_checks()
+    logger.info("Health checks registered")
+
+    # Initialize OpenTelemetry tracing
+    if settings.otel_enabled:
+        configure_tracing(
+            TracingConfig(
+                service_name=settings.otel_service_name,
+                exporter_endpoint=settings.otel_exporter_endpoint,
+            )
+        )
+        logger.info(
+            "OpenTelemetry tracing initialized",
+            endpoint=settings.otel_exporter_endpoint,
+        )
+
     # Security warning for production
     if settings.is_production and settings.allowed_admin_ips == "*":
         logger.warning(
@@ -80,6 +119,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Identity Admin Service")
+    await dispose_db()
+    logger.info("Database connections disposed")
 
 
 def create_app() -> FastAPI:
@@ -116,6 +157,9 @@ def create_app() -> FastAPI:
             allowed_ips=settings.allowed_ip_list,
         )
 
+    # Request context middleware (correlation/request IDs)
+    app.add_middleware(RequestContextMiddleware)
+
     # Request logging middleware
     app.add_middleware(
         RequestLoggingMiddleware,
@@ -140,25 +184,11 @@ def create_app() -> FastAPI:
         expose_headers=["X-Correlation-ID", "X-Request-ID"],
     )
 
-    # Global exception handler
-    @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        """Handle uncaught exceptions."""
-        logger.error(
-            "Unhandled exception in admin service",
-            path=request.url.path,
-            method=request.method,
-            error=str(exc),
-            exc_info=True,
-        )
+    # Shared exception handlers (structured error responses)
+    register_exception_handlers(app)
 
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "server_error",
-                "error_description": "An internal error occurred",
-            },
-        )
+    # Prometheus metrics endpoint
+    app.mount("/metrics", create_prometheus_asgi_app())
 
     # Include routers
     app.include_router(health_router)

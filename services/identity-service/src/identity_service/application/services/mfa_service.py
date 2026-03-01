@@ -99,7 +99,7 @@ class MFAService:
 
         # Generate recovery codes
         recovery_codes = _generate_recovery_codes()
-        user.credential.recovery_codes = recovery_codes
+        user.credential.mfa_recovery_codes = recovery_codes
 
         await self._user_repo.update(user)
 
@@ -238,7 +238,7 @@ class MFAService:
 
         # Check recovery code
         normalized_code = recovery_code.strip().upper()
-        if normalized_code not in user.credential.recovery_codes:
+        if normalized_code not in user.credential.mfa_recovery_codes:
             logger.warning(
                 "Invalid recovery code attempt",
                 user_id=str(user_id),
@@ -246,11 +246,11 @@ class MFAService:
             return None, 0, "Invalid recovery code"
 
         # Consume recovery code
-        user.credential.recovery_codes.remove(normalized_code)
+        user.credential.mfa_recovery_codes.remove(normalized_code)
         user.credential.updated_at = now_utc()
         await self._user_repo.update(user)
 
-        remaining = len(user.credential.recovery_codes)
+        remaining = len(user.credential.mfa_recovery_codes)
         logger.info(
             "Recovery code used",
             user_id=str(user_id),
@@ -298,7 +298,7 @@ class MFAService:
         # Disable MFA
         user.credential.mfa_enabled = False
         user.credential.mfa_secret = None
-        user.credential.recovery_codes = []
+        user.credential.mfa_recovery_codes = []
         user.credential.updated_at = now_utc()
         await self._user_repo.update(user)
 
@@ -324,5 +324,5 @@ class MFAService:
 
         return (
             user.credential.mfa_enabled,
-            len(user.credential.recovery_codes),
+            len(user.credential.mfa_recovery_codes),
         )

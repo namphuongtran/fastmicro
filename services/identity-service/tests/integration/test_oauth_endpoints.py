@@ -15,18 +15,18 @@ class TestHealthEndpoints:
         assert "version" in data
 
     def test_readiness_check(self, client: TestClient):
-        """Test /ready endpoint."""
-        response = client.get("/ready")
+        """Test /health/ready endpoint."""
+        response = client.get("/health/ready")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "ready"
+        assert data["status"] == "healthy"
 
     def test_liveness_check(self, client: TestClient):
-        """Test /live endpoint."""
-        response = client.get("/live")
+        """Test /health/live endpoint."""
+        response = client.get("/health/live")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "alive"
+        assert data["status"] == "healthy"
 
 
 class TestDiscoveryEndpoints:

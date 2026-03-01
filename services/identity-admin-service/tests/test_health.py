@@ -19,18 +19,18 @@ async def test_health_check(client: AsyncClient) -> None:
 @pytest.mark.anyio
 async def test_readiness_check(client: AsyncClient) -> None:
     """Test readiness check endpoint."""
-    response = await client.get("/readyz")
+    response = await client.get("/health/ready")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "ready"
+    assert data["status"] == "healthy"
 
 
 @pytest.mark.anyio
 async def test_liveness_check(client: AsyncClient) -> None:
     """Test liveness check endpoint."""
-    response = await client.get("/healthz")
+    response = await client.get("/health/live")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "ok"
+    assert data["status"] == "healthy"

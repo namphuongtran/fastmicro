@@ -1,21 +1,33 @@
 """FastAPI dependencies for dependency injection.
 
 Defines reusable Annotated type aliases following FastAPI best practices.
+Uses PostgreSQL repositories (via shared.identity) for persistent storage
+and in-memory repositories for Redis-backed entities (auth codes, sessions,
+token blacklist).
+
 See: https://fastapi.tiangolo.com/tutorial/dependencies/
 """
 
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from identity_service.application.services import MFAService, OAuth2Service, UserAuthService
 from identity_service.configs import Settings, get_settings
+from identity_service.infrastructure.database import get_db_session
 
-if TYPE_CHECKING:
-    pass
+# PostgreSQL-backed repositories from shared library
+from shared.identity.repositories import (
+    ClientRepository,
+    ConsentRepository,
+    PasswordResetRepository,
+    RefreshTokenRepository,
+    UserRepository,
+)
 
 # =============================================================================
 # Annotated Type Aliases for Dependency Injection
@@ -29,120 +41,13 @@ if TYPE_CHECKING:
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
-# Placeholder for actual repository implementations
-# These will be implemented in Phase 1 infrastructure layer
-
-
-class InMemoryUserRepository:
-    """In-memory user repository for development/testing."""
-
-    async def get_by_id(self, user_id):
-        return None
-
-    async def get_by_email(self, email):
-        return None
-
-    async def get_by_username(self, username):
-        return None
-
-    async def get_by_external_id(self, external_id, provider):
-        return None
-
-    async def create(self, user):
-        return user
-
-    async def update(self, user):
-        return user
-
-    async def delete(self, user_id):
-        return True
-
-    async def exists_by_email(self, email):
-        return False
-
-    async def exists_by_username(self, username):
-        return False
-
-    async def find_by_role(self, role_name, skip=0, limit=100):
-        return []
-
-    async def count(self, include_inactive=False):
-        return 0
-
-    async def search(self, query, skip=0, limit=100, include_inactive=False):
-        return []
-
-
-class InMemoryClientRepository:
-    """In-memory client repository for development/testing.
-
-    Provides a functional in-memory implementation for OAuth2 client storage.
-    Used during development and testing before database persistence is implemented.
-    """
-
-    def __init__(self) -> None:
-        """Initialize the in-memory storage."""
-        self._clients: dict[str, any] = {}  # Keyed by client_id (OAuth2 public identifier)
-        self._clients_by_uuid: dict[str, any] = {}  # Keyed by internal UUID
-
-    async def get_by_id(self, client_id):
-        """Get client by internal UUID."""
-        return self._clients_by_uuid.get(str(client_id))
-
-    async def get_by_client_id(self, client_id: str):
-        """Get client by OAuth2 client_id (public identifier)."""
-        return self._clients.get(client_id)
-
-    async def create(self, client):
-        """Create a new client."""
-        self._clients[client.client_id] = client
-        self._clients_by_uuid[str(client.id)] = client
-        return client
-
-    async def update(self, client):
-        """Update an existing client."""
-        self._clients[client.client_id] = client
-        self._clients_by_uuid[str(client.id)] = client
-        return client
-
-    async def delete(self, client_id):
-        """Delete a client by UUID."""
-        client = self._clients_by_uuid.get(str(client_id))
-        if client:
-            client.is_active = False
-            return True
-        return False
-
-    async def exists_by_client_id(self, client_id: str) -> bool:
-        """Check if client exists by OAuth2 client_id."""
-        return client_id in self._clients
-
-    async def list_active(self, skip=0, limit=100):
-        """List all active clients."""
-        active = [c for c in self._clients.values() if c.is_active]
-        return active[skip : skip + limit]
-
-    async def list_by_owner(self, owner_id, skip=0, limit=100):
-        """List clients by owner."""
-        owned = [c for c in self._clients.values() if c.created_by == owner_id]
-        return owned[skip : skip + limit]
-
-    async def count(self, include_inactive=False):
-        """Count total clients."""
-        if include_inactive:
-            return len(self._clients)
-        return len([c for c in self._clients.values() if c.is_active])
-
-    async def search(self, query, skip=0, limit=100, include_inactive=False):
-        """Search clients by name or client_id."""
-        query_lower = query.lower()
-        results = []
-        for client in self._clients.values():
-            if not include_inactive and not client.is_active:
-                continue
-            if query_lower in client.client_id.lower() or query_lower in client.client_name.lower():
-                results.append(client)
-        return results[skip : skip + limit]
+# =============================================================================
+# In-Memory Repositories (Redis-backed entities - kept until Redis implementation)
+# =============================================================================
+# These entities (auth codes, token blacklist, sessions) are designed for
+# Redis storage. Using in-memory stubs until Redis implementation.
+# NOTE: In multi-worker deployments, each worker has its own instance.
+# =============================================================================
 
 
 class InMemoryAuthCodeRepository:
@@ -170,67 +75,6 @@ class InMemoryAuthCodeRepository:
         return False
 
 
-class InMemoryRefreshTokenRepository:
-    """In-memory refresh token repository."""
-
-    def __init__(self):
-        self._tokens = {}
-
-    async def save(self, token):
-        self._tokens[token.token] = token
-        return token
-
-    async def get_by_token(self, token):
-        return self._tokens.get(token)
-
-    async def get_by_id(self, token_id):
-        for t in self._tokens.values():
-            if t.id == token_id:
-                return t
-        return None
-
-    async def revoke(self, token, replaced_by=None):
-        if token in self._tokens:
-            self._tokens[token].revoke(replaced_by)
-            return True
-        return False
-
-    async def revoke_all_for_user(self, user_id):
-        count = 0
-        for t in self._tokens.values():
-            if t.user_id == user_id and not t.is_revoked:
-                t.revoke()
-                count += 1
-        return count
-
-    async def revoke_all_for_client(self, client_id):
-        count = 0
-        for t in self._tokens.values():
-            if t.client_id == client_id and not t.is_revoked:
-                t.revoke()
-                count += 1
-        return count
-
-    async def revoke_all_for_user_and_client(self, user_id, client_id):
-        count = 0
-        for t in self._tokens.values():
-            if t.user_id == user_id and t.client_id == client_id and not t.is_revoked:
-                t.revoke()
-                count += 1
-        return count
-
-    async def list_active_for_user(self, user_id, skip=0, limit=100):
-        return [t for t in self._tokens.values() if t.user_id == user_id and t.is_valid()][
-            skip : skip + limit
-        ]
-
-    async def cleanup_expired(self):
-        expired = [k for k, v in self._tokens.items() if v.is_expired()]
-        for k in expired:
-            del self._tokens[k]
-        return len(expired)
-
-
 class InMemoryTokenBlacklistRepository:
     """In-memory token blacklist repository."""
 
@@ -248,53 +92,6 @@ class InMemoryTokenBlacklistRepository:
             del self._blacklist[jti]
             return True
         return False
-
-
-class InMemoryConsentRepository:
-    """In-memory consent repository."""
-
-    def __init__(self):
-        self._consents = {}
-
-    async def get_by_id(self, consent_id):
-        return self._consents.get(str(consent_id))
-
-    async def get_by_user_and_client(self, user_id, client_id):
-        key = f"{user_id}:{client_id}"
-        return self._consents.get(key)
-
-    async def save(self, consent):
-        key = f"{consent.user_id}:{consent.client_id}"
-        self._consents[key] = consent
-        return consent
-
-    async def delete(self, consent_id):
-        for k, v in list(self._consents.items()):
-            if v.id == consent_id:
-                del self._consents[k]
-                return True
-        return False
-
-    async def delete_for_user(self, user_id):
-        count = 0
-        for k in list(self._consents.keys()):
-            if k.startswith(str(user_id)):
-                del self._consents[k]
-                count += 1
-        return count
-
-    async def delete_for_client(self, client_id):
-        count = 0
-        for k in list(self._consents.keys()):
-            if k.endswith(client_id):
-                del self._consents[k]
-                count += 1
-        return count
-
-    async def list_by_user(self, user_id, skip=0, limit=100):
-        return [v for k, v in self._consents.items() if k.startswith(str(user_id))][
-            skip : skip + limit
-        ]
 
 
 class InMemorySessionRepository:
@@ -344,23 +141,76 @@ class InMemorySessionRepository:
         return False
 
 
-# Singleton instances for in-memory repositories
-_user_repo = InMemoryUserRepository()
-_client_repo = InMemoryClientRepository()
+# =============================================================================
+# Database Session Dependency
+# =============================================================================
+
+DbSessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+# =============================================================================
+# PostgreSQL Repository Dependencies (session-scoped)
+# =============================================================================
+
+
+def get_user_repository(session: DbSessionDep) -> UserRepository:
+    """Get session-scoped PostgreSQL user repository."""
+    return UserRepository(session)
+
+
+def get_client_repository(session: DbSessionDep) -> ClientRepository:
+    """Get session-scoped PostgreSQL client repository."""
+    return ClientRepository(session)
+
+
+def get_refresh_token_repository(session: DbSessionDep) -> RefreshTokenRepository:
+    """Get session-scoped PostgreSQL refresh token repository."""
+    return RefreshTokenRepository(session)
+
+
+def get_consent_repository(session: DbSessionDep) -> ConsentRepository:
+    """Get session-scoped PostgreSQL consent repository."""
+    return ConsentRepository(session)
+
+
+def get_password_reset_repository(session: DbSessionDep) -> PasswordResetRepository:
+    """Get session-scoped PostgreSQL password reset repository."""
+    return PasswordResetRepository(session)
+
+
+# Annotated type aliases for repositories
+UserRepoDep = Annotated[UserRepository, Depends(get_user_repository)]
+ClientRepoDep = Annotated[ClientRepository, Depends(get_client_repository)]
+RefreshTokenRepoDep = Annotated[RefreshTokenRepository, Depends(get_refresh_token_repository)]
+ConsentRepoDep = Annotated[ConsentRepository, Depends(get_consent_repository)]
+PasswordResetRepoDep = Annotated[PasswordResetRepository, Depends(get_password_reset_repository)]
+
+
+# =============================================================================
+# In-Memory Repositories (Redis-backed entities - kept until Redis implementation)
+# =============================================================================
+
+# Singleton instances for Redis-only repositories
 _auth_code_repo = InMemoryAuthCodeRepository()
-_refresh_token_repo = InMemoryRefreshTokenRepository()
 _blacklist_repo = InMemoryTokenBlacklistRepository()
-_consent_repo = InMemoryConsentRepository()
 _session_repo = InMemorySessionRepository()
 
 
 async def get_oauth2_service(
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: SettingsDep,
+    user_repository: UserRepoDep,
+    client_repository: ClientRepoDep,
+    refresh_token_repository: RefreshTokenRepoDep,
+    consent_repository: ConsentRepoDep,
 ) -> OAuth2Service:
-    """Get OAuth2 service instance.
+    """Get OAuth2 service instance with PostgreSQL-backed repositories.
 
     Args:
         settings: Application settings
+        user_repository: PostgreSQL user repository
+        client_repository: PostgreSQL client repository
+        refresh_token_repository: PostgreSQL refresh token repository
+        consent_repository: PostgreSQL consent repository
 
     Returns:
         OAuth2Service instance.
@@ -374,12 +224,12 @@ async def get_oauth2_service(
         settings=settings,
         jwt_service=get_jwt_service(settings),
         password_service=get_password_service(settings),
-        user_repository=_user_repo,
-        client_repository=_client_repo,
+        user_repository=user_repository,
+        client_repository=client_repository,
         auth_code_repository=_auth_code_repo,
-        refresh_token_repository=_refresh_token_repo,
+        refresh_token_repository=refresh_token_repository,
         token_blacklist_repository=_blacklist_repo,
-        consent_repository=_consent_repo,
+        consent_repository=consent_repository,
         session_repository=_session_repo,
     )
 
@@ -388,72 +238,17 @@ async def get_oauth2_service(
 OAuth2ServiceDep = Annotated[OAuth2Service, Depends(get_oauth2_service)]
 
 
-def get_client_repository() -> InMemoryClientRepository:
-    """Get the client repository singleton.
-
-    Returns:
-        Client repository instance for OAuth2 client management.
-    """
-    return _client_repo
-
-
-def get_user_repository() -> InMemoryUserRepository:
-    """Get the user repository singleton.
-
-    Returns:
-        User repository instance for user management.
-    """
-    return _user_repo
-
-
-# =============================================================================
-# Password Reset Repository (In-Memory)
-# =============================================================================
-
-
-class InMemoryPasswordResetRepository:
-    """In-memory password reset token repository."""
-
-    def __init__(self) -> None:
-        self._tokens: dict[str, any] = {}
-
-    async def save(self, reset_token):
-        self._tokens[reset_token.token] = reset_token
-
-    async def get_by_token(self, token: str):
-        return self._tokens.get(token)
-
-    async def mark_as_used(self, token: str):
-        if token in self._tokens:
-            self._tokens[token].consume()
-            return True
-        return False
-
-    async def delete_expired(self):
-        expired = [k for k, v in self._tokens.items() if not v.is_valid()]
-        for k in expired:
-            del self._tokens[k]
-        return len(expired)
-
-    async def delete_for_user(self, user_id):
-        to_delete = [k for k, v in self._tokens.items() if v.user_id == user_id]
-        for k in to_delete:
-            del self._tokens[k]
-        return len(to_delete)
-
-
-_reset_repo = InMemoryPasswordResetRepository()
-
-
 # =============================================================================
 # Auth Services
 # =============================================================================
 
 
 async def get_user_auth_service(
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: SettingsDep,
+    user_repository: UserRepoDep,
+    password_reset_repository: PasswordResetRepoDep,
 ) -> UserAuthService:
-    """Get UserAuthService instance with all dependencies wired.
+    """Get UserAuthService instance with PostgreSQL-backed repositories.
 
     Returns:
         UserAuthService for registration, login, and password operations.
@@ -468,8 +263,8 @@ async def get_user_auth_service(
 
     return UserAuthService(
         settings=settings,
-        user_repository=_user_repo,
-        password_reset_repository=_reset_repo,
+        user_repository=user_repository,
+        password_reset_repository=password_reset_repository,
         password_service=get_password_service(settings),
         password_policy_service=get_password_policy_service(settings),
         brute_force_service=get_brute_force_protection_service(settings),
@@ -479,9 +274,10 @@ async def get_user_auth_service(
 
 
 async def get_mfa_service(
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: SettingsDep,
+    user_repository: UserRepoDep,
 ) -> MFAService:
-    """Get MFAService instance with all dependencies wired.
+    """Get MFAService instance with PostgreSQL-backed user repository.
 
     Returns:
         MFAService for TOTP setup, verification, and recovery.
@@ -493,7 +289,7 @@ async def get_mfa_service(
 
     return MFAService(
         settings=settings,
-        user_repository=_user_repo,
+        user_repository=user_repository,
         password_service=get_password_service(settings),
         jwt_service=get_jwt_service(settings),
     )
@@ -510,7 +306,7 @@ MFAServiceDep = Annotated[MFAService, Depends(get_mfa_service)]
 
 
 async def get_current_user_id(
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: SettingsDep,
 ) -> uuid.UUID:
     """Extract user ID from JWT bearer token.
 

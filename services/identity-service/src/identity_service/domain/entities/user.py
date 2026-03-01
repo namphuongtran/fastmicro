@@ -20,13 +20,15 @@ class UserCredential:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     user_id: uuid.UUID | None = None
     password_hash: str = ""
+    password_changed_at: datetime | None = None
+    previous_password_hashes: list[str] = field(default_factory=list)
     mfa_enabled: bool = False
     mfa_secret: str | None = None  # TOTP secret (encrypted)
-    recovery_codes: list[str] = field(default_factory=list)
-    last_password_change: datetime | None = None
-    password_expires_at: datetime | None = None
+    mfa_recovery_codes: list[str] = field(default_factory=list)
     failed_login_attempts: int = 0
     locked_until: datetime | None = None
+    last_failed_login: datetime | None = None
+    password_expires_at: datetime | None = None
     created_at: datetime = field(default_factory=now_utc)
     updated_at: datetime = field(default_factory=now_utc)
 
@@ -90,6 +92,7 @@ class UserClaim:
     user_id: uuid.UUID | None = None
     claim_type: str = ""
     claim_value: str = ""
+    issuer: str | None = None
     created_at: datetime = field(default_factory=now_utc)
 
 

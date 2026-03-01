@@ -38,8 +38,8 @@ def _make_user(
             password_hash=password_hash,
             mfa_enabled=mfa_enabled,
             mfa_secret=mfa_secret,
-            recovery_codes=recovery_codes or [],
-            last_password_change=now,
+            mfa_recovery_codes=recovery_codes or [],
+            password_changed_at=now,
         ),
         profile=UserProfile(
             user_id=uid,
@@ -355,7 +355,7 @@ class TestMFARecovery:
         assert remaining == 2
         assert error is None
         # Verify code was consumed
-        assert "BBBB2222" not in user.credential.recovery_codes
+        assert "BBBB2222" not in user.credential.mfa_recovery_codes
 
     @pytest.mark.unit
     async def test_recovery_code_invalid(

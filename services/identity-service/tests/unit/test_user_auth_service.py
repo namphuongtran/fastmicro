@@ -72,7 +72,7 @@ def _make_user(
             password_hash=password_hash,
             mfa_enabled=mfa_enabled,
             mfa_secret=mfa_secret,
-            last_password_change=now,
+            password_changed_at=now,
         ),
         profile=UserProfile(
             user_id=uid,

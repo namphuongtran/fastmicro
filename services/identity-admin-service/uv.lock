@@ -1904,6 +1904,7 @@ caching = [
     { name = "redis" },
 ]
 database = [
+    { name = "alembic" },
     { name = "asyncpg" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
@@ -1925,6 +1926,7 @@ observability = [
 requires-dist = [
     { name = "aio-pika", marker = "extra == 'messaging'", specifier = ">=9.3.0" },
     { name = "aiokafka", marker = "extra == 'messaging'", specifier = ">=0.10.0" },
+    { name = "alembic", marker = "extra == 'database'", specifier = ">=1.13.0" },
     { name = "argon2-cffi", marker = "extra == 'auth'", specifier = ">=23.1.0" },
     { name = "asyncpg", marker = "extra == 'database'", specifier = ">=0.29.0" },
     { name = "bcrypt", marker = "extra == 'auth'", specifier = ">=4.1.0" },
