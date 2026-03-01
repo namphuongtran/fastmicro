@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/namphuongtran/fastmicro/compare/v1.0.1...v1.1.0) (2026-03-01)
+
+
+### Features
+
+* **identity:** Phase 1 Foundation - shared ORM, mappers, repos, DB wiring ([a4f99f4](https://github.com/namphuongtran/fastmicro/commit/a4f99f49d9e87aac884aab4d5f15089879652367))
+
 ## [1.0.1](https://github.com/namphuongtran/fastmicro/compare/v1.0.0...v1.0.1) (2026-02-22)
 
 
