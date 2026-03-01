@@ -119,7 +119,7 @@ class UserAuthService:
             credential=UserCredential(
                 user_id=user_id,
                 password_hash=password_hash,
-                last_password_change=now_utc(),
+                password_changed_at=now_utc(),
             ),
             profile=UserProfile(
                 user_id=user_id,
@@ -387,7 +387,7 @@ class UserAuthService:
 
         add_to_password_history(str(user_id), user.credential.password_hash)
         user.credential.password_hash = self._password_service.hash_password(new_password)
-        user.credential.last_password_change = now_utc()
+        user.credential.password_changed_at = now_utc()
         user.credential.updated_at = now_utc()
 
         await self._user_repo.update(user)
@@ -478,7 +478,7 @@ class UserAuthService:
 
         add_to_password_history(str(user.id), user.credential.password_hash)
         user.credential.password_hash = self._password_service.hash_password(new_password)
-        user.credential.last_password_change = now_utc()
+        user.credential.password_changed_at = now_utc()
         user.credential.reset_failed_attempts()
 
         await self._user_repo.update(user)

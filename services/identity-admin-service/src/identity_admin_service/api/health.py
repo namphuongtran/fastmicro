@@ -1,45 +1,34 @@
-"""Health check endpoints for Identity Admin Service."""
+"""Health check and observability endpoints for Identity Admin Service.
 
-from fastapi import APIRouter
+Uses shared library's health router with database connectivity checks.
+"""
 
-from identity_admin_service import __version__
-from identity_admin_service.configs import get_settings
-
-router = APIRouter(tags=["health"])
+from shared.fastapi_utils import create_database_health_check, create_health_router
 
 
-@router.get("/health")
-async def health() -> dict:
-    """Basic health check endpoint.
+async def _check_identity_db() -> bool:
+    """Check identity database connectivity."""
+    try:
+        from identity_admin_service.database import get_db_manager
 
-    Returns:
-        Service health status with version info.
+        return await get_db_manager().health_check()
+    except Exception:
+        return False
+
+
+def register_health_checks() -> None:
+    """Register health checks during application startup.
+
+    Called from the app lifespan handler rather than at module import
+    so tests can control when (and if) checks are registered.
     """
-    settings = get_settings()
-    return {
-        "status": "healthy",
-        "service": "identity-admin-service",
-        "version": __version__,
-        "environment": settings.app_env,
-    }
+    create_database_health_check(
+        name="identity_db",
+        check_fn=_check_identity_db,
+    )
 
 
-@router.get("/healthz")
-async def healthz() -> dict:
-    """Kubernetes liveness probe endpoint.
-
-    Returns:
-        Simple status for liveness check.
-    """
-    return {"status": "ok"}
-
-
-@router.get("/readyz")
-async def readyz() -> dict:
-    """Kubernetes readiness probe endpoint.
-
-    Returns:
-        Readiness status including dependencies.
-    """
-    # TODO: Add actual dependency checks (database, identity-service)
-    return {"status": "ready"}
+# Create the shared health router (stateless - safe at module level)
+router = create_health_router(
+    service_name="identity-admin-service",
+)

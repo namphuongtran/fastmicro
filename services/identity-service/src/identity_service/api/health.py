@@ -1,73 +1,35 @@
-"""Health check endpoints."""
+"""Health check and observability endpoints.
 
-from datetime import UTC, datetime
+Uses shared library's health router with database connectivity checks
+and Prometheus metrics endpoint.
+"""
 
-from fastapi import APIRouter
-from pydantic import BaseModel
-
-router = APIRouter(tags=["health"])
-
-
-class HealthResponse(BaseModel):
-    """Health check response."""
-
-    status: str
-    service: str
-    version: str
-    timestamp: str
+from shared.fastapi_utils import create_database_health_check, create_health_router
 
 
-class ReadinessResponse(BaseModel):
-    """Readiness check response."""
+async def _check_identity_db() -> bool:
+    """Check identity database connectivity."""
+    try:
+        from identity_service.infrastructure.database import get_db_manager
 
-    status: str
-    checks: dict[str, str]
+        return await get_db_manager().health_check()
+    except Exception:
+        return False
 
 
-@router.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """Basic health check endpoint.
+def register_health_checks() -> None:
+    """Register health checks during application startup.
 
-    Returns:
-        Service health status.
+    Called from the app lifespan handler rather than at module import
+    so tests can control when (and if) checks are registered.
     """
-    from identity_service import __version__
-
-    return HealthResponse(
-        status="healthy",
-        service="identity-service",
-        version=__version__,
-        timestamp=datetime.now(UTC).isoformat(),
+    create_database_health_check(
+        name="identity_db",
+        check_fn=_check_identity_db,
     )
 
 
-@router.get("/ready", response_model=ReadinessResponse)
-async def readiness_check() -> ReadinessResponse:
-    """Readiness check with dependency status.
-
-    Returns:
-        Readiness status with dependency checks.
-    """
-    checks = {
-        "database": "healthy",  # TODO: Add actual DB check
-        "redis": "healthy",  # TODO: Add actual Redis check
-        "keys": "healthy",  # TODO: Add key availability check
-    }
-
-    # Determine overall status
-    all_healthy = all(v == "healthy" for v in checks.values())
-
-    return ReadinessResponse(
-        status="ready" if all_healthy else "not_ready",
-        checks=checks,
-    )
-
-
-@router.get("/live")
-async def liveness_check() -> dict:
-    """Kubernetes liveness probe.
-
-    Returns:
-        Simple OK response.
-    """
-    return {"status": "alive"}
+# Create the shared health router (stateless - safe at module level)
+router = create_health_router(
+    service_name="identity-service",
+)

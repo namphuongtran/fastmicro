@@ -56,10 +56,12 @@ def app(test_settings: Settings, monkeypatch):
     # Clear all caches before test to ensure fresh state
     from identity_service import configs
     from identity_service.infrastructure.security import jwt_service
+    from shared.observability.health import _health_checks
 
     jwt_service.get_key_manager.cache_clear()
     jwt_service._jwt_service_cache.clear()
     configs.get_settings.cache_clear()
+    _health_checks.clear()
 
     # Set environment variables for settings
     monkeypatch.setenv("APP_ENV", "test")
@@ -83,6 +85,7 @@ def app(test_settings: Settings, monkeypatch):
     jwt_service.get_key_manager.cache_clear()
     jwt_service._jwt_service_cache.clear()
     configs.get_settings.cache_clear()
+    _health_checks.clear()
 
 
 @pytest.fixture
