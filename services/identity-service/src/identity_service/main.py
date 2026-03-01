@@ -76,6 +76,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     logger.info("Database connection pool initialized")
 
+    # Auto-create tables in test mode (production uses Alembic migrations)
+    if settings.app_env == "test":
+        from shared.identity.models.base import IdentityBase
+
+        await db_manager.create_all(IdentityBase)
+        logger.info("Database tables auto-created (test mode)")
+
     # Verify database connectivity
     if await db_manager.health_check():
         logger.info("Database health check passed")

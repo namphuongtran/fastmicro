@@ -15,7 +15,7 @@ from shared.identity.mappers.client_mapper import (
 from shared.identity.models.client import ClientModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import Client
+    from shared.identity.entities import Client
 
 
 class ClientRepository:

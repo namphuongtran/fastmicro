@@ -19,7 +19,7 @@ from shared.identity.mappers.user_mapper import (
 from shared.identity.models.user import PasswordResetTokenModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities.password_reset import PasswordResetToken
+    from shared.identity.entities.password_reset import PasswordResetToken
 
 
 class PasswordResetRepository:

@@ -21,7 +21,7 @@ from shared.identity.mappers.token_mapper import (
 from shared.identity.models.token import RefreshTokenModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import RefreshToken
+    from shared.identity.entities import RefreshToken
 
 
 class RefreshTokenRepository:

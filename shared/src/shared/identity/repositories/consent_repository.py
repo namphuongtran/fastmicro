@@ -19,7 +19,7 @@ from shared.identity.mappers.consent_mapper import (
 from shared.identity.models.consent import ConsentModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import Consent
+    from shared.identity.entities import Consent
 
 
 class ConsentRepository:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from shared.identity.models.consent import ConsentModel, ConsentScopeModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import Consent, ConsentScope
+    from shared.identity.entities import Consent, ConsentScope
 
 
 def consent_entity_to_model(entity: Consent) -> ConsentModel:
@@ -28,7 +28,7 @@ def consent_entity_to_model(entity: Consent) -> ConsentModel:
 
 def consent_model_to_entity(model: ConsentModel) -> Consent:
     """Convert ORM model to Consent domain entity."""
-    from identity_service.domain.entities import Consent
+    from shared.identity.entities import Consent
 
     entity = Consent(
         id=uuid.UUID(model.id),
@@ -55,7 +55,7 @@ def consent_scope_entity_to_model(entity: ConsentScope) -> ConsentScopeModel:
 
 def consent_scope_model_to_entity(model: ConsentScopeModel) -> ConsentScope:
     """Convert ORM model to ConsentScope domain entity."""
-    from identity_service.domain.entities import ConsentScope
+    from shared.identity.entities import ConsentScope
 
     return ConsentScope(
         id=uuid.UUID(model.id),

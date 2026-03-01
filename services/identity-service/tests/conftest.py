@@ -16,9 +16,7 @@ from identity_service.domain.entities.client import Client, ClientRedirectUri, C
 from identity_service.domain.entities.user import User, UserCredential, UserProfile
 from identity_service.domain.value_objects import (
     AuthMethod,
-    ClientId,
     ClientType,
-    Email,
     GrantType,
     ResponseType,
     Scope,
@@ -91,7 +89,8 @@ def app(test_settings: Settings, monkeypatch):
 @pytest.fixture
 def client(app) -> TestClient:
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as c:
+        yield c
 
 
 @pytest_asyncio.fixture
@@ -113,13 +112,13 @@ def password_service(test_settings: Settings) -> PasswordService:
 @pytest.fixture
 def test_user(password_service: PasswordService) -> User:
     """Create test user."""
-    user_id = str(uuid4())
+    user_id = uuid4()
     now = datetime.now(UTC)
     password_hash = password_service.hash_password("TestPassword123!")
 
     return User(
         id=user_id,
-        email=Email("test@example.com"),
+        email="test@example.com",
         username="testuser",
         created_at=now,
         updated_at=now,
@@ -141,28 +140,28 @@ def test_user(password_service: PasswordService) -> User:
 @pytest.fixture
 def test_client_entity() -> Client:
     """Create test OAuth client."""
-    client_id = str(uuid4())
+    client_uuid = uuid4()
     now = datetime.now(UTC)
 
     return Client(
-        id=client_id,
-        client_id=ClientId("test-client"),
-        name="Test Application",
+        id=client_uuid,
+        client_id="test-client",
+        client_name="Test Application",
         client_type=ClientType.CONFIDENTIAL,
         created_at=now,
         updated_at=now,
-        allowed_grant_types=[GrantType.AUTHORIZATION_CODE, GrantType.REFRESH_TOKEN],
-        allowed_response_types=[ResponseType.CODE],
+        grant_types=[GrantType.AUTHORIZATION_CODE, GrantType.REFRESH_TOKEN],
+        response_types=[ResponseType.CODE],
         token_endpoint_auth_method=AuthMethod.CLIENT_SECRET_POST,
         require_pkce=True,
         scopes=[
-            ClientScope(client_id=client_id, scope=Scope.OPENID),
-            ClientScope(client_id=client_id, scope=Scope.PROFILE),
-            ClientScope(client_id=client_id, scope=Scope.EMAIL),
+            ClientScope(client_id=client_uuid, scope=Scope.OPENID),
+            ClientScope(client_id=client_uuid, scope=Scope.PROFILE),
+            ClientScope(client_id=client_uuid, scope=Scope.EMAIL),
         ],
         redirect_uris=[
             ClientRedirectUri(
-                client_id=client_id,
+                client_id=client_uuid,
                 uri="http://localhost:3000/callback",
             ),
         ],
@@ -172,27 +171,27 @@ def test_client_entity() -> Client:
 @pytest.fixture
 def test_public_client() -> Client:
     """Create test public OAuth client."""
-    client_id = str(uuid4())
+    client_uuid = uuid4()
     now = datetime.now(UTC)
 
     return Client(
-        id=client_id,
-        client_id=ClientId("test-spa"),
-        name="Test SPA",
+        id=client_uuid,
+        client_id="test-spa-client",
+        client_name="Test SPA",
         client_type=ClientType.PUBLIC,
         created_at=now,
         updated_at=now,
-        allowed_grant_types=[GrantType.AUTHORIZATION_CODE],
-        allowed_response_types=[ResponseType.CODE],
+        grant_types=[GrantType.AUTHORIZATION_CODE],
+        response_types=[ResponseType.CODE],
         token_endpoint_auth_method=AuthMethod.NONE,
         require_pkce=True,
         scopes=[
-            ClientScope(client_id=client_id, scope=Scope.OPENID),
-            ClientScope(client_id=client_id, scope=Scope.PROFILE),
+            ClientScope(client_id=client_uuid, scope=Scope.OPENID),
+            ClientScope(client_id=client_uuid, scope=Scope.PROFILE),
         ],
         redirect_uris=[
             ClientRedirectUri(
-                client_id=client_id,
+                client_id=client_uuid,
                 uri="http://localhost:3000/callback",
             ),
         ],

@@ -13,7 +13,7 @@ from shared.identity.models.client import (
 )
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import (
+    from shared.identity.entities import (
         Client,
         ClientRedirectUri,
         ClientScope,
@@ -70,10 +70,10 @@ def client_entity_to_model(entity: Client) -> ClientModel:
 
 def client_model_to_entity(model: ClientModel) -> Client:
     """Convert ORM model to Client domain entity."""
-    from identity_service.domain.entities import (
+    from shared.identity.entities import (
         Client,
     )
-    from identity_service.domain.value_objects import (
+    from shared.identity.value_objects import (
         AuthMethod,
         ClientType,
         GrantType,
@@ -156,7 +156,7 @@ def secret_entity_to_model(entity: ClientSecret) -> ClientSecretModel:
 
 def secret_model_to_entity(model: ClientSecretModel) -> ClientSecret:
     """Convert ORM model to ClientSecret domain entity."""
-    from identity_service.domain.entities import ClientSecret
+    from shared.identity.entities import ClientSecret
 
     return ClientSecret(
         id=uuid.UUID(model.id),
@@ -187,7 +187,7 @@ def scope_entity_to_model(entity: ClientScope) -> ClientScopeModel:
 
 def scope_model_to_entity(model: ClientScopeModel) -> ClientScope:
     """Convert ORM model to ClientScope domain entity."""
-    from identity_service.domain.entities import ClientScope
+    from shared.identity.entities import ClientScope
 
     return ClientScope(
         id=uuid.UUID(model.id),
@@ -215,7 +215,7 @@ def redirect_uri_entity_to_model(entity: ClientRedirectUri) -> ClientRedirectUri
 
 def redirect_uri_model_to_entity(model: ClientRedirectUriModel) -> ClientRedirectUri:
     """Convert ORM model to ClientRedirectUri domain entity."""
-    from identity_service.domain.entities import ClientRedirectUri
+    from shared.identity.entities import ClientRedirectUri
 
     return ClientRedirectUri(
         id=uuid.UUID(model.id),

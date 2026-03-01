@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from shared.identity.models.token import RefreshTokenModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import RefreshToken
+    from shared.identity.entities import RefreshToken
 
 
 def refresh_token_entity_to_model(entity: RefreshToken) -> RefreshTokenModel:
@@ -30,7 +30,7 @@ def refresh_token_entity_to_model(entity: RefreshToken) -> RefreshTokenModel:
 
 def refresh_token_model_to_entity(model: RefreshTokenModel) -> RefreshToken:
     """Convert ORM model to RefreshToken domain entity."""
-    from identity_service.domain.entities import RefreshToken
+    from shared.identity.entities import RefreshToken
 
     return RefreshToken(
         id=uuid.UUID(model.id),

@@ -16,14 +16,14 @@ from shared.identity.models.user import (
 )
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import (
+    from shared.identity.entities import (
         User,
         UserClaim,
         UserCredential,
         UserProfile,
         UserRole,
     )
-    from identity_service.domain.entities.password_reset import PasswordResetToken
+    from shared.identity.entities.password_reset import PasswordResetToken
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ def user_entity_to_model(entity: User) -> UserModel:
 
 def user_model_to_entity(model: UserModel) -> User:
     """Convert ORM model to User domain entity."""
-    from identity_service.domain.entities import (
+    from shared.identity.entities import (
         User,
     )
 
@@ -115,7 +115,7 @@ def credential_entity_to_model(entity: UserCredential) -> UserCredentialModel:
 
 def credential_model_to_entity(model: UserCredentialModel) -> UserCredential:
     """Convert ORM model to UserCredential domain entity."""
-    from identity_service.domain.entities import UserCredential
+    from shared.identity.entities import UserCredential
 
     prev_hashes = (
         json.loads(model.previous_password_hashes) if model.previous_password_hashes else []
@@ -170,7 +170,7 @@ def profile_entity_to_model(entity: UserProfile) -> UserProfileModel:
 
 def profile_model_to_entity(model: UserProfileModel) -> UserProfile:
     """Convert ORM model to UserProfile domain entity."""
-    from identity_service.domain.entities import UserProfile
+    from shared.identity.entities import UserProfile
 
     address = json.loads(model.address) if model.address else None
     return UserProfile(
@@ -212,7 +212,7 @@ def claim_entity_to_model(entity: UserClaim) -> UserClaimModel:
 
 def claim_model_to_entity(model: UserClaimModel) -> UserClaim:
     """Convert ORM model to UserClaim domain entity."""
-    from identity_service.domain.entities import UserClaim
+    from shared.identity.entities import UserClaim
 
     return UserClaim(
         id=uuid.UUID(model.id),
@@ -242,7 +242,7 @@ def role_entity_to_model(entity: UserRole) -> UserRoleModel:
 
 def role_model_to_entity(model: UserRoleModel) -> UserRole:
     """Convert ORM model to UserRole domain entity."""
-    from identity_service.domain.entities import UserRole
+    from shared.identity.entities import UserRole
 
     return UserRole(
         id=uuid.UUID(model.id),
@@ -280,7 +280,7 @@ def password_reset_model_to_entity(
     model: PasswordResetTokenModel,
 ) -> PasswordResetToken:
     """Convert ORM model to PasswordResetToken domain entity."""
-    from identity_service.domain.entities.password_reset import PasswordResetToken
+    from shared.identity.entities.password_reset import PasswordResetToken
 
     return PasswordResetToken(
         id=uuid.UUID(model.id),

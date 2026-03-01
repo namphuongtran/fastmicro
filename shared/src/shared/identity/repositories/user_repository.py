@@ -16,7 +16,7 @@ from shared.identity.mappers.user_mapper import user_entity_to_model, user_model
 from shared.identity.models.user import UserModel
 
 if TYPE_CHECKING:
-    from identity_service.domain.entities import User
+    from shared.identity.entities import User
 
 
 class UserRepository:

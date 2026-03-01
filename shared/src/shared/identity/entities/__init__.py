@@ -1,23 +1,24 @@
-"""Domain entities package - re-exports from shared library.
+"""Shared identity domain entities.
 
-Canonical definitions live in ``shared.identity.entities``.
-This module re-exports them so that existing intra-service imports
-(``from identity_service.domain.entities import ...``) continue to work.
+These entities represent the core domain objects for the identity platform.
+They are shared between identity-service and identity-admin-service.
 """
 
-from shared.identity.entities import (  # noqa: F401
-    AuthorizationCode,
+from shared.identity.entities.client import (
     Client,
     ClientRedirectUri,
     ClientScope,
     ClientSecret,
-    Consent,
-    ConsentScope,
-    PasswordResetToken,
+)
+from shared.identity.entities.consent import Consent, ConsentScope, Session
+from shared.identity.entities.password_reset import PasswordResetToken
+from shared.identity.entities.token import (
+    AuthorizationCode,
     RefreshToken,
-    Session,
     TokenBlacklistEntry,
     TokenInfo,
+)
+from shared.identity.entities.user import (
     User,
     UserClaim,
     UserCredential,
